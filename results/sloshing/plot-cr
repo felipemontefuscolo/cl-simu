@@ -1,0 +1,14 @@
+set samples 500
+step = 0.2  # print_step * dt
+ampe = 0.2
+ni = 0.01;
+g = 1;
+we   = sqrt(6)
+
+
+A(x) = ampe * exp(-x/taue) * cos(we*x)
+
+
+
+
+#plot './amplitude.curve' u (step*$1):($2-1) w lp title "numeric", A(x) title "exact"

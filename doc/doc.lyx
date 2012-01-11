@@ -1,0 +1,737 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language brazilian
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize 12
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_amsmath 1
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 0
+\index Índice
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 2.5cm
+\topmargin 2.5cm
+\rightmargin 2.5cm
+\bottommargin 2.5cm
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Navier-Stokes
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\begin{aligned}\mathrm{Re}\, u_{k}\partial_{k}u_{c}-\partial_{k}\left(\partial_{k}u_{c}+\partial_{c}u_{k}\right)+\partial_{c}p=f_{c} & \qquad\boldsymbol{x}\in\Omega\\
+\partial_{k}u_{k}=0 & \qquad\boldsymbol{x}\in\Omega\\
+\left[-p\delta_{kc}+\left(\partial_{k}u_{c}+\partial_{c}u_{k}\right)\right]n_{k}=t_{c} & \qquad\boldsymbol{x}\in\Gamma_{1}\\
+u_{c}=v_{c} & \qquad\boldsymbol{x}\in\Gamma_{2}
+\end{aligned}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+FV:
+\begin_inset Formula 
+\[
+\begin{aligned}\int_{\Omega}\mathrm{Re}\left(u_{k}\partial_{k}u_{c}\right)\mathcal{N}^{i}+\int\partial_{k}\mathcal{N}^{i}\left(\partial_{k}u_{c}+\partial_{c}u_{k}\right)-\int p\partial_{c}\mathcal{N}^{i}=\\
+=\int f_{c}\mathcal{N}^{i}+\int_{\Gamma_{1}}t_{c}\mathcal{N}^{i}\\
+\\
+\int\partial_{k}u_{k}\mathcal{Q}_{i}=0
+\end{aligned}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Newton 
+\begin_inset Formula $\dfrac{\partial\mathcal{F}(\boldsymbol{q})}{\partial\boldsymbol{q}}\Delta\boldsymbol{q}=-\mathcal{F}(\boldsymbol{q})$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\begin{aligned}A_{ij}^{(c,d)}=\mathrm{Re}\int_{\Omega}\left(\mathcal{N}^{j}\partial_{d}u_{c}+\delta_{cd}\boldsymbol{u}\cdot\boldsymbol{\nabla}\mathcal{N}^{j}\right)\mathcal{N}^{i}+\int_{\Omega}\left(\delta_{cd}\boldsymbol{\nabla}\mathcal{N}^{i}\cdot\boldsymbol{\nabla}\mathcal{N}^{j}+\partial_{d}\mathcal{N}^{i}\partial_{c}\mathcal{N}^{j}\right)\\
+G_{ij}^{(c)}=-\int_{\Omega}\mathcal{Q}^{j}\partial_{c}\mathcal{N}^{i}\\
+C_{ij}^{(d)}=-\int_{\Omega}\mathcal{Q}^{i}\partial_{d}\mathcal{N}^{j}\\
+R_{i}=\int f_{c}\mathcal{N}^{i}+\oint t_{c}\mathcal{N}^{i}
+\end{aligned}
+\]
+
+\end_inset
+
+onde 
+\begin_inset Formula $\boldsymbol{q}=\left(\boldsymbol{u},\boldsymbol{p}\right)$
+\end_inset
+
+, e denotando
+\begin_inset Formula 
+\[
+\dfrac{\partial\mathcal{F}(\boldsymbol{q})}{\partial\boldsymbol{q}}=\left[\begin{array}{cc}
+\dfrac{\partial\mathcal{F}_{u}}{\partial\boldsymbol{u}} & \dfrac{\partial\mathcal{F}_{u}}{\partial\boldsymbol{p}}\\
+\\
+\dfrac{\partial\mathcal{F}_{p}}{\partial\boldsymbol{u}} & \dfrac{\partial\mathcal{F}_{p}}{\partial\boldsymbol{p}}
+\end{array}\right]
+\]
+
+\end_inset
+
+onde
+\begin_inset Formula 
+\[
+\begin{aligned}\dfrac{\partial\mathcal{F}_{u}}{\partial\boldsymbol{u}}= & \left[A_{ij}^{(c,d)}\right]\\
+\dfrac{\partial\mathcal{F}_{u}}{\partial\boldsymbol{p}}= & \left[G_{ij}^{(c)}\right]\\
+\dfrac{\partial\mathcal{F}_{p}}{\partial\boldsymbol{u}}= & \left[C_{ij}^{(d)}\right]\\
+\dfrac{\partial\mathcal{F}_{p}}{\partial\boldsymbol{p}}= & \left[0\right]
+\end{aligned}
+\]
+
+\end_inset
+
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\backslash
+partial_{u_{n}}
+\backslash
+left(A{}_{nn}u_{n}
+\backslash
+right)
+\end_layout
+
+\begin_layout Section
+Estabilizações
+\end_layout
+
+\begin_layout Subsection
+Condensação das bolhas
+\end_layout
+
+\begin_layout Standard
+resíduo:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+\mathcal{F}_{n}=A_{nn}u_{n}+A_{nb}u_{b}+G_{np}p-f_{n} & = & 0\\
+\mathcal{F}_{b}=A_{bn}u_{n}+A_{bb}u_{b}+G_{bp}p-f_{b} & = & 0\\
+\mathcal{F}_{p}=D_{pn}u_{n}+D_{pb}u_{b}\qquad\qquad\quad & = & 0
+\end{eqnarray*}
+
+\end_inset
+
+onde os subscritos 
+\begin_inset Formula $n$
+\end_inset
+
+ e 
+\begin_inset Formula $b$
+\end_inset
+
+ correspondem aos coeficientes dos nós e das bolhas respectivamente.
+\begin_inset Formula 
+\begin{eqnarray*}
+A|_{ij} & = & \mathrm{Re}\int_{\Omega}\delta_{cd}\widetilde{\boldsymbol{u}}\cdot\boldsymbol{\nabla}\mathcal{N}^{j}\mathcal{N}^{i}+\int_{\Omega}\left(\delta_{cd}\boldsymbol{\nabla}\mathcal{N}^{i}\cdot\boldsymbol{\nabla}\mathcal{N}^{j}+\partial_{d}\mathcal{N}^{i}\partial_{c}\mathcal{N}^{j}\right),\qquad c,d=1,..,d\\
+G|_{ij} & = & -\int_{\Omega}\mathcal{\mathcal{N}}^{j}\partial_{c}\mathcal{N}^{i}\\
+D|_{ij} & = & -\int_{\Omega}\mathcal{\mathcal{N}}^{i}\partial_{c}\mathcal{N}^{j}
+\end{eqnarray*}
+
+\end_inset
+
+onde 
+\begin_inset Formula $\widetilde{\boldsymbol{u}}$
+\end_inset
+
+ é a velocidade com os coeficientes das bolhas anuladas.
+\end_layout
+
+\begin_layout Standard
+Newton 
+\begin_inset Formula $\dfrac{\partial\mathcal{F}(q)}{\partial q}\Delta q=-\mathcal{F}(q)$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+\left[\begin{array}{ccc}
+\partial_{u_{n}}\left(A{}_{nn}u_{n}\right)+\partial_{u_{n}}\left(A{}_{nb}u_{b}\right) & A_{nb} & G_{np}\\
+\partial_{u_{n}}\left(A{}_{bn}u_{n}\right)+\partial_{u_{n}}\left(A{}_{bb}u_{b}\right) & A_{bb} & G_{bp}\\
+D_{pn} & D_{pb} & 0
+\end{array}\right]\left[\begin{array}{c}
+\Delta u_{n}\\
+u_{b}\\
+\Delta p
+\end{array}\right]^{k+1} & = & -\left[\begin{array}{ccc}
+A_{nn} & 0 & G_{np}\\
+A_{bn} & 0 & G_{bp}\\
+D_{pn} & 0 & 0
+\end{array}\right]\left[\begin{array}{c}
+u_{n}\\
+u_{b}\\
+p
+\end{array}\right]^{k}+\left[\begin{array}{c}
+f_{n}\\
+f_{b}\\
+0
+\end{array}\right]\\
+ & = & -\left[\begin{array}{c}
+\widetilde{\mathcal{F}}_{n}\\
+\widetilde{\mathcal{F}}_{b}\\
+\widetilde{\mathcal{F}}_{p}
+\end{array}\right]
+\end{eqnarray*}
+
+\end_inset
+
+Lembrar que
+\begin_inset Formula 
+\begin{eqnarray*}
+\partial_{u_{n}}\left(A{}_{nn}u_{n}\right)|_{ij} & = & \mathrm{Re}\int_{\Omega}\left(\mathcal{N}^{j}\partial_{d}\tilde{u}_{c}+\delta_{cd}\tilde{\boldsymbol{u}}\cdot\boldsymbol{\nabla}\mathcal{N}^{j}\right)\mathcal{N}^{i}+\mbox{rigidez}\\
+\partial_{u_{n}}\left(A{}_{nb}u_{b}\right)|_{ij} & = & \mathrm{Re}\int_{\Omega}\mathcal{N}^{j}\partial_{d}u_{c}^{bub}\mathcal{N}^{i}+\mbox{rigidez}\\
+\partial_{u_{n}}\left(A{}_{bn}u_{n}\right)|_{ij} & = & \mathrm{Re}\int_{\Omega}\left(\mathcal{N}^{j}\partial_{d}\tilde{u}_{c}+\delta_{cd}\tilde{\boldsymbol{u}}\cdot\boldsymbol{\nabla}\mathcal{N}^{j}\right)\mathcal{B}+\mbox{rigidez}\\
+\partial_{u_{n}}\left(A{}_{bb}u_{b}\right)|_{ij} & = & \mathrm{Re}\int_{\Omega}\mathcal{N}^{j}\partial_{d}u_{c}^{bub}\mathcal{B}+\mbox{rigidez}
+\end{eqnarray*}
+
+\end_inset
+
+Denotando
+\begin_inset Formula 
+\begin{eqnarray*}
+S_{nn}: & = & \partial_{u_{n}}\left(A{}_{nn}u_{n}\right)+\partial_{u_{n}}\left(A{}_{nb}u_{b}\right)\\
+S_{bn}: & = & \partial_{u_{n}}\left(A{}_{bn}u_{n}\right)+\partial_{u_{n}}\left(A{}_{bb}u_{b}\right)
+\end{eqnarray*}
+
+\end_inset
+
+então, como 
+\begin_inset Formula $u_{b}^{(k+1)}=A_{bb}^{-1}\left(-S_{bn}\Delta u_{n}-G_{bp}\Delta p-\widetilde{\mathcal{F}}_{b}\right)$
+\end_inset
+
+, vem que
+\begin_inset Formula 
+\[
+\left[\begin{array}{cc}
+S_{nn}-A_{nb}A_{bb}^{-1}S_{bn} & G_{np}-A_{nb}A_{bb}^{-1}G_{bp}\\
+D_{pn}-D_{pb}A_{bb}^{-1}S_{bn} & -D_{pb}A_{bb}^{-1}G_{bp}
+\end{array}\right]\left[\begin{array}{c}
+\Delta u_{n}\\
+\Delta p
+\end{array}\right]^{k+1}=-\left[\begin{array}{c}
+\widetilde{\mathcal{F}}_{n}-A_{nb}A_{bb}^{-1}\widetilde{\mathcal{F}}_{b}\\
+\widetilde{\mathcal{F}}_{p}-D_{pb}A_{bb}^{-1}\widetilde{\mathcal{F}}_{b}
+\end{array}\right]
+\]
+
+\end_inset
+
+Os coeficientes 
+\begin_inset Formula $u_{b}^{(k)}$
+\end_inset
+
+ são calculador no elemento como:
+\begin_inset Formula 
+\[
+u_{b}^{(k)}=-A_{bb}^{-1}\widetilde{\mathcal{F}}_{b}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+GSL
+\end_layout
+
+\begin_layout Standard
+Formulação GSL para elementos 
+\begin_inset Formula $\mathrm{P}_{1}$
+\end_inset
+
+-
+\begin_inset Formula $\mathrm{P}_{1}$
+\end_inset
+
+:
+\begin_inset Formula 
+\begin{eqnarray*}
+\mathrm{FV_{momento}}+\sum_{K}\tau_{K}\left(\mathrm{Re}\boldsymbol{u}\cdot\boldsymbol{\nabla w},\,\,\mathrm{Re}\boldsymbol{u}\cdot\boldsymbol{\nabla u}+\boldsymbol{\nabla}p-\boldsymbol{f}\right) & = & 0,\quad\forall\boldsymbol{w}\in W\\
+\mathrm{FV_{incomp}}-\sum_{K}\tau_{K}\left(\boldsymbol{\nabla}q,\,\,\mathrm{Re}\boldsymbol{u}\cdot\boldsymbol{\nabla u}+\boldsymbol{\nabla}p-\boldsymbol{f}\right) & = & 0,\quad\forall q\in Q
+\end{eqnarray*}
+
+\end_inset
+
+Newton:
+\begin_inset Formula 
+\begin{eqnarray*}
+\left[\begin{array}{cc}
+A+B & G+C\\
+D+H & E
+\end{array}\right]\left[\begin{array}{c}
+\Delta u\\
+\Delta p
+\end{array}\right]^{k+1} & = & -\left[\begin{array}{c}
+\mathcal{F}_{u}+\sum_{K}\tau_{K}\left(\mathrm{Re}\boldsymbol{u}\cdot\boldsymbol{\nabla}\mathcal{\mathcal{N}}^{i},\,\,\mathrm{Re}\boldsymbol{u}\cdot\boldsymbol{\nabla}u_{c}+\partial_{c}p-f_{c}\right)\\
+\mathcal{F}_{p}-\sum_{K}\tau_{K}\left(\boldsymbol{\nabla}\mathcal{\mathcal{N}}^{i},\,\,\mathrm{Re}\boldsymbol{u}\cdot\boldsymbol{\nabla u}+\boldsymbol{\nabla}p-\boldsymbol{f}\right)
+\end{array}\right]
+\end{eqnarray*}
+
+\end_inset
+
+onde 
+\begin_inset Formula $A,$
+\end_inset
+
+ 
+\begin_inset Formula $G,$
+\end_inset
+
+ e 
+\begin_inset Formula $D$
+\end_inset
+
+ vêm da formulação de Galerkin e 
+\begin_inset Formula 
+\begin{eqnarray*}
+B|_{ij} & = & \tau_{K}\mathrm{Re}^{2}\int_{\Omega_{K}}\left(\mathcal{\mathcal{N}}^{j}\partial_{d}\mathcal{\mathcal{N}}^{i}\boldsymbol{u}\cdot\boldsymbol{\nabla}u_{c}+\boldsymbol{u}\cdot\boldsymbol{\nabla}\mathcal{\mathcal{N}}^{i}\mathcal{\mathcal{N}}^{j}\partial_{d}u_{c}+\delta_{cd}\boldsymbol{u}\cdot\boldsymbol{\nabla}\mathcal{\mathcal{N}}^{i}\boldsymbol{u}\cdot\boldsymbol{\nabla}\mathcal{\mathcal{N}}^{j}\right)\\
+ &  & +\tau_{K}\mathrm{Re}\int_{\Omega_{K}}\mathcal{\mathcal{N}}^{j}\partial_{d}\mathcal{\mathcal{N}}^{i}\left(\partial_{c}p-f_{c}\right)\\
+C|_{ij} & = & \tau_{K}\mathrm{Re}\int_{\Omega_{K}}\boldsymbol{u}\cdot\boldsymbol{\nabla}\mathcal{\mathcal{N}}^{i}\partial_{c}\mathcal{\mathcal{N}}^{j}\\
+H|_{ij} & = & -\tau_{K}\mathrm{Re}\int_{\Omega_{K}}\left(\mathcal{\mathcal{N}}^{j}\partial_{c}\boldsymbol{u}\cdot\boldsymbol{\nabla}\mathcal{\mathcal{N}}^{i}+\boldsymbol{u}\cdot\boldsymbol{\nabla}\mathcal{\mathcal{N}}^{j}\partial_{c}\mathcal{\mathcal{N}}^{i}\right)\\
+E|_{ij} & = & -\tau_{K}\int_{\Omega_{K}}\boldsymbol{\nabla}\mathcal{\mathcal{N}}^{i}\cdot\boldsymbol{\nabla}\mathcal{\mathcal{N}}^{j}
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+ALE para gota oscilante
+\end_layout
+
+\begin_layout Standard
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\begin_inset Formula 
+\[
+\begin{aligned}\int\left(\partial_{t}\boldsymbol{u}+\left(\boldsymbol{v}\cdot\boldsymbol{\nabla}\right)\boldsymbol{u}\right)\cdot\boldsymbol{w}+\int\nu\boldsymbol{\nabla}\boldsymbol{w}:\left(\boldsymbol{\nabla}\boldsymbol{u}+\boldsymbol{\nabla}^{T}\boldsymbol{u}\right)-\int\overline{p}\boldsymbol{\nabla}\cdot\boldsymbol{w}=\int\boldsymbol{f}+\int_{\Gamma}\bar{\gamma}\boldsymbol{P}:\boldsymbol{\nabla}\boldsymbol{w}\\
+\int q\boldsymbol{\nabla}\cdot\boldsymbol{u}=0
+\end{aligned}
+\]
+
+\end_inset
+
+
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+onde 
+\begin_inset Formula $\boldsymbol{v}=\boldsymbol{u}-\boldsymbol{u}_{m}$
+\end_inset
+
+, 
+\begin_inset Formula $\bar{p}=p/\rho$
+\end_inset
+
+ e 
+\begin_inset Formula $\boldsymbol{P}=I-\boldsymbol{n}\boldsymbol{n}$
+\end_inset
+
+.
+ Atenção: 
+\begin_inset Formula $\bar{\gamma}=\gamma/\rho$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+em componentes, discretizado no tempo e estabilizando:
+\end_layout
+
+\begin_layout Standard
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\begin_inset Formula 
+\[
+\begin{aligned}FVG_{U}+GLS_{U}= & 0\\
+FVG_{P}+GLS_{P}= & 0
+\end{aligned}
+\]
+
+\end_inset
+
+
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+onde
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+FVG_{U} & = & \int\left(\delta_{t}^{n}u_{c}+\left(\boldsymbol{v}^{n}\cdot\boldsymbol{\nabla}\right)u_{c}^{n+\theta}\right)N^{i}+\int\nu\boldsymbol{\nabla}N^{i}\cdot\left(\boldsymbol{\nabla}u_{c}^{n+\theta}+\partial_{c}\boldsymbol{u}^{n+\theta}\right)-\int\overline{p}^{n+1}\partial_{c}N^{i}-\\
+ &  & -\int f_{c}^{n+1}-\int_{\Gamma}\bar{\gamma}\left(\boldsymbol{P}^{n}\cdot\boldsymbol{\nabla}N^{i}\right)|_{c}-\Delta t\int_{\Gamma}\bar{\gamma}\left(\boldsymbol{\nabla}\boldsymbol{u}^{n+1}\cdot\boldsymbol{P}\cdot\boldsymbol{\nabla}N^{i}\right)|_{c}\\
+GLS_{U} & = & \sum_{K}\tau_{K}\left(\boldsymbol{v}^{n}\cdot\boldsymbol{\nabla}N^{i},\delta_{t}^{n}u_{c}+\boldsymbol{v}^{n}\cdot\boldsymbol{\nabla}u_{c}^{n+\theta}+\partial_{c}\bar{p}^{n+1}-f_{c}^{n+1}\right)\\
+FVG_{P} & = & \int N^{i}\boldsymbol{\nabla}\cdot\boldsymbol{u}^{n+1}\\
+GLS_{P} & = & \sum_{K}\tau_{K}\left(\boldsymbol{\nabla}N^{i},\delta_{t}^{n}\boldsymbol{u}+\left(\boldsymbol{v}^{n}\cdot\boldsymbol{\nabla}\right)\boldsymbol{u}^{n+\theta}+\boldsymbol{\nabla}\bar{p}^{n+1}-\boldsymbol{f}^{n+1}\right)
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Newton
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+\left[\begin{array}{cc}
+A+B & G+C\\
+D+H & E
+\end{array}\right]\left[\begin{array}{c}
+\Delta u^{n+1}\\
+\Delta p^{n+1}
+\end{array}\right] & = & -\left[\begin{array}{c}
+\mathcal{F}_{u}\\
+\mathcal{F}_{p}
+\end{array}\right]
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+onde
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula 
+\begin{eqnarray*}
+A|_{ij} & = & \int_{\Omega}\delta_{cd}\left(\dfrac{N^{j}}{\Delta t}+\theta\boldsymbol{v}^{n}\cdot\boldsymbol{\nabla}N^{j}\right)N^{i}+\int_{\Omega}\theta\nu\left(\delta_{cd}\boldsymbol{\nabla}N^{i}\cdot\boldsymbol{\nabla}N^{j}+\partial_{d}N^{i}\partial_{c}N^{j}\right)-\\
+ &  & -\Delta t\int_{\Gamma}\delta_{cd}\bar{\gamma}\boldsymbol{\nabla}N^{j}\cdot\boldsymbol{P}\cdot\boldsymbol{\nabla}N^{i}\\
+G|_{ij} & = & -\int_{\Omega}N^{j}\partial_{c}N^{i}\\
+D|_{ij} & = & \int_{\Omega}N^{i}\partial_{d}N^{j}
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+e as estabilizações
+\begin_inset Formula 
+\begin{eqnarray*}
+B|_{ij} & = & \sum_{K}\tau_{K}\int_{\Omega_{K}}\delta_{cd}\boldsymbol{v}^{n}\cdot\boldsymbol{\nabla}N^{i}\left(\dfrac{N^{j}}{\Delta t}+\theta\boldsymbol{v}^{n}\cdot\boldsymbol{\nabla}N^{j}\right)\\
+C|_{ij} & = & \sum_{K}\tau_{K}\int_{\Omega_{K}}\boldsymbol{v}^{n}\cdot\boldsymbol{\nabla}N^{i}\partial_{c}N^{j}\\
+H|_{ij} & = & \sum_{K}\tau_{K}\int_{\Omega_{K}}\partial_{d}N^{i}\left(\dfrac{N^{j}}{\Delta t}+\theta\boldsymbol{v}^{n}\cdot\boldsymbol{\nabla}N^{j}\right)\\
+E|_{ij} & = & \sum_{K}\tau_{K}\int_{\Omega_{K}}\boldsymbol{\nabla}N^{i}\cdot\boldsymbol{\nabla}N^{j}
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Ale explícito + Crouzeix-Raviart
+\end_layout
+
+\begin_layout Standard
+Depois da eliminação de bolhas:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\left[\begin{array}{cc}
+A_{nn}-A_{nb}A_{bb}^{-1}A_{bn} & G_{np}-A_{nb}A_{bb}^{-1}G_{bp}\\
+D_{pn}-D_{pb}A_{bb}^{-1}A_{bn} & -D_{pb}A_{bb}^{-1}G_{bp}
+\end{array}\right]\left[\begin{array}{c}
+\Delta u_{n}\\
+\Delta p
+\end{array}\right]^{k+1}=-\left[\begin{array}{c}
+F_{n}-A_{nb}A_{bb}^{-1}F_{b}\\
+F_{p}-D_{pb}A_{bb}^{-1}F_{b}
+\end{array}\right]
+\]
+
+\end_inset
+
+Separando o gradiente da pressão de seu valor no centro:
+\begin_inset Formula 
+\begin{eqnarray*}
+G_{np} & = & \left[\begin{array}{cc}
+G_{nc} & G_{nx}\end{array}\right]\\
+G_{bp} & = & \left[\begin{array}{cc}
+G_{bc} & G_{bx}\end{array}\right]=\left[\begin{array}{cc}
+0 & G_{bx}\end{array}\right]
+\end{eqnarray*}
+
+\end_inset
+
+e
+\begin_inset Formula 
+\begin{eqnarray*}
+D_{pn} & = & \left[\begin{array}{cc}
+D_{cn} & D_{xn}\end{array}\right]^{T}\\
+D_{pb} & = & \left[\begin{array}{cc}
+D_{cb} & D_{xb}\end{array}\right]^{T}=\left[\begin{array}{cc}
+0 & D_{xb}\end{array}\right]^{T}
+\end{eqnarray*}
+
+\end_inset
+
+tem-se que
+\begin_inset Formula 
+\[
+D_{pb}A_{bb}^{-1}G_{bp}=\left[\begin{array}{cc}
+0 & 0\\
+0 & D_{xb}A_{bb}^{-1}G_{bx}
+\end{array}\right]=<\textrm{no elemento}>=\left[\begin{array}{cc}
+0 & 0\\
+0 & \alpha^{2}A_{bb}^{-1}
+\end{array}\right]
+\]
+
+\end_inset
+
+onde foi usado que, no elemento:
+\begin_inset Formula 
+\[
+D_{xb}|_{i,j}=-\int x_{i}\partial_{j}B=\int B\partial_{j}x_{i}=\int B\delta_{ij}\equiv\alpha\delta_{ij}.
+\]
+
+\end_inset
+
+O sistema fica:
+\begin_inset Formula 
+\[
+\left[\begin{array}{ccc}
+Ã_{nn} & G_{nc} & G_{nx}-A_{nb}A_{bb}^{-1}G_{bx}\\
+D_{cn} & 0 & 0\\
+D_{xn}-D_{xb}A_{bb}^{-1}A_{bn} & 0 & -D_{xb}A_{bb}^{-1}G_{bx}
+\end{array}\right]\left[\begin{array}{c}
+\Delta u_{n}\\
+\Delta p_{c}\\
+\Delta p_{x}
+\end{array}\right]^{k+1}=-\left[\begin{array}{c}
+F_{n}-A_{nb}A_{bb}^{-1}F_{b}\\
+F_{c}\\
+F_{x}-D_{xb}A_{bb}^{-1}F_{b}
+\end{array}\right]
+\]
+
+\end_inset
+
+então
+\begin_inset Formula 
+\begin{eqnarray*}
+\Delta p_{x} & = & G_{bx}^{-1}A_{bb}D_{xb}^{-1}\left[\left(D_{xn}-D_{xb}A_{bb}^{-1}A_{bn}\right)\Delta u_{n}+F_{x}-D_{xb}A_{bb}^{-1}F_{b}\right]\\
+ & = & G_{bx}^{-1}\left(A_{bb}D_{xb}^{-1}D_{xn}-A_{bn}\right)\Delta u_{n}+G_{bx}^{-1}A_{bb}D_{xb}^{-1}F_{x}-G_{bx}^{-1}F_{b}
+\end{eqnarray*}
+
+\end_inset
+
+substituindo:
+\begin_inset Formula 
+\[
+\left[\begin{array}{cc}
+A_{nn}+\left(G_{nx}G_{bx}^{-1}A_{bb}-A_{nb}\right)D_{xb}^{-1}D_{xn}-G_{nx}G_{bx}^{-1}A_{bn} & G_{nc}\\
+D_{cn} & 0
+\end{array}\right]\left[\begin{array}{c}
+\Delta u_{n}\\
+\Delta p_{c}
+\end{array}\right]^{k+1}=-\left[\begin{array}{c}
+R\\
+F_{c}
+\end{array}\right]
+\]
+
+\end_inset
+
+onde
+\begin_inset Formula 
+\[
+R=F_{n}+(G_{nx}G_{bx}^{-1}A_{bb}-A_{nb})D_{xb}^{-1}F_{x}-G_{nx}G_{bx}^{-1}F_{b}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+que no elemento pode ser construído como
+\end_layout
+
+\begin_layout Standard
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\begin_inset Formula $\left[\begin{array}{cc}
+A_{nn}+\dfrac{1}{\alpha}\left(\dfrac{1}{\alpha}G_{nx}A_{bb}D_{xn}-A_{nb}D_{xn}-G_{nx}A_{bn}\right) & G_{nc}\\
+D_{cn} & 0
+\end{array}\right]\left[\begin{array}{c}
+\Delta u_{n}\\
+\Delta p_{c}
+\end{array}\right]^{k+1}=-\left[\begin{array}{c}
+R\\
+F_{c}
+\end{array}\right]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+e
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+R=F_{n}+\dfrac{1}{\alpha}\left(\dfrac{1}{\alpha}G_{nx}A_{bb}F_{x}-A_{nb}F_{x}-G_{nx}F_{b}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document

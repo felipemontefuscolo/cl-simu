@@ -1,0 +1,11 @@
+set key left top #legend position
+set logscale
+plot 'errorscr' u ($1):($2) w lp title 'velocity', \
+     'errorscr' u ($1):($3) w lp title 'pressure', \
+     'errorscr' u ($1):($4) w lp title 'velocity grad', \
+0.07*x**3 title 'x^3', \
+1.2*x**2 title 'x^2', \
+0.09*x lt 9 title 'x'
+
+# lt 17
+# lt 9

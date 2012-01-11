@@ -1,0 +1,7 @@
+parametros
+
+-snes_ls basic
+-snes_fd 0
+-stab 2
+-Re 400
+

@@ -1,0 +1,67 @@
+mesh: resultados/ramp/3d/ramp-ho.msh
+elem type: Quadratic tetrahedron
+space dim: 3
+# nodes:   330
+# cells:   169
+# facets:  382
+# corners: 271
+# cell colors:  44
+# node colors:  16
+
+# velocity unknows: 990
+# preassure unknows: 59
+
+Cell list: 
+  -allocated:      177
+  -used:           169 (95%)
+  -# reservations: 1
+Node list: 
+  -allocated:      346
+  -used:           330 (95%)
+  -# reservations: 1
+Facet list: 
+  -allocated:      413
+  -used:           382 (92%)
+  -# reservations: 1
+Corner list: 
+  -allocated:      304
+  -used:           271 (89%)
+  -# reservations: 1
+elapsed    2.847s in : buildCellsAdjacency()
+elapsed    0.013s in : buildNodesAdjacency()
+elapsed    1.169s in : setColorAllCells()
+elapsed    7.617s in : setColorAllPoints()
+elapsed    1.168s in : setColorAllFacets()
+elapsed    0.209s in : buildCorners_Template()
+elapsed    0.657s in : setColorAllCorners()
+elapsed    0.044s in : readFileMsh(): read connectivity
+elapsed    0.205s in : readFileMsh(): search for boundary elements
+Dirichlet entries 
+dir_vertices.size()        : 0
+dir_corners.size()         : 0
+dir_facets.size()          : 0
+dir_normal_vertices.size() : 24
+dir_normal_corners.size()  : 57
+dir_normal_facets.size()   : 0
+total (dir_entries)        : 81
+
+current time: 0
+time step: 0
+steady error: 1
+
+
+current time: 0.01
+time step: 1
+steady error: 1
+
+num snes iterations: 1
+reason: 5
+SNES_CONVERGED_ITS            /* maximum iterations reached */
+81779 allocated		81779 used	0 unneeded
+
+elapsed    4.813s in : CuthillMcKeeRenumber
+WARNING! There are options you set that were not used!
+WARNING! could be spelling mistake, etc!
+Option left: name:-pc_factor_mat_ordering_type value: nd
+Option left: name:-pc_factor_reuse_ordering value: 1
+Option left: name:-snes_ls value: basic

@@ -1,0 +1,74 @@
+/* [wxMaxima batch file version 1] [ DO NOT EDIT BY HAND! ]*/
+/* [ Created with wxMaxima version 0.8.5 ] */
+
+/* [wxMaxima: input   start ] */
+I : matrix([1,0,0],[0,1,0],[0,0,1])$
+
+rot(v) := matrix([diff(v[2][1],z) - diff(v[3][1],y)],
+                 [diff(v[3][1],x) - diff(v[1][1],z)],
+                 [diff(v[1][1],y) - diff(v[2][1],x)])$
+
+nabla2(v) := matrix( [diff(v[1][1],x,2)+diff(v[1][1],y,2)+diff(v[1][1],z,2)],
+                     [diff(v[2][1],x,2)+diff(v[2][1],y,2)+diff(v[2][1],z,2)],
+                     [diff(v[3][1],x,2)+diff(v[3][1],y,2)+diff(v[3][1],z,2)])$
+
+grad(p) := matrix( [diff(p,x)], [diff(p,y)], [diff(p,z)] )$
+
+gradvec(v) := matrix( [diff(v[1][1],x), diff(v[1][1],y), diff(v[1][1],z)],
+                      [diff(v[2][1],x), diff(v[2][1],y), diff(v[2][1],z)],
+                      [diff(v[3][1],x), diff(v[3][1],y), diff(v[3][1],z)] )$
+
+convec(v) := matrix( [v.grad(v[1][1])],
+                     [v.grad(v[2][1])],
+                     [v.grad(v[3][1])])$
+
+div(v) := diff(v[1][1],x) + diff(v[2][1],y) + diff(v[3][1],z)$
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+/* Stokes Problem - Jean Donea pag306 */
+u : matrix([x^2*(1-x)^2*(2*y-6*y^2+4*y^3)],[-y^2*(1-y)^2*(2*x-6*x^2+4*x^3)],[0])$
+p : x*(1-x)$
+Re: 0$
+f : ratsimp(Re*convec(u) + grad(p) - nabla2(u));
+t : ((-p*I + gradvec(u) + transpose(gradvec(u))).matrix([0],[1],[0]));
+gradu: gradvec(u);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+/* Kovasznay flow - Codina */
+u : matrix([1-exp(a*x)*cos(2*%pi*y)],[a*exp(a*x)*sin(2*%pi*y)/(2*%pi)],[0])$
+p : Re*(1-exp(2*a*x))/2$
+a : Re/2 - sqrt(Re^2/4+4*%pi^2)$
+/* a força vai ser zero sempre*/
+f : ratsimp(Re*convec(u) + grad(p) - nabla2(u));
+t : ((-p*I + gradvec(u) + transpose(gradvec(u))).matrix([1],[0],[0]));
+gradu: gradvec(u);
+kill(a)$
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+/* Kovasznay flow - Codina */
+assume(niu>0);
+Re: 1/niu;
+a : Re/2 - sqrt(Re^2/4+4*%pi^2);
+u : matrix([1-exp(a*x)*cos(2*%pi*y)],[a*exp(a*x)*sin(2*%pi*y)/(2*%pi)],[0])$
+p : (1-exp(2*a*x))/2$
+/* a força vai ser zero sempre*/
+f : ratsimp(convec(u) + grad(p) - niu*nabla2(u));
+t : ((-p*I + niu*gradvec(u) + niu*transpose(gradvec(u))).matrix([1],[0],[0]));
+gradu: gradvec(u);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+/* Anything Navier-Stokes Problem 3d */
+u : matrix([-exp(-y*z)],[exp(-x)],[exp(-z)])$
+p : 2*%pi*sin(x*y*z)$
+/*niu: 0$*/
+f : ratsimp(convec(u) + grad(p) - niu*nabla2(u));
+t : ((-p*I + niu*gradvec(u) + niu*transpose(gradvec(u))).matrix([0],[1],[0]));
+gradu: gradvec(u);
+/* [wxMaxima: input   end   ] */
+
+/* Maxima can't load/batch files which end with a comment! */
+"Created with wxMaxima"$
