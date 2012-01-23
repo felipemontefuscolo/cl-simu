@@ -1,7 +1,7 @@
--dim 2   				  # cell dimension (= space dimension)
+-dim 3   				  # cell dimension (= space dimension)
 -dt 1e-2         # time step
 -renumber_dofs 0  # dofs renumbering
--maxts 500       # maximum number of time steps
+-maxts 100       # maximum number of time steps
 -print_step 3     # print step
 -has_convec 1     # convective term: true or false
 -unsteady   1     # steady or unsteady problem
@@ -21,26 +21,28 @@ plot_es 1         # plot exact solution: true or false
 -pc_type asm                        # Preconditioner (one of) none jacobi pbjacobi bjacobi sor lu shell mg eisenstat ilu icc cholesky asm ksp composite redundant nn mat fieldsplit galerkin exotic openmp asa cp bfbt lsc redistribute tfs (PCSetType)
 pc_composite_type multiplicative   # one of multiplicative, additive, special
 pc_composite_pcs ilu,ilu
--ksp_type bcgsl gmres                  # (one of) cg cgne nash stcg gltr richardson chebychev gmres tcqmr bcgs ibcgs bcgsl cgs tfqmr cr lsqr preonly qcg bicg fgmres minres symmlq lgmres lcd broyden gcr (KSPSetType)
+-ksp_type gmres                  # (one of) cg cgne nash stcg gltr richardson chebychev gmres tcqmr bcgs ibcgs bcgsl cgs tfqmr cr lsqr preonly qcg bicg fgmres minres symmlq lgmres lcd broyden gcr (KSPSetType)
 -ksp_initial_guess_nonzero 1
 pc_factor_shift_type NONZERO
 pc_factor_shift_amount 1.e-10
--pc_factor_mat_ordering_type nd    # natural nd 1wd rcm qmd rowlength flow (PCFactorSetMatOrderingType)
+pc_factor_mat_ordering_type nd    # natural nd 1wd rcm qmd rowlength flow (PCFactorSetMatOrderingType)
 pc_factor_nonzeros_along_diagonal 1.e-10
 pc_factor_diagonal_fill
--pc_factor_reuse_ordering 1
+pc_factor_reuse_ordering 1
 pc_factor_fill 3.22746e-06
 pc_factor_in_place
 ksp_rtol 1e-11
 
+THREADS
 vec_type seqpthread
 mat_type seqaijpthread
+nthreads 4
 
 fp_trap 1           # stop on floating-point exceptions
 -on_error_abort 1
 log_trace stdout
 malloc_debug 1
--snes_fd 0
+snes_fd 0
 -snes_ls basic      # line search: basic, cubic, quadratic
 -snes_type ksponly   # Nonlinear solver method (one of) ls tr test picard ksponly vi ngmres sorqn
 snes_test_display 1 # compare f.e. jacobian with f.d. jacobian
@@ -82,47 +84,47 @@ function_space 5 # P1+P1
 function_space 6 # P2P0
 function_space 7 # P2+Pm1 full                                                       
 
-mesh_type 4      # TRIANGLE3        = 0x4,
--mesh_type 8      # TRIANGLE6        = 0x8,
-mesh_type 16     # QUADRANGLE4      = 0x10,
-mesh_type 32     # QUADRANGLE8      = 0x20,
-mesh_type 64     # QUADRANGLE9      = 0x40,
-mesh_type 128    # TETRAHEDRON4     = 0x80,
-mesh_type 256    # TETRAHEDRON10    = 0x100,
-mesh_type 512    # HEXAHEDRON8      = 0x200,
-mesh_type 1024   # HEXAHEDRON20     = 0x400,
-mesh_type 2048   # HEXAHEDRON27     = 0x800,
+mesh_type 8      # TRIANGLE3        = 0x8,
+mesh_type 16     # TRIANGLE6        = 0x10,
+mesh_type 32     # QUADRANGLE4      = 0x20,
+mesh_type 64     # QUADRANGLE8      = 0x40,
+mesh_type 128    # QUADRANGLE9      = 0x80,
+mesh_type 256    # TETRAHEDRON4     = 0x100,
+-mesh_type 512    # TETRAHEDRON10    = 0x200,
+mesh_type 1024   # HEXAHEDRON8      = 0x400,
+mesh_type 2048   # HEXAHEDRON20     = 0x800,
+mesh_type 4096   # HEXAHEDRON27     = 0x1000,
 
 
 2nd
-fin  resultados/osc_drop/mesh/drop.msh
-fout resultados/osc_drop/mesh/drop.vtk
-fin  resultados/static_drop/2d/mesh/sdrop1st-04.msh
-fout resultados/static_drop/2d/mesh/sdrop1st-04.vtk
-fin  resultados/static_drop/3d/mesh/drop-1st-01.msh
-fout resultados/static_drop/3d/mesh/bla.vtk
-fin  resultados/osc_drop/mesh/drop.msh
-fout resultados/osc_drop/mesh/drop.vtk
-fin  resultados/kovasznay/mesh/kovas.msh
-fout resultados/kovasznay/mesh/kovas.vtk
+fin  results/osc_drop/mesh/drop.msh
+fout results/osc_drop/mesh/drop.vtk
+fin  results/static_drop/2d/mesh/sdrop1st-04.msh
+fout results/static_drop/2d/mesh/sdrop1st-04.vtk
+fin  results/static_drop/3d/mesh/drop-1st-01.msh
+fout results/static_drop/3d/mesh/bla.vtk
+fin  results/osc_drop/mesh/drop.msh
+fout results/osc_drop/mesh/drop.vtk
+fin  results/kovasznay/mesh/kovas.msh
+fout results/kovasznay/mesh/kovas.vtk
 fin malha/cavity2d-1o.msh
 fout malha/cavity2d-1o.vtk
-fin  resultados/stokes2d/square.msh
-fout resultados/stokes2d/square.vtk
-fin  resultados/sloshing/2d/mesh/slosh.msh
-fout resultados/sloshing/2d/mesh/slosh.vtk
-fin  resultados/anything3d/cavity.msh
-fout resultados/anything3d/cavity.vtk
--fin  resultados/ramp/2d/mesh/ramp-ho.msh
--fout resultados/ramp/2d/mesh/ramp.vtk
-fin  resultados/ramp/3d/ramp-ho.msh
-fout resultados/ramp/3d/ramp.vtk
-fin  resultados/russab/2d/mesh/russa.msh
-fout resultados/russab/2d/mesh/cretino.vtk
-fin  resultados/angle/2d/mesh/angle.msh
-fout resultados/angle/2d/mesh/angle-dis.vtk
-fin  resultados/ramp/2d/mesh/ramp2nd.msh
-fout resultados/ramp/2d/mesh/ramp2nd.vtk
+fin  results/stokes2d/square.msh
+fout results/stokes2d/square.vtk
+fin  results/sloshing/2d/mesh/slosh.msh
+fout results/sloshing/2d/mesh/slosh.vtk
+fin  results/anything3d/cavity.msh
+fout results/anything3d/cavity.vtk
+fin  results/ramp/2d/mesh/ramp-ho.msh
+fout results/ramp/2d/mesh/ramp.vtk
+-fin  results/ramp/3d/ramp-ho.msh
+-fout results/ramp/3d/ramp.vtk
+fin  results/russab/2d/mesh/russa.msh
+fout results/russab/2d/mesh/cretino.vtk
+fin  results/angle/2d/mesh/angle.msh
+fout results/angle/2d/mesh/angle-dis.vtk
+fin  results/ramp/2d/mesh/ramp2nd.msh
+fout results/ramp/2d/mesh/ramp2nd.vtk
 
 
 

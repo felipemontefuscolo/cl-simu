@@ -1,4 +1,4 @@
-static char help[] = "steady Navier-Stokes.\n\n";
+//static char help[] = "Navier-Stokes.\n\n";
 
 /*
  * ALE
@@ -260,8 +260,8 @@ public:
   bool getCommandLineOptions(int argc, char **/*argv*/)
   {
     PetscBool          flg_fin, flg_fout;
-    char                finaux[PETSC_MAX_PATH_LEN];
-    char                foutaux[PETSC_MAX_PATH_LEN];
+    char               finaux[PETSC_MAX_PATH_LEN];
+    char               foutaux[PETSC_MAX_PATH_LEN];
     PetscBool          ask_help;
 
     if (argc == 1)
@@ -368,7 +368,7 @@ public:
     if (!unsteady)
     {
       if (ale) {
-        printf("ale with steady problem? are you crazy?\n");
+        printf("ale with steady problem?\n");
         throw;
       }
       //dt = 1.e50;
@@ -451,11 +451,9 @@ public:
     shape_phi_f.reset(ShapeFunction::create(facetof(cell_type), facetof(velo_shape)));
     shape_psi_f.reset(ShapeFunction::create(facetof(cell_type), facetof(pres_shape)));
     shape_qsi_f.reset(ShapeFunction::create(facetof(cell_type)));
-    if (dim==3) {
-      shape_phi_r.reset(ShapeFunction::create(facetof(facetof(cell_type)), facetof(facetof(velo_shape))));
-      shape_psi_r.reset(ShapeFunction::create(facetof(facetof(cell_type)), facetof(facetof(pres_shape))));
-      shape_qsi_r.reset(ShapeFunction::create(facetof(facetof(cell_type))));
-    }
+    shape_phi_r.reset(ShapeFunction::create(facetof(facetof(cell_type)), facetof(facetof(velo_shape))));
+    shape_psi_r.reset(ShapeFunction::create(facetof(facetof(cell_type)), facetof(facetof(pres_shape))));
+    shape_qsi_r.reset(ShapeFunction::create(facetof(facetof(cell_type))));
 
     shape_bble.reset(ShapeFunction::create(cell_type, BUBBLE));
 
@@ -480,12 +478,10 @@ public:
     quadr_facet->setOrder(quadr_degree_facet);
     n_qpts_facet = quadr_facet->numPoints();
 
-    if (dim==3)
-    {
-      quadr_corner.reset( Quadrature::create(facetof(facetof(ECellType(ct)))) );
-      quadr_corner->setOrder(quadr_degree_corner);
-      n_qpts_corner = quadr_corner->numPoints();
-    }
+    quadr_corner.reset( Quadrature::create(facetof(facetof(ECellType(ct)))) );
+    quadr_corner->setOrder(quadr_degree_corner);
+    n_qpts_corner = quadr_corner->numPoints();
+    
 
     quadr_err.reset( Quadrature::create(ECellType(ct)) );
     quadr_err->setOrder(quadr_degree_err);
@@ -538,32 +534,32 @@ public:
   PetscErrorCode allocPetscObjs()
   {
     PetscErrorCode      ierr;
-    ierr = SNESCreate(PETSC_COMM_WORLD, &snes);                  CHKERRQ(ierr);
+    ierr = SNESCreate(PETSC_COMM_WORLD, &snes);                   CHKERRQ(ierr);
 
     //Vec q;
-    VecCreate(PETSC_COMM_WORLD, &q);
-    VecSetSizes(q, PETSC_DECIDE, n_unknowns);
-    VecSetFromOptions(q);
+    ierr = VecCreate(PETSC_COMM_WORLD, &q);                       CHKERRQ(ierr);
+    ierr = VecSetSizes(q, PETSC_DECIDE, n_unknowns);              CHKERRQ(ierr);
+    ierr = VecSetFromOptions(q);                                  CHKERRQ(ierr);
 
     //Vec q0;
-    VecCreate(PETSC_COMM_WORLD, &q0);
-    VecSetSizes(q0, PETSC_DECIDE, n_unknowns);
-    VecSetFromOptions(q0);
+    ierr = VecCreate(PETSC_COMM_WORLD, &q0);                      CHKERRQ(ierr);
+    ierr = VecSetSizes(q0, PETSC_DECIDE, n_unknowns);             CHKERRQ(ierr);
+    ierr = VecSetFromOptions(q0);                                 CHKERRQ(ierr);
 
     //Vec res;
-    VecCreate(PETSC_COMM_WORLD, &res);
-    VecSetSizes(res, PETSC_DECIDE, n_unknowns);
-    VecSetFromOptions(res);
+    ierr = VecCreate(PETSC_COMM_WORLD, &res);                     CHKERRQ(ierr);
+    ierr = VecSetSizes(res, PETSC_DECIDE, n_unknowns);            CHKERRQ(ierr);
+    ierr = VecSetFromOptions(res);                                CHKERRQ(ierr);
 
     //Vec u_mesh;
-    VecCreate(PETSC_COMM_WORLD, &u_mesh);
-    VecSetSizes(u_mesh, PETSC_DECIDE, n_dofs_u_mesh);
-    VecSetFromOptions(u_mesh);
+    ierr = VecCreate(PETSC_COMM_WORLD, &u_mesh);                  CHKERRQ(ierr);
+    ierr = VecSetSizes(u_mesh, PETSC_DECIDE, n_dofs_u_mesh);      CHKERRQ(ierr);
+    ierr = VecSetFromOptions(u_mesh);                             CHKERRQ(ierr);
 
     //Vec x_mesh;
-    VecCreate(PETSC_COMM_WORLD, &x_mesh);
-    VecSetSizes(x_mesh, PETSC_DECIDE, n_dofs_u_mesh);
-    VecSetFromOptions(x_mesh);
+    ierr = VecCreate(PETSC_COMM_WORLD, &x_mesh);                  CHKERRQ(ierr);
+    ierr = VecSetSizes(x_mesh, PETSC_DECIDE, n_dofs_u_mesh);      CHKERRQ(ierr);
+    ierr = VecSetFromOptions(x_mesh);                             CHKERRQ(ierr);
 
     VectorXi nnz;
     {
@@ -572,7 +568,7 @@ public:
 
       nnz.resize(n_unknowns);
 
-      #pragma omp parallel for
+      //#pragma omp parallel for
       for (int i = 0; i < n_unknowns; ++i)
         nnz[i] = table[i].size();
 
@@ -580,7 +576,7 @@ public:
       if (!pres_pres_block)
       {
         int const n_p_dofs_total = dof_handler.getVariable(1).totalSize();
-        #pragma omp parallel for
+        //#pragma omp parallel for
         for (int i = 0; i < n_p_dofs_total; ++i)
         {
           int const dof = dof_handler.getVariable(1).data()[i];
@@ -591,11 +587,11 @@ public:
     }
 
     //Mat Jac;
-    MatCreate(PETSC_COMM_WORLD, &Jac);
-    MatSetSizes(Jac, PETSC_DECIDE, PETSC_DECIDE, n_unknowns, n_unknowns);
-    MatSetFromOptions(Jac);
-    MatSeqAIJSetPreallocation(Jac, 0, nnz.data());
-    MatSetOption(Jac,MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE); // importante!
+    ierr = MatCreate(PETSC_COMM_WORLD, &Jac);                                      CHKERRQ(ierr);
+    ierr = MatSetSizes(Jac, PETSC_DECIDE, PETSC_DECIDE, n_unknowns, n_unknowns);   CHKERRQ(ierr);
+    ierr = MatSetFromOptions(Jac);                                                 CHKERRQ(ierr);
+    ierr = MatSeqAIJSetPreallocation(Jac, 0, nnz.data());                          CHKERRQ(ierr);
+    ierr = MatSetOption(Jac,MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE);                  CHKERRQ(ierr);
 
     ierr = SNESCreate(PETSC_COMM_WORLD, &snes);                  CHKERRQ(ierr);
     ierr = SNESSetFunction(snes, res, FormFunction, this);      CHKERRQ(ierr);
@@ -608,11 +604,11 @@ public:
     //ierr = KSPSetType(ksp,KSPPREONLY);                                           CHKERRQ(ierr);
     //ierr = KSPSetType(ksp,KSPGMRES);                                               CHKERRQ(ierr);
     //ierr = PCSetType(pc,PCLU);                                                     CHKERRQ(ierr);
-    ierr = PCFactorSetMatOrderingType(pc, MATORDERINGNATURAL);                         CHKERRQ(ierr);
+    //ierr = PCFactorSetMatOrderingType(pc, MATORDERINGNATURAL);                         CHKERRQ(ierr);
     //ierr = KSPSetTolerances(ksp,1.e-7,PETSC_DEFAULT,PETSC_DEFAULT,PETSC_DEFAULT);  CHKERRQ(ierr);
 
 
-    ierr = SNESMonitorSet(snes, SNESMonitorDefault, 0, 0); CHKERRQ(ierr);
+    //ierr = SNESMonitorSet(snes, SNESMonitorDefault, 0, 0); CHKERRQ(ierr);
     //ierr = SNESMonitorSet(snes,Monitor,0,0);CHKERRQ(ierr);
     //ierr = SNESSetTolerances(snes,0,0,0,13,PETSC_DEFAULT);
     ierr = SNESSetFromOptions(snes); CHKERRQ(ierr);
@@ -648,6 +644,7 @@ public:
       dof_handler.getVariable(0).getCellDofs(mapU_c.data(), &*cell);
       dof_handler.getVariable(1).getCellDofs(mapP_c.data(), &*cell);
 
+
       MatSetValues(Jac, mapU_c.size(), mapU_c.data(), mapU_c.size(), mapU_c.data(), Aloc.data(), ADD_VALUES);
       MatSetValues(Jac, mapU_c.size(), mapU_c.data(), mapP_c.size(), mapP_c.data(), Gloc.data(), ADD_VALUES);
       MatSetValues(Jac, mapP_c.size(), mapP_c.data(), mapU_c.size(), mapU_c.data(), Dloc.data(), ADD_VALUES);
@@ -655,6 +652,11 @@ public:
         MatSetValues(Jac, mapP_c.size(), mapP_c.data(), mapP_c.size(), mapP_c.data(), Eloc.data(), ADD_VALUES);
 
     }
+
+    ////test
+    //for (int i = 0; i < n_unknowns; ++i)
+    //  for (int j = 0; j < n_unknowns; ++j)
+    //    MatSetValue(Jac, i, j, 0.0, ADD_VALUES);
 
     if (!pres_pres_block)
     {
@@ -668,9 +670,12 @@ public:
       }
     }
 
+
+
     Assembly(Jac);
-    MatSetOption(Jac,MAT_NEW_NONZERO_LOCATIONS,PETSC_FALSE);
-    MatSetOption(Jac,MAT_NEW_NONZERO_LOCATION_ERR,PETSC_TRUE);
+    //MatSetOption(Jac,MAT_NEW_NONZERO_LOCATIONS,PETSC_FALSE);
+    //MatSetOption(Jac,MAT_NEW_NONZERO_LOCATION_ERR,PETSC_TRUE);
+
   }
 
   void printMatlabLoader()
@@ -707,12 +712,9 @@ public:
     psi_f.resize(n_qpts_facet);
     qsi_f.resize(n_qpts_facet);
 
-    if (dim==3)
-    {
-      phi_r.resize(n_qpts_corner);
-      psi_r.resize(n_qpts_corner);
-      qsi_r.resize(n_qpts_corner);
-    }
+    phi_r.resize(n_qpts_corner);
+    psi_r.resize(n_qpts_corner);
+    qsi_r.resize(n_qpts_corner);
 
     dLphi_c.resize(n_qpts_cell);
     dLpsi_c.resize(n_qpts_cell);
@@ -722,11 +724,9 @@ public:
     dLpsi_f.resize(n_qpts_facet);
     dLqsi_f.resize(n_qpts_facet);
 
-    if (dim==3) {
-      dLphi_r.resize(n_qpts_corner);
-      dLpsi_r.resize(n_qpts_corner);
-      dLqsi_r.resize(n_qpts_corner);
-    }
+    dLphi_r.resize(n_qpts_corner);
+    dLpsi_r.resize(n_qpts_corner);
+    dLqsi_r.resize(n_qpts_corner);
 
     bble.resize(n_qpts_cell);
     dLbble.resize(n_qpts_cell);
@@ -823,51 +823,48 @@ public:
       }
     } // end qp
 
-    if (dim==3)
+
+    // pts de quadratura no contorno do contorno
+    for (int qp = 0; qp < n_qpts_corner; ++qp)
     {
-      // pts de quadratura no contorno do contorno
-      for (int qp = 0; qp < n_qpts_corner; ++qp)
+      phi_r[qp].resize(n_dofs_u_per_corner/dim);
+      psi_r[qp].resize(n_dofs_p_per_corner);
+      qsi_r[qp].resize(nodes_per_corner);
+
+      dLphi_r[qp].resize(n_dofs_u_per_corner/dim, dim);
+      dLpsi_r[qp].resize(n_dofs_p_per_corner, dim);
+      dLqsi_r[qp].resize(nodes_per_corner, dim);
+
+      for (int n = 0; n < n_dofs_u_per_corner/dim; ++n)
       {
-        phi_r[qp].resize(n_dofs_u_per_corner/dim);
-        psi_r[qp].resize(n_dofs_p_per_corner);
-        qsi_r[qp].resize(nodes_per_corner);
-
-        dLphi_r[qp].resize(n_dofs_u_per_corner/dim, dim);
-        dLpsi_r[qp].resize(n_dofs_p_per_corner, dim);
-        dLqsi_r[qp].resize(nodes_per_corner, dim);
-
-        for (int n = 0; n < n_dofs_u_per_corner/dim; ++n)
+        phi_r[qp][n] = shape_phi_r->eval(quadr_corner->point(qp), n);
+        for (int d = 0; d < dim-2; ++d)
         {
-          phi_r[qp][n] = shape_phi_r->eval(quadr_corner->point(qp), n);
-          for (int d = 0; d < dim-2; ++d)
-          {
-            /* dLphi_r nao depende de qp no caso de funcoes lineares */
-            dLphi_r[qp](n, d) = shape_phi_r->gradL(quadr_corner->point(qp), n, d);
-          }
+          /* dLphi_r nao depende de qp no caso de funcoes lineares */
+          dLphi_r[qp](n, d) = shape_phi_r->gradL(quadr_corner->point(qp), n, d);
         }
+      }
 
-        for (int n = 0; n < n_dofs_p_per_corner; ++n)
+      for (int n = 0; n < n_dofs_p_per_corner; ++n)
+      {
+        psi_r[qp][n] = shape_psi_r->eval(quadr_corner->point(qp), n);
+        for (int d = 0; d < dim-2; ++d)
         {
-          psi_r[qp][n] = shape_psi_r->eval(quadr_corner->point(qp), n);
-          for (int d = 0; d < dim-2; ++d)
-          {
-            /* dLpsi_r nao depende de qp no caso de funcoes lineares */
-            dLpsi_r[qp](n, d) = shape_psi_r->gradL(quadr_corner->point(qp), n, d);
-          }
+          /* dLpsi_r nao depende de qp no caso de funcoes lineares */
+          dLpsi_r[qp](n, d) = shape_psi_r->gradL(quadr_corner->point(qp), n, d);
         }
+      }
 
-        for (int n = 0; n < nodes_per_corner; ++n)
+      for (int n = 0; n < nodes_per_corner; ++n)
+      {
+        qsi_r[qp][n] = shape_qsi_r->eval(quadr_corner->point(qp), n);
+        for (int d = 0; d < dim-2; ++d)
         {
-          qsi_r[qp][n] = shape_qsi_r->eval(quadr_corner->point(qp), n);
-          for (int d = 0; d < dim-2; ++d)
-          {
-            /* dLqsi_r nao depende de qp no caso de funcoes lineares */
-            dLqsi_r[qp](n, d) = shape_qsi_r->gradL(quadr_corner->point(qp), n, d);
-          }
+          /* dLqsi_r nao depende de qp no caso de funcoes lineares */
+          dLqsi_r[qp](n, d) = shape_qsi_r->gradL(quadr_corner->point(qp), n, d);
         }
-      } // end qp
-
-    }
+      }
+    } // end qp
 
     //     Quadrature
     //     to compute the error
@@ -952,7 +949,7 @@ public:
     bool const has_corner_dofs   = shape_phi_c->numDofsAssociatedToCorner()  > 0;
     bool const has_facet_dofs    = shape_phi_c->numDofsAssociatedToFacet()   > 0;
 
-    #pragma omp parallel private(tag) shared(cout,count_dir_vertices,count_dir_corners,count_dir_facets,count_dir_normal_vertices,count_dir_normal_corners,count_dir_normal_facets) default(none)
+    //#pragma omp parallel private(tag) shared(cout,count_dir_vertices,count_dir_corners,count_dir_facets,count_dir_normal_vertices,count_dir_normal_corners,count_dir_normal_facets) default(none)
     {
       int count_dir_vertices_local=0;
       int count_dir_corners_local=0;
@@ -968,7 +965,7 @@ public:
       // counting dirichlet vertices
       if (has_vertices_dofs)
       {
-        #pragma omp for nowait
+        //#pragma omp for nowait
         for (int i = 0; i < n_nodes_total; i++)
         {
           point = mesh->getNode(i);
@@ -991,7 +988,7 @@ public:
       // counting dirichlet edges (to compute higher order nodes later)
       if (has_corner_dofs)
       {
-        #pragma omp for nowait
+        //#pragma omp for nowait
         for (int i = 0; i < n_corners_total; i++)
         {
           corner = mesh->getCorner(i);
@@ -1013,8 +1010,8 @@ public:
       // counting dirichlet faces (to compute higher order nodes later)
       if (has_facet_dofs)
       {
-        #pragma omp for nowait
-        //#pragma omp single
+        //#pragma omp for nowait
+        ////#pragma omp single
         for (int i = 0; i < n_facets_total; i++)
         {
           facet = mesh->getFacet(i);
@@ -1033,7 +1030,7 @@ public:
         }
       }
 
-      #pragma omp critical
+      //#pragma omp critical
       {
         count_dir_vertices        += count_dir_vertices_local;
         count_dir_corners         += count_dir_corners_local;
@@ -1097,16 +1094,16 @@ public:
 
     // é possível paralelizar melhor isso daqui ....
     // store
-    //#pragma omp parallel private(tag) shared(cout,count_dir_vertices,count_dir_corners,count_dir_facets,  count_dir_normal_vertices,count_dir_normal_corners,count_dir_normal_facets) default(none)
+    ////#pragma omp parallel private(tag) shared(cout,count_dir_vertices,count_dir_corners,count_dir_facets,  count_dir_normal_vertices,count_dir_normal_corners,count_dir_normal_facets) default(none)
     {
       Point const* point;
       Facet const* facet;
       Corner const* corner;
       int kk, mm;
 
-      #pragma omp sections nowait
+      //#pragma omp sections nowait
       {
-        #pragma omp section
+        //#pragma omp section
         // counting dirichlet vertices
         if (has_vertices_dofs)
         {
@@ -1127,7 +1124,7 @@ public:
           }
         }
 
-        #pragma omp section
+        //#pragma omp section
         // counting dirichlet edges (to compute higher order nodes later)
         if (has_corner_dofs)
         {
@@ -1149,7 +1146,7 @@ public:
           }
         }
 
-        #pragma omp section
+        //#pragma omp section
         // counting dirichlet faces (to compute higher order nodes later)
         if (has_facet_dofs)
         {
@@ -1188,7 +1185,7 @@ public:
     xadj[6] = count_dir_normal_facets   + xadj[5];
 
 
-    #pragma omp parallel shared(cout,xadj) default(none)
+    //#pragma omp parallel shared(cout,xadj) default(none)
     {
       Point const* point;
       Facet const* facet;
@@ -1200,7 +1197,7 @@ public:
       std::vector<int> facet_dofs(dim);
 
       // pure dirichlet
-      #pragma omp for nowait
+      //#pragma omp for nowait
       for (int i = xadj[0]; i < xadj[1]; i++)
       {
         point = mesh->getNode(dir_vertices[i]);
@@ -1211,7 +1208,7 @@ public:
         }
       }
 
-      #pragma omp for nowait
+      //#pragma omp for nowait
       for (int i = xadj[1]; i < xadj[2]; i++)
       {
         corner = mesh->getCorner(dir_corners[i-xadj[1]]);
@@ -1220,7 +1217,7 @@ public:
           dir_entries.at(i*dim + c) = corner_dofs[c];
       }
 
-      #pragma omp for nowait
+      //#pragma omp for nowait
       for (int i = xadj[2]; i < xadj[3]; i++)
       {
         facet = mesh->getFacet(dir_facets[i-xadj[2]]);
@@ -1231,7 +1228,7 @@ public:
 
       const int shift = xadj[3]*(dim-1);
       // normal dirichlet
-      #pragma omp for nowait
+      //#pragma omp for nowait
       for (int i = xadj[3]; i < xadj[4]; i++)
       {
         point = mesh->getNode(dir_normal_vertices[i-xadj[3]]);
@@ -1239,7 +1236,7 @@ public:
         dir_entries.at(shift + i) = vertice_dofs[0];
       }
 
-      #pragma omp for nowait
+      //#pragma omp for nowait
       for (int i = xadj[4]; i < xadj[5]; i++)
       {
         corner = mesh->getCorner(dir_normal_corners[i-xadj[4]]);
@@ -1247,7 +1244,7 @@ public:
         dir_entries.at(shift + i) = corner_dofs[0];
       }
 
-      #pragma omp for nowait
+      //#pragma omp for nowait
       for (int i = xadj[5]; i < xadj[6]; i++)
       {
         facet = mesh->getFacet(dir_normal_facets[i-xadj[5]]);
@@ -1267,7 +1264,7 @@ public:
       {
         p_dof = dof_handler.getVariable(1).data()[i];
       }
-      dir_entries.at(dim*xadj[xadj_size]) = p_dof;
+      dir_entries.at(dim*xadj[xadj_size-1]) = p_dof;
     }
 
 
@@ -1409,6 +1406,7 @@ public:
     case( SNES_DIVERGED_LINE_SEARCH      ): printf("SNES_DIVERGED_LINE_SEARCH     /* the line search failed */ \n"); break;
     case( SNES_DIVERGED_LOCAL_MIN        ): printf("SNES_DIVERGED_LOCAL_MIN       /* || J^T b || is small, implies converged to local minimum of F() */\n"); break;
     case( SNES_CONVERGED_ITERATING       ): printf("SNES_CONVERGED_ITERATING      \n"); break;
+    case( SNES_DIVERGED_INNER            ): printf("SNES_DIVERGED_INNER           \n"); break;
     }
 
     if (solve_the_sys)
@@ -1427,7 +1425,7 @@ public:
   // ******************************************************************************
   //                            FORM JACOBIAN
   // ******************************************************************************
-  PetscErrorCode formJacobian(SNES /*snes*/,Vec x,Mat *Jac, Mat* /*prejac*/, MatStructure *flag)
+  PetscErrorCode formJacobian(SNES /*snes*/,Vec x,Mat *Jac, Mat* /*prejac*/, MatStructure * /*flag*/)
   {
 
     Mat                 *JJ = Jac;
@@ -1440,11 +1438,9 @@ public:
     MatZeroEntries(*JJ);
 
 
-
-
     //  LOOP NOS ELEMENTOS
     //
-    #pragma omp parallel default(none) shared(JJ,x,cout)
+    //#pragma omp parallel default(none) shared(JJ,x,cout)
     {
 
       //MatrixXd            u_coefs_c(n_dofs_u_per_cell/dim, dim);
@@ -1511,20 +1507,20 @@ public:
       LocalMat_uu    R(n_dofs_u_per_cell,n_dofs_u_per_cell);
       LocalMat_uu    tmp(n_dofs_u_per_cell,n_dofs_u_per_cell);
 
-      const int tid = omp_get_thread_num();
-      const int nthreads = omp_get_num_threads();
-      const int n_cell_colors = mesh->numCellColors();
+      //const int tid = omp_get_thread_num();
+      //const int nthreads = omp_get_num_threads();
+      //const int n_cell_colors = mesh->numCellColors();
+      //
+      //cell_iterator cell;
+      //cell_iterator cell_end;
 
-      cell_color_iterator cell;
-      cell_color_iterator cell_end;
+      //for (int color = 0; color < n_cell_colors; ++color)
+      //{
+        //cell = mesh->cellBegin(EColor(color),tid,nthreads);
+        //cell_end = mesh->cellEnd(EColor(color),tid,nthreads);
 
-      for (int color = 0; color < n_cell_colors; ++color)
-      {
-        cell = mesh->cellBegin(EColor(color),tid,nthreads);
-        cell_end = mesh->cellEnd(EColor(color),tid,nthreads);
-
-        //cell_iterator cell = mesh->cellBegin();
-        //cell_iterator cell_end = mesh->cellEnd();
+        cell_iterator cell = mesh->cellBegin();
+        cell_iterator cell_end = mesh->cellEnd();
         for (; cell != cell_end; ++cell)
         {
           tag = cell->getTag();
@@ -1620,7 +1616,7 @@ public:
             weight = quadr_cell->weight(qp);
             if (Jx < 1.e-10)
             {
-              //#pragma omp critical
+              ////#pragma omp critical
               {
                 std::cout << "erro: jacobiana da integral não invertível: ";
                 std::cout << "Jx = " << Jx << endl;
@@ -1767,8 +1763,8 @@ public:
 
         }
 
-        #pragma omp barrier
-      } // endl color
+        //#pragma omp barrier
+      //} // endl color
 
 
 
@@ -1776,7 +1772,7 @@ public:
 
     // LOOP NAS FACETS
     if (interface_tags.size() != 0)
-    #pragma omp parallel default(none)  shared(JJ,x,cout)
+    //#pragma omp parallel default(none)  shared(JJ,x,cout)
     {
 
       int                 tag;
@@ -1799,84 +1795,181 @@ public:
       LocalMat_uu    R(n_dofs_u_per_facet,n_dofs_u_per_facet);
       LocalMat_uu    tmp;
 
-      const int tid = omp_get_thread_num();
-      const int nthreads = omp_get_num_threads();
-      const int n_cell_colors = mesh->numFacetColors();
-
-      facet_color_iterator facet;
-      facet_color_iterator facet_end;
-
-      for (int color = 0; color < n_cell_colors; ++color)
+      // LOOP NAS FACES DO CONTORNO
+      facet_iterator facet = mesh->facetBegin();
+      facet_iterator facet_end = mesh->facetEnd();
+      for (; facet != facet_end; ++facet)
       {
-        facet = mesh->facetBegin(EColor(color),tid,nthreads);
-        facet_end = mesh->facetEnd(EColor(color),tid,nthreads);
+        tag = facet->getTag();
 
-        // LOOP NAS FACES DO CONTORNO
-        //facet_iterator facet = mesh->facetBegin();
-        //facet_iterator facet_end = mesh->facetEnd();
-        for (; facet != facet_end; ++facet)
+        //is_neumann = (neumann_tags.end() != std::find(neumann_tags.begin(), neumann_tags.end(), tag));
+        is_surface = (PetscBool)is_in(tag, interface_tags);
+
+        if ( (!is_surface) ) continue;
+
+        dof_handler.getVariable(0).getFacetDofs(mapU_f.data(), &*facet);
+        dof_handler.getVariable(1).getFacetDofs(mapP_f.data(), &*facet);
+
+        mesh->getFacetNodesId(&*facet, facet_nodes.data());
+        mesh->getNodesCoords(facet_nodes.begin(), facet_nodes.end(), x_coefs_f.data());
+        x_coefs_f_trans = x_coefs_f.transpose();
+
+        getRotationMatrix(R,facet_nodes,facet_nodes.size());
+
+        ///*  Pega os valores das variáveis nos graus de liberdade */
+        //VecGetValues(x, mapUb.size(), mapUb.data(), halfU_trans.data());
+
+        Aloc_f.setZero();
+
+        //dxUb  = halfU_trans * dxphib; // n+1
+
+
+        for (int qp = 0; qp < n_qpts_facet; ++qp)
         {
-          tag = facet->getTag();
+          F_f.noalias()   = x_coefs_f_trans * dLqsi_f[qp];
 
-          //is_neumann = (neumann_tags.end() != std::find(neumann_tags.begin(), neumann_tags.end(), tag));
-          is_surface = (PetscBool)is_in(tag, interface_tags);
-
-          if ( (!is_surface) ) continue;
-
-          dof_handler.getVariable(0).getFacetDofs(mapU_f.data(), &*facet);
-          dof_handler.getVariable(1).getFacetDofs(mapP_f.data(), &*facet);
-
-          mesh->getFacetNodesId(&*facet, facet_nodes.data());
-          mesh->getNodesCoords(facet_nodes.begin(), facet_nodes.end(), x_coefs_f.data());
-          x_coefs_f_trans = x_coefs_f.transpose();
-
-          getRotationMatrix(R,facet_nodes,facet_nodes.size());
-
-          ///*  Pega os valores das variáveis nos graus de liberdade */
-          //VecGetValues(x, mapUb.size(), mapUb.data(), halfU_trans.data());
-
-          Aloc_f.setZero();
-
-          //dxUb  = halfU_trans * dxphib; // n+1
+          tmp.noalias() = F_f.transpose()*F_f;
+          Jx = sqrt(determinant(tmp, tmp.rows()));
+          invert(tmp, tmp.rows());
+          invF_f.noalias() = tmp*F_f.transpose();
 
 
-          for (int qp = 0; qp < n_qpts_facet; ++qp)
+          weight = quadr_facet->weight(qp);
+          Xqp.noalias()  = x_coefs_f_trans * qsi_f[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
+          dxphi_f.noalias() = dLphi_f[qp] * invF_f;
+
+
+          for (int i = 0; i < n_dofs_u_per_facet/dim; ++i)
           {
-            F_f.noalias()   = x_coefs_f_trans * dLqsi_f[qp];
-
-            tmp.noalias() = F_f.transpose()*F_f;
-            Jx = sqrt(determinant(tmp, tmp.rows()));
-            invert(tmp, tmp.rows());
-            invF_f.noalias() = tmp*F_f.transpose();
-
-
-            weight = quadr_facet->weight(qp);
-            Xqp.noalias()  = x_coefs_f_trans * qsi_f[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
-            dxphi_f.noalias() = dLphi_f[qp] * invF_f;
-
-
-            for (int i = 0; i < n_dofs_u_per_facet/dim; ++i)
+            for (int j = 0; j < n_dofs_u_per_facet/dim; ++j)
             {
-              for (int j = 0; j < n_dofs_u_per_facet/dim; ++j)
+              for (int c = 0; c < dim; ++c)
               {
-                for (int c = 0; c < dim; ++c)
-                {
-                  Aloc_f(i*dim + c, j*dim + c) += Jx*weight* (unsteady*dt) *gama(Xqp,current_time,tag)*dxphi_f.row(i).dot(dxphi_f.row(j));
-                }
+                Aloc_f(i*dim + c, j*dim + c) += Jx*weight* (unsteady*dt) *gama(Xqp,current_time,tag)*dxphi_f.row(i).dot(dxphi_f.row(j));
               }
             }
-          } // end quadratura
+          }
+        } // end quadratura
 
-          rotate_RARt(R, Aloc_f, tmp);
-          MatSetValues(*JJ, mapU_f.size(), mapU_f.data(), mapU_f.size(), mapU_f.data(), Aloc_f.data(),  ADD_VALUES);
+        rotate_RARt(R, Aloc_f, tmp);
+        MatSetValues(*JJ, mapU_f.size(), mapU_f.data(), mapU_f.size(), mapU_f.data(), Aloc_f.data(),  ADD_VALUES);
 
 
-        }
-
-        #pragma omp barrier
-      } // end color
-
+      }
+      
     } // end parallel
+
+
+    //// LOOP CORNERS
+    //if (dim==2)
+    ////#pragma omp parallel shared(x,JJ,cout) default(none)
+    //{
+      //Real const eps = std::numeric_limits<Real>::epsilon();
+      //Real const eps_root = pow(eps,1./3.);
+
+      //bool        is_triple;
+      //int         tag;
+      //int         n_dofs_u_per_corner = dim;
+      //Point       *point;
+      //Vector_i    mapU_r(dim);
+      //LocalMat_uu Aloc_r(n_dofs_u_per_corner, n_dofs_u_per_corner);
+      //Vector      FUloc_km1(dim);
+      //Vector      FUloc_kp1(dim);
+      //Vector      Ur_k(dim); // rotated
+      //Vector      Ur_kp1(dim); // rotated
+      //Vector      Ur_km1(dim); // rotated
+      //double      h;
+      //volatile    double hh;
+
+      ////#pragma omp for
+      //for (int i=0; i<mesh->numNodesTotal(); ++i)
+      //{
+        //point = mesh->getNode(i);
+
+        //tag = point->getTag();
+
+        //is_triple = (triple_tags.end() != std::find(triple_tags.begin(), triple_tags.end(), tag));
+
+        //if (!is_triple)
+          //continue;
+
+        //dof_handler.getVariable(0).getVertexDofs(mapU_r.data(), &*point);
+
+        //VecGetValues(x, dim, mapU_r.data(), Ur_k.data());
+
+        //h = max(Ur_k.norm(),1.)*eps_root;
+
+        //Ur_kp1 = Ur_k;
+        //Ur_km1 = Ur_k;
+        //for (int i = 0; i < n_dofs_u_per_corner; ++i)
+        //{
+          //Ur_kp1(i) += h;
+          //Ur_km1(i) -= h;
+          //hh = Ur_kp1(i) - Ur_km1(i);
+
+          ////formCornerFunction(point, Ur_kp1, FUloc_kp1);
+          ////formCornerFunction(point, Ur_km1, FUloc_km1);
+
+          //for (int l=0; l<n_dofs_u_per_corner; ++l)
+          //{
+            //Aloc_r(l,i) = (FUloc_kp1(l)-FUloc_km1(l))/hh;
+          //}
+
+        //}
+        ////cout << Aloc_r << " ..." <<  endl;
+        ////MatSetValues(*JJ, mapU_r.size(), mapU_r.data(), mapU_r.size(), mapU_r.data(), Aloc_r.data(),  ADD_VALUES);
+
+
+      //} //end nodes
+    //}
+    //else
+    //if (dim==3)
+    ////#pragma omp parallel shared(x,JJ,cout) default(none)
+    //{
+      //int                 tag;
+      //bool                is_triple;
+
+      //Coefs_u             u_coefs_r(n_dofs_u_per_corner/dim, dim);
+      //LocalVec_u          FUloc(n_dofs_u_per_corner);
+      //LocalMat_uu         Aloc_r(n_dofs_u_per_corner, n_dofs_u_per_corner);
+
+      //Map_u               mapU_r(n_dofs_u_per_corner);
+      //Map_p               mapP_r(n_dofs_p_per_corner);
+
+      ////const int tid = omp_get_thread_num();
+      ////const int nthreads = omp_get_num_threads();
+
+      //// LOOP NAS ARESTAS DA LINHA TRIPLICE
+      //corner_iterator corner = mesh->cornerBegin();
+      //corner_iterator corner_end = mesh->cornerEnd();
+
+      //if (triple_tags.size() != 0)
+      //for (; corner != corner_end; ++corner)
+      //{
+        //tag = corner->getTag();
+        //is_triple = is_in(tag,triple_tags);
+        //if (!is_triple)
+          //continue;
+
+        //// mapeamento do local para o global:
+        ////
+        //dof_handler.getVariable(0).getCornerDofs(mapU_r.data(), &*corner);
+        //dof_handler.getVariable(1).getCornerDofs(mapP_r.data(), &*corner);
+
+        //VecGetValues(x , mapU_r.size(), mapU_r.data(), u_coefs_r.data());
+
+        //formCornerFunction3d(corner,mapU_r,mapP_r,u_coefs_r,FUloc);
+
+        //VecSetValues(f, mapU_r.size(), mapU_r.data(), FUloc.data(), ADD_VALUES);
+
+      //}
+      
+
+
+
+    //}
+
+
 
 
 
@@ -1888,7 +1981,8 @@ public:
     }
     Assembly(*JJ);
 
-    *flag = SAME_NONZERO_PATTERN;
+
+    //*flag = SAME_NONZERO_PATTERN;
 
     if (print_to_matlab) {
       static bool ja_foi=false;
@@ -1912,7 +2006,7 @@ public:
 
     // LOOP NAS CÉLULAS
     VecZeroEntries(f);
-    #pragma omp parallel default(none) shared(x,f,cout)
+    //#pragma omp parallel default(none) shared(x,f,cout)
     {
       LocalVec_u          FUloc(n_dofs_u_per_cell);
       LocalVec_p          FPloc(n_dofs_p_per_cell);
@@ -1923,20 +2017,20 @@ public:
       Map_u               mapU_c(n_dofs_u_per_cell);
       Map_p               mapP_c(n_dofs_p_per_cell);
 
-      const int tid = omp_get_thread_num();
-      const int nthreads = omp_get_num_threads();
-      const int n_cell_colors = mesh->numCellColors();
+      //const int tid = omp_get_thread_num();
+      //const int nthreads = omp_get_num_threads();
+      //const int n_cell_colors = mesh->numCellColors();
 
-      cell_color_iterator cell;
-      cell_color_iterator cell_end;
+      //cell_iterator cell;
+      //cell_iterator cell_end;
 
-      for (int color = 0; color < n_cell_colors; ++color)
-      {
-        cell = mesh->cellBegin(EColor(color),tid,nthreads);
-        cell_end = mesh->cellEnd(EColor(color),tid,nthreads);
+      //for (int color = 0; color < n_cell_colors; ++color)
+      //{
+        //cell = mesh->cellBegin(EColor(color),tid,nthreads);
+        //cell_end = mesh->cellEnd(EColor(color),tid,nthreads);
 
-        //cell_iterator cell = mesh->cellBegin();
-        //cell_iterator cell_end = mesh->cellEnd();
+        cell_iterator cell = mesh->cellBegin();
+        cell_iterator cell_end = mesh->cellEnd();
         for (; cell != cell_end; ++cell)
         {
 
@@ -1948,28 +2042,28 @@ public:
           /*  Pega os valores das variáveis nos graus de liberdade */
           VecGetValues(x , mapU_c.size(), mapU_c.data(), u_coefs_c_new.data());
           VecGetValues(x , mapP_c.size(), mapP_c.data(), p_coefs_c.data());
-          
+
 
           formCellFunction(cell, mapU_c, mapP_c, u_coefs_c_new, p_coefs_c, FUloc, FPloc);
-          
-          
+
+
           VecSetValues(f, mapU_c.size(), mapU_c.data(), FUloc.data(), ADD_VALUES);
           VecSetValues(f, mapP_c.size(), mapP_c.data(), FPloc.data(), ADD_VALUES);
 
         }
 
-        #pragma omp barrier
-      }
+        //#pragma omp barrier
+      //}
 
 
     }
 
     // LOOP NAS FACES DO CONTORNO
-    #pragma omp parallel default(none) shared(x,f,cout)
+    //#pragma omp parallel default(none) shared(x,f,cout)
     {
       LocalVec_u          FUloc(n_dofs_u_per_facet);
       //LocalVec_p          FPloc(n_dofs_p_per_facet); // don't need it
-      
+
       Coefs_u             u_coefs_f(n_dofs_u_per_facet/dim, dim);
       Coefs_p             p_coefs_f(n_dofs_p_per_facet);
 
@@ -1981,21 +2075,21 @@ public:
       bool is_solid;
       int tag;
 
-      const int tid = omp_get_thread_num();
-      const int nthreads = omp_get_num_threads();
-      const int n_facet_colors = mesh->numFacetColors();
+      //const int tid = omp_get_thread_num();
+      //const int nthreads = omp_get_num_threads();
+      //const int n_facet_colors = mesh->numFacetColors();
 
-      facet_color_iterator facet;
-      facet_color_iterator facet_end;
+      //facet_iterator facet;
+      //facet_iterator facet_end;
 
-      for (int color = 0; color < n_facet_colors; ++color)
-      {
-        facet = mesh->facetBegin(EColor(color),tid,nthreads);
-        facet_end = mesh->facetEnd(EColor(color),tid,nthreads);
+      //for (int color = 0; color < n_facet_colors; ++color)
+      //{
+        //facet = mesh->facetBegin(EColor(color),tid,nthreads);
+       //facet_end = mesh->facetEnd(EColor(color),tid,nthreads);
 
         // LOOP NAS FACES DO CONTORNO
-        //facet_iterator facet = mesh->facetBegin();
-        //facet_iterator facet_end = mesh->facetEnd();
+        facet_iterator facet = mesh->facetBegin();
+        facet_iterator facet_end = mesh->facetEnd();
         if (neumann_tags.size() != 0 || interface_tags.size() != 0 || solid_tags.size() != 0)
         for (; facet != facet_end; ++facet)
         {
@@ -2003,11 +2097,11 @@ public:
           is_neumann = is_in(tag, neumann_tags);
           is_surface = is_in(tag, interface_tags);
           is_solid   = is_in(tag, solid_tags);
-          
+
           if ((!is_neumann) && (!is_surface) && (!is_solid))
           //PetscFunctionReturn(0);
             continue;
-          
+
           // mapeamento do local para o global:
           //
           dof_handler.getVariable(0).getFacetDofs(mapU_f.data(), &*facet);
@@ -2016,104 +2110,63 @@ public:
           VecGetValues(x , mapU_f.size(), mapU_f.data(), u_coefs_f.data());
 
           formFacetFunction(facet, mapU_f, mapP_f, u_coefs_f, p_coefs_f,FUloc);
-          
+
           VecSetValues(f, mapU_f.size(), mapU_f.data(), FUloc.data(), ADD_VALUES);
 
         }
 
-        #pragma omp barrier
-      } // end color
+        //#pragma omp barrier
+      //} // end color
 
     } // end parallel
 
 
     // LINHA DE CONTATO
-    if (dim==2)
-    #pragma omp parallel shared(x,f,cout) default(none)
-    {
-      bool      is_triple;
-      int       tag;
-      Point    *point;
-      Vector_i  vtx_dofs_fluid(dim);
-      Vector    FUloc(dim);
-      Vector    Ur(dim); // rotated
-
-      #pragma omp for
-      for (int i=0; i<mesh->numNodesTotal(); ++i)
-      {
-        point = mesh->getNode(i);
-
-        tag = point->getTag();
-
-        is_triple = (triple_tags.end() != std::find(triple_tags.begin(), triple_tags.end(), tag));
-
-        if (!is_triple)
-          continue;
-
-        dof_handler.getVariable(0).getVertexDofs(vtx_dofs_fluid.data(), &*point);
-
-        VecGetValues(x, dim, vtx_dofs_fluid.data(), Ur.data());
-
-        formCornerFunction2d(point, Ur, FUloc);
-  
-        VecSetValues(f, vtx_dofs_fluid.size(), vtx_dofs_fluid.data(), FUloc.data(), ADD_VALUES);
-      }
-    }
-    else
-    if (dim==3)
-    #pragma omp parallel shared(x,f,cout) default(none)
+    //#pragma omp parallel shared(x,f,cout) default(none)
     {
       int                 tag;
       bool                is_triple;
-      
+
       Coefs_u             u_coefs_r(n_dofs_u_per_corner/dim, dim);
       LocalVec_u          FUloc(n_dofs_u_per_corner);
-  
+
       Map_u               mapU_r(n_dofs_u_per_corner);
       Map_p               mapP_r(n_dofs_p_per_corner);
 
-      const int tid = omp_get_thread_num();
-      const int nthreads = omp_get_num_threads();
-      const int n_corner_colors = mesh->numCornerColors();
+      //const int tid = omp_get_thread_num();
+      //const int nthreads = omp_get_num_threads();
+      //const int n_corner_colors = mesh->numCornerColors();
 
-      corner_color_iterator corner;
-      corner_color_iterator corner_end;
 
-      for (int color = 0; color < n_corner_colors; ++color)
+      // LOOP NAS ARESTAS DA LINHA TRIPLICE
+      corner_iterator corner = mesh->cornerBegin();
+      corner_iterator corner_end = mesh->cornerEnd();
+      if (triple_tags.size() != 0)
+      for (; corner != corner_end; ++corner)
       {
-        corner = mesh->cornerBegin(EColor(color),tid,nthreads);
-        corner_end = mesh->cornerEnd(EColor(color),tid,nthreads);
+        tag = corner->getTag();
+        is_triple = is_in(tag,triple_tags);
+        if (!is_triple)
+          continue;
 
-        // LOOP NAS ARESTAS DA LINHA TRIPLICE
-        //corner_iterator corner = mesh->cornerBegin();
-        //corner_iterator corner_end = mesh->cornerEnd();
-        if (triple_tags.size() != 0)
-        for (; corner != corner_end; ++corner)
-        {
-          tag = corner->getTag();
-          is_triple = is_in(tag,triple_tags);
-          if (!is_triple)
-            continue;
+        // mapeamento do local para o global:
+        //
+        dof_handler.getVariable(0).getCornerDofs(mapU_r.data(), &*corner);
+        dof_handler.getVariable(1).getCornerDofs(mapP_r.data(), &*corner);
 
-          // mapeamento do local para o global:
-          //
-          dof_handler.getVariable(0).getCornerDofs(mapU_r.data(), &*corner);
-          dof_handler.getVariable(1).getCornerDofs(mapP_r.data(), &*corner);
+        VecGetValues(x , mapU_r.size(), mapU_r.data(), u_coefs_r.data());
 
-          VecGetValues(x , mapU_r.size(), mapU_r.data(), u_coefs_r.data());
+        formCornerFunction(corner,mapU_r,mapP_r,u_coefs_r,FUloc);
 
-          formCornerFunction3d(corner,mapU_r,mapP_r,u_coefs_r,FUloc);
- 
-          VecSetValues(f, mapU_r.size(), mapU_r.data(), FUloc.data(), ADD_VALUES);
+        VecSetValues(f, mapU_r.size(), mapU_r.data(), FUloc.data(), ADD_VALUES);
+        //cout << FUloc.transpose() << endl;
 
-        }
-
-        #pragma omp barrier
-      } // end color
+      }
 
 
 
     }
+
 
     Assembly(f);
 
@@ -2122,7 +2175,7 @@ public:
     int const n_dofs_u_assoc2_corner = dim*shape_phi_c->numDofsAssociatedToCorner();
     int const n_dofs_u_assoc2_facet = dim*shape_phi_c->numDofsAssociatedToFacet();
 
-    #pragma omp parallel default(none) shared(x,f,cout)
+    //#pragma omp parallel default(none) shared(x,f,cout)
     {
 
       int tag;
@@ -2140,7 +2193,7 @@ public:
       Facet const* facet;
 
       const int dvs = dir_vertices.size();
-      #pragma omp for nowait
+      //#pragma omp for nowait
       for (int i = 0; i < dvs; ++i)
       {
         point = mesh->getNode(dir_vertices[i]);
@@ -2158,7 +2211,7 @@ public:
       bool const mesh_has_edge_nodes = mesh->numNodesPerCell()-mesh->numVerticesPerCell() > 0;
 
       const int dfs = dir_facets.size();
-      #pragma omp for nowait
+      //#pragma omp for nowait
       for (int i = 0; i < dfs; ++i)
       {
         // assume que há no máximo 3 nós por faceta
@@ -2187,7 +2240,7 @@ public:
       }
 
       const int dcs = dir_corners.size();
-      #pragma omp for nowait
+      //#pragma omp for nowait
       for (int i = 0; i < dcs; ++i)
       {
         // assume que há no máximo 3 nós por cornera
@@ -2217,7 +2270,7 @@ public:
       // UNORMAL_AQUI
       // NORMAL DIRS
       const int dnvs = dir_normal_vertices.size();
-      #pragma omp for nowait
+      //#pragma omp for nowait
       for (int i = 0; i < dnvs; ++i)
       {
         point = mesh->getNode(dir_normal_vertices[i]);
@@ -2232,7 +2285,7 @@ public:
       //bool const mesh_has_edge_nodes = mesh->numNodesPerCell()-mesh->numVerticesPerCell() > 0;
 
       const int dnfs = dir_normal_facets.size();
-      #pragma omp for nowait
+      //#pragma omp for nowait
       for (int i = 0; i < dnfs; ++i)
       {
         // assume que há no máximo 3 nós por faceta
@@ -2261,7 +2314,7 @@ public:
 
 
       const int dncs = dir_normal_corners.size();
-      #pragma omp for nowait
+      //#pragma omp for nowait
       for (int i = 0; i < dncs; ++i)
       {
         // assume que há no máximo 3 nós por cornera
@@ -2318,7 +2371,7 @@ public:
 
   // ***********
   // form the residue of the cell
-  void formCellFunction(cell_color_iterator &cell,
+  void formCellFunction(cell_iterator &cell,
                                   Map_u &mapU_c,  Map_p &/*mapP_c*/, // mappers
                                   Coefs_u &u_coefs_c_new,  Coefs_p &p_coefs_c, // coefficients
                                   LocalVec_u &FUloc, LocalVec_p &FPloc) // output: local residue
@@ -2388,7 +2441,7 @@ public:
 
     // get coeficients of the mesh velocity and the old velocity (time step n)
     dof_hand_mesh.getVariable(0).getCellDofs(mapM_c.data(), &*cell);
-    
+
     VecGetValues(u_mesh, mapM_c.size(), mapM_c.data(), v_coefs_c_old.data());
     VecGetValues(q0,     mapU_c.size(), mapU_c.data(), u_coefs_c_old.data());
 
@@ -2475,7 +2528,7 @@ public:
 
       if (Jx < 1.e-10)
       {
-        #pragma omp critical
+        //#pragma omp critical
         //if (tid==0)
         {
           std::cout << "erro: jacobiana da integral não invertível: ";
@@ -2601,7 +2654,7 @@ public:
 
   // ***********
   // form the residue of the facet
-  void formFacetFunction(facet_color_iterator &facet,
+  void formFacetFunction(facet_iterator &facet,
                          Map_u const&/*mapU_f*/,  Map_p const&/*mapP_f*/, // mappers
                          Coefs_u &u_coefs_f,  Coefs_p &/*p_coefs_f*/, // coefficients
                          LocalVec_u &FUloc) // output: local residue
@@ -2627,15 +2680,15 @@ public:
     Vector              normal(dim);
     double              Jx=0;
     double              weight=0;
-    
+
     Map_v               mapM_f(dim*nodes_per_facet);
-    
+
     LocalMat_uu         R(n_dofs_u_per_facet,n_dofs_u_per_facet);
     LocalMat_uu         tmp;
-    
+
     // ----- computations ------
     FUloc.setZero();
-    
+
     tag = facet->getTag();
 
     is_neumann = (neumann_tags.end() != std::find(neumann_tags.begin(), neumann_tags.end(), tag));
@@ -2650,12 +2703,12 @@ public:
     mesh->getNodesCoords(facet_nodes.begin(), facet_nodes.end(), x_coefs_f.data());
     x_coefs_f_trans.noalias() = x_coefs_f.transpose();
 
-    getRotationMatrix(R,facet_nodes,facet_nodes.size());    
-    
+    getRotationMatrix(R,facet_nodes,facet_nodes.size());
+
     rotate_RtA(R,u_coefs_f,tmp);
     u_coefs_f_trans.noalias() = u_coefs_f.transpose();
 
-    
+
 
     for (int qp = 0; qp < n_qpts_facet; ++qp)
     {
@@ -2705,21 +2758,21 @@ public:
     } // end quadratura
 
     rotate_RA(R,FUloc,tmp);
-    
-    
+
+
     //PetscFunctionReturn(0);
     //return;
   } // end formFacetFunction
 
 
   // ***********
-  // form the residue of the contact line (3D)
-  void formCornerFunction3d(corner_color_iterator &corner,
-                         Map_u const&/*mapU_r*/,  Map_p const&/*mapP_r*/, // mappers
-                         Coefs_u &u_coefs_r, // coefficients
-                         LocalVec_u &FUloc)
+  // form the residue of the contact line (2D)
+  void formCornerFunction(corner_iterator &corner,
+                            Map_u const&/*mapU_r*/,  Map_p const&/*mapP_r*/, // mappers
+                            Coefs_u &u_coefs_r, // coefficients
+                            LocalVec_u &FUloc)
   {
-    
+
     bool                gen_error = false;
     int                 tag;
     bool                is_triple;
@@ -2757,8 +2810,8 @@ public:
 
     LocalMat_uu         R(n_dofs_u_per_corner,n_dofs_u_per_corner);
     LocalMat_uu         tmp;
-    
-        
+
+
     tag = corner->getTag();
 
     is_triple = (triple_tags.end() != std::find(triple_tags.begin(), triple_tags.end(), tag));
@@ -2768,60 +2821,103 @@ public:
     if (!is_triple)
       return;
 
-
-    // encontrando o ponto da superfície sólido. com ele, é calculado uma normal
-    // que corrigi o sinal de line_normal
-    iCs_end = mesh->edgeStar(&*corner, iCs, eiCs);
-    if (iCs_end == iCs)
-    {
-      printf("ERROR!: no icell found\n");
-      throw;
-    }
-    gen_error = true;
-    for (iCs_it = iCs; iCs_it != iCs_end ; ++iCs_it)
-    {
-      fluid_cell = mesh->getCell(*iCs_it);
-
-      //if (!is_in(fluid_cell->getTag(), solid_tags))
-      //  continue;
-
-      for (int kk = 0; kk < mesh->numVerticesPerCell(); ++kk)
-      {
-        Point const* pp      = mesh->getNode(fluid_cell->getNodeId(kk) );
-        const int    tag_aux = pp->getTag();
-
-        if (is_in(tag_aux, solid_tags) && !is_in(tag_aux, triple_tags))
-        {
-          gen_error = false;
-          pp->getCoord(solid_point.data());
-          break;
-        }
-      }
-      if (gen_error==false)
-        break;
-
-    }
-    if (gen_error)
-    {
-      printf("ERROR!: solid point not found\n");
-      throw;
-    }
     mesh->getCornerNodesId(&*corner, corner_nodes.data());
 
-    mesh->getNode(corner_nodes(0))->getCoord(point_a.data());
-    mesh->getNode(corner_nodes(1))->getCoord(point_b.data());
+    if (dim==3)
+    {
+      // encontrando o ponto da superfície sólido. com ele, é calculado uma normal
+      // que corrigi o sinal de line_normal
+      iCs_end = mesh->edgeStar(&*corner, iCs, eiCs);
+      if (iCs_end == iCs)
+      {
+        printf("ERROR!: no icell found\n");
+        throw;
+      }
+      gen_error = true;
+      for (iCs_it = iCs; iCs_it != iCs_end ; ++iCs_it)
+      {
+        fluid_cell = mesh->getCell(*iCs_it);
 
-    // se (a-c) cross (b-c) dot solid_normal > 0, então line_normal_sign = 1, se não, =-1
-    Xqp = (point_a+point_b)/2.;
-    point_a -= solid_point;
-    point_b -= solid_point;
-    normal  = solid_normal(Xqp, current_time, tag);
-    line_normal_sign = point_a(0)*point_b(1)*normal(2) + point_a(1)*point_b(2)*normal(0) + point_a(2)*point_b(0)*normal(1)
-                      -point_a(0)*point_b(2)*normal(1) - point_a(1)*point_b(0)*normal(2) - point_a(2)*point_b(1)*normal(0);
-    if (line_normal_sign>0)
-      line_normal_sign = 1;
-    else
-      line_normal_sign = -1;
+        for (int kk = 0; kk < mesh->numVerticesPerCell(); ++kk)
+        {
+          Point const* pp      = mesh->getNode(fluid_cell->getNodeId(kk) );
+          const int    tag_aux = pp->getTag();
+
+          if (is_in(tag_aux, solid_tags) && !is_in(tag_aux, triple_tags))
+          {
+            gen_error = false;
+            pp->getCoord(solid_point.data());
+            break;
+          }
+        }
+        if (gen_error==false)
+          break;
+
+      }
+      if (gen_error)
+      {
+        printf("ERROR!: solid point not found\n");
+        throw;
+      }
+      
+
+      mesh->getNode(corner_nodes(0))->getCoord(point_a.data());
+      mesh->getNode(corner_nodes(1))->getCoord(point_b.data());
+
+      // se (a-c) cross (b-c) dot solid_normal > 0, então line_normal_sign = 1, se não, =-1
+      Xqp = (point_a+point_b)/2.;
+      point_a -= solid_point;
+      point_b -= solid_point;
+      normal  = solid_normal(Xqp, current_time, tag);
+      line_normal_sign = point_a(0)*point_b(1)*normal(2) + point_a(1)*point_b(2)*normal(0) + point_a(2)*point_b(0)*normal(1)
+                        -point_a(0)*point_b(2)*normal(1) - point_a(1)*point_b(0)*normal(2) - point_a(2)*point_b(1)*normal(0);
+      if (line_normal_sign>0)
+        line_normal_sign = 1;
+      else
+        line_normal_sign = -1;
+
+    }
+    else // dim==2
+    {
+      Point * point = mesh->getNode(corner_nodes[0]);
+      Point * sol_point;
+      int iVs[FEPIC_MAX_ICELLS];
+      int *iVs_end, *iVs_it;
+      Vector aux(dim);
+
+      iVs_end = mesh->connectedVtcs(point, iVs);
+
+      // se esse nó está na linha, então existe um vértice vizinho que está no sólido
+      for (iVs_it = iVs; iVs_it != iVs_end ; ++iVs_it)
+      {
+        sol_point = mesh->getNode(*iVs_it);
+        if ( is_in(sol_point->getTag(), solid_tags) )
+          break;
+      }
+      if (iVs_it == iVs_end)
+      {
+        //#pragma omp critical
+        {
+          printf("ERRO: ponto na linha tríplice não tem um vértice vizinho no sólido");
+          throw;
+        }
+      }
+      point->getCoord(Xqp.data());
+
+      normal = solid_normal(Xqp, current_time, tag);
+
+      sol_point->getCoord(aux.data());
+
+
+      // choose a line_normal candidate
+      line_normal(0) = -normal(1);
+      line_normal(1) =  normal(0);
+
+      // check orientation
+      if (line_normal.dot(Xqp-aux) < 0)
+        line_normal *= -1;
+    }
+
 
     //mesh->getCornerNodesId(&*corner, corner_nodes.data());
     mesh->getNodesCoords(corner_nodes.begin(), corner_nodes.end(), x_coefs_r.data());
@@ -2832,12 +2928,18 @@ public:
     rotate_RtA(R,u_coefs_r,tmp);
     u_coefs_r_trans = u_coefs_r.transpose();
 
+
     for (int qp = 0; qp < n_qpts_corner; ++qp)
     {
-
-      F_r.noalias()   = x_coefs_r_trans * dLqsi_r[qp];
-      Jx = F_r.norm();
-
+      if (dim==3)
+      {
+        F_r.noalias()   = x_coefs_r_trans * dLqsi_r[qp];
+        Jx = F_r.norm();
+      }
+      else
+      {
+        Jx = 1;
+      }
       //invF_r = F_r.transpose()/(Jx*Jx);
 
       weight  = quadr_corner->weight(qp);
@@ -2846,25 +2948,28 @@ public:
       //dxU_r.noalias()   = u_coefs_r_trans * dxphi_r; // n+theta
       Uqp.noalias()  = u_coefs_r_trans * phi_r[qp];
 
-      normal  = solid_normal(Xqp, current_time, tag);
-      line_normal(0)= F_r(0,0);line_normal(1)= F_r(1,0);line_normal(2)= F_r(2,0);
-      line_normal *= line_normal_sign;
-      // a = a cross b
-      cross(line_normal, normal);
-      line_normal.normalize();
-
+      if (dim==3)
+      {
+        normal  = solid_normal(Xqp, current_time, tag);
+        line_normal(0)= F_r(0,0);line_normal(1)= F_r(1,0);line_normal(2)= F_r(2,0);
+        line_normal *= line_normal_sign;
+        // a = a cross b
+        cross(line_normal, normal);
+        line_normal.normalize();
+      }
 
       for (int i = 0; i < n_dofs_u_per_corner/dim; ++i)
       {
-        FUloc(i*dim + 0) += Jx*weight*(-gama(Xqp, current_time, tag)*cos_theta0() + zeta(0,0)*line_normal.dot(Uqp))*line_normal(0)*phi_r[qp][i];
-        FUloc(i*dim + 1) += Jx*weight*(-gama(Xqp, current_time, tag)*cos_theta0() + zeta(0,0)*line_normal.dot(Uqp))*line_normal(1)*phi_r[qp][i];
-        FUloc(i*dim + 2) += Jx*weight*(-gama(Xqp, current_time, tag)*cos_theta0() + zeta(0,0)*line_normal.dot(Uqp))*line_normal(2)*phi_r[qp][i];
+        for (int j = 0; j < dim; ++j)
+        {
+          FUloc(i*dim + j) += Jx*weight*(-gama(Xqp, current_time, tag)*cos_theta0() + zeta(0,0)*line_normal.dot(Uqp))*line_normal(j)*phi_r[qp][i];
+        }
       }
 
 
     } // end quadratura
 
-    //#pragma omp critical
+    ////#pragma omp critical
     //{
     //cout << "line_normal " << line_normal.size() << endl;
     //cout << "---------------------------------" << endl;
@@ -2874,93 +2979,10 @@ public:
     //}
 
     rotate_RA(R,FUloc,tmp);
-    
-    
+
   }
-  
-  
-  // ***********
-  // form the residue of the contact line (2D)
-  void formCornerFunction2d(Point * point,
-                            Vector &Ur,
-                            Vector &FUloc)
-  {
-    bool is_triple;
-    int tag;
-    //Point * point;
-    Point * sol_point; // solid point
-    int iVs[FEPIC_MAX_ICELLS];
-    int *iVs_end;
-    int *iVs_it;
-    Vector line_normal(dim);
-    Vector aux(dim);
-    Vector normal(dim); // solid normal
-    Vector X(dim);
-    Vector_i vtx_dofs_fluid(dim);
-    int nodeid;
-    //Vector FUloc(dim);
-    Vector U(dim);
-    //Vector Ur(dim); // rotated
-    Tensor R(dim,dim);
-    Vector tmp(dim);
-
-    tag = point->getTag();
-
-    is_triple = is_in(tag, triple_tags);
-
-    if (!is_triple)
-      return;
 
 
-    iVs_end = mesh->connectedVtcs(point, iVs);
-
-    // se esse nó está na linha, então existe um vértice vizinho que está no sólido
-    for (iVs_it = iVs; iVs_it != iVs_end ; ++iVs_it)
-    {
-      sol_point = mesh->getNode(*iVs_it);
-      if ( is_in(sol_point->getTag(), solid_tags) )
-        break;
-    }
-    if (iVs_it == iVs_end)
-    {
-      #pragma omp critical
-      {
-        printf("ERRO: ponto na linha tríplice não tem um vértice vizinho no sólido");
-        throw;
-      }
-    }
-
-    normal = solid_normal(X, current_time, tag);
-
-    point->getCoord(X.data());
-
-    sol_point->getCoord(aux.data());
-
-
-    // choose a line_normal candidate
-    line_normal(0) = -normal(1);
-    line_normal(1) =  normal(0);
-
-    // check orientation
-    if (line_normal.dot(X-aux) < 0)
-      line_normal *= -1;
-
-    dof_handler.getVariable(0).getVertexDofs(vtx_dofs_fluid.data(), &*point);
-
-    nodeid = mesh->getPointId(point);
-    getRotationMatrix(R, &nodeid, 1);
-
-    U.noalias() = R.transpose()*Ur;
-
-    FUloc(0) = (-gama(X, current_time, tag)*cos_theta0() + zeta(0,0)*line_normal.dot(U))*line_normal(0);
-    FUloc(1) = (-gama(X, current_time, tag)*cos_theta0() + zeta(0,0)*line_normal.dot(U))*line_normal(1);
-
-    nodeid = mesh->getPointId(&*point);
-
-    rotate_RA(R,FUloc,tmp);    
-  }
-  
-  
   //// R size: ndofu x ndofu
   template<class AnyStaticMAtrix, class AnyStaticVector>
   void getRotationMatrix(AnyStaticMAtrix & R, AnyStaticVector/*LocalNodes*/ const& nodes, int const n_nodes) const
@@ -3214,7 +3236,7 @@ public:
     // ASSUME QUE SÓ POSSA TER NO MÁXIMO 1 NÓ POR ARESTA
 
     if (dim==2)
-    #pragma omp parallel default(none) shared(hmin)
+    //#pragma omp parallel default(none) shared(hmin)
     {
       const int n_facets_total = mesh->numFacetsTotal();
       Facet const* facet(NULL);
@@ -3222,7 +3244,7 @@ public:
       LocalNodes facet_nodes(nodes_per_facet);
       Vector Xa(dim), Xb(dim);
 
-      #pragma omp for nowait
+      //#pragma omp for nowait
       for (int a = 0; a < n_facets_total; ++a)
       {
         facet = mesh->getFacet(a);
@@ -3241,7 +3263,7 @@ public:
             hmin_local = dist;
         }
       }
-      #pragma omp critical
+      //#pragma omp critical
       {
         if (hmin_local < hmin)
           hmin = hmin_local;
@@ -3249,7 +3271,7 @@ public:
     }
 
     if (dim==3)
-    #pragma omp parallel default(none) shared(cout,hmin)
+    //#pragma omp parallel default(none) shared(cout,hmin)
     {
       const int n_corners_total = mesh->numCornersTotal();
       Corner const* corner(NULL);
@@ -3257,7 +3279,7 @@ public:
       LocalNodes corner_nodes(nodes_per_corner);
       Vector Xa(dim), Xb(dim);
 
-      #pragma omp for nowait
+      //#pragma omp for nowait
       for (int a = 0; a < n_corners_total; ++a)
       {
         corner = mesh->getCorner(a);
@@ -3278,7 +3300,7 @@ public:
 
         }
       }
-      #pragma omp critical
+      //#pragma omp critical
       {
         if (hmin_local < hmin)
           hmin = hmin_local;
@@ -3611,8 +3633,11 @@ public:
     Destroy(q);
     Destroy(res);
     Destroy(q0);
+    Destroy(u_mesh);
+    Destroy(x_mesh);
     //Destroy(ksp);
-    Destroy(snes);
+    //Destroy(snes);
+    SNESDestroy(&snes);
   }
 
 
@@ -3867,7 +3892,7 @@ extern PetscErrorCode Monitor(SNES,PetscInt,PetscReal,void *);
 int main(int argc, char **argv)
 {
 
-  PetscInitialize(&argc,&argv,0,help);
+  PetscInitialize(&argc,&argv);
 
   bool help_return;
   bool erro;
@@ -4051,4 +4076,104 @@ void cross(AnyVector & a, AnyVector const& b)
 
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+  // ***********
+  // form the residue of the contact line (2D)
+  void formCornerFunction(Point * point,
+                            Vector &Ur,
+                            Vector &FUloc)
+  {
+    bool is_triple;
+    int tag;
+    //Point * point;
+    Point * sol_point; // solid point
+    int iVs[FEPIC_MAX_ICELLS];
+    int *iVs_end;
+    int *iVs_it;
+    Vector line_normal(dim);
+    Vector aux(dim);
+    Vector normal(dim); // solid normal
+    Vector X(dim);
+    Vector_i vtx_dofs_fluid(dim);
+    int nodeid;
+    //Vector FUloc(dim);
+    Vector U(dim);
+    //Vector Ur(dim); // rotated
+    Tensor R(dim,dim);
+    Vector tmp(dim);
+
+    tag = point->getTag();
+
+    is_triple = is_in(tag, triple_tags);
+
+    if (!is_triple)
+      return;
+
+
+    iVs_end = mesh->connectedVtcs(point, iVs);
+
+    // se esse nó está na linha, então existe um vértice vizinho que está no sólido
+    for (iVs_it = iVs; iVs_it != iVs_end ; ++iVs_it)
+    {
+      sol_point = mesh->getNode(*iVs_it);
+      if ( is_in(sol_point->getTag(), solid_tags) )
+        break;
+    }
+    if (iVs_it == iVs_end)
+    {
+      //#pragma omp critical
+      {
+        printf("ERRO: ponto na linha tríplice não tem um vértice vizinho no sólido");
+        throw;
+      }
+    }
+
+    normal = solid_normal(X, current_time, tag);
+
+    point->getCoord(X.data());
+
+    sol_point->getCoord(aux.data());
+
+
+    // choose a line_normal candidate
+    line_normal(0) = -normal(1);
+    line_normal(1) =  normal(0);
+
+    // check orientation
+    if (line_normal.dot(X-aux) < 0)
+      line_normal *= -1;
+
+    dof_handler.getVariable(0).getVertexDofs(vtx_dofs_fluid.data(), &*point);
+
+    nodeid = mesh->getPointId(point);
+    getRotationMatrix(R, &nodeid, 1);
+
+    U.noalias() = R.transpose()*Ur;
+
+    FUloc(0) = (-gama(X, current_time, tag)*cos_theta0() + zeta(0,0)*line_normal.dot(U))*line_normal(0);
+    FUloc(1) = (-gama(X, current_time, tag)*cos_theta0() + zeta(0,0)*line_normal.dot(U))*line_normal(1);
+
+    nodeid = mesh->getPointId(&*point);
+
+    rotate_RA(R,FUloc,tmp);
+  }
+*/
 

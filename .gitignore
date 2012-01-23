@@ -4,4 +4,7 @@
 *.so
 *.d
 *.vtk
+main
+octave-core
+wx2cpp
 
