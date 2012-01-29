@@ -13,8 +13,8 @@ plot_es 1         # plot exact solution: true or false
 -theta 1.0        # time discretization theta method
 -quadr_c 4        # quadrature degree (cell)
 -quadr_f 3        # quadrature degree (facet)
--quadr_r 2        # quadrature degree (facet)
--quadr_e 8        # quadrature degree (facet)
+-quadr_r 2        # quadrature degree (corner)
+-quadr_e 8        # quadrature degree (exact)
 -ale 1
 
 # Petsc options
@@ -22,7 +22,7 @@ plot_es 1         # plot exact solution: true or false
 pc_composite_type multiplicative   # one of multiplicative, additive, special
 pc_composite_pcs ilu,ilu
 -ksp_type gmres                  # (one of) cg cgne nash stcg gltr richardson chebychev gmres tcqmr bcgs ibcgs bcgsl cgs tfqmr cr lsqr preonly qcg bicg fgmres minres symmlq lgmres lcd broyden gcr (KSPSetType)
--ksp_initial_guess_nonzero 1
+ksp_initial_guess_nonzero 1
 pc_factor_shift_type NONZERO
 pc_factor_shift_amount 1.e-10
 pc_factor_mat_ordering_type nd    # natural nd 1wd rcm qmd rowlength flow (PCFactorSetMatOrderingType)
@@ -34,9 +34,9 @@ pc_factor_in_place
 ksp_rtol 1e-11
 
 THREADS
-vec_type seqpthread
-mat_type seqaijpthread
-nthreads 4
+-vec_type seqpthread
+-mat_type seqaijpthread
+nthreads 1
 
 fp_trap 1           # stop on floating-point exceptions
 -on_error_abort 1

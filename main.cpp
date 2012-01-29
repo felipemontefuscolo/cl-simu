@@ -1406,7 +1406,7 @@ public:
     case( SNES_DIVERGED_LINE_SEARCH      ): printf("SNES_DIVERGED_LINE_SEARCH     /* the line search failed */ \n"); break;
     case( SNES_DIVERGED_LOCAL_MIN        ): printf("SNES_DIVERGED_LOCAL_MIN       /* || J^T b || is small, implies converged to local minimum of F() */\n"); break;
     case( SNES_CONVERGED_ITERATING       ): printf("SNES_CONVERGED_ITERATING      \n"); break;
-    case( SNES_DIVERGED_INNER            ): printf("SNES_DIVERGED_INNER           \n"); break;
+//    case( SNES_DIVERGED_INNER            ): printf("SNES_DIVERGED_INNER           \n"); break;
     }
 
     if (solve_the_sys)
@@ -1861,115 +1861,78 @@ public:
 
 
     //// LOOP CORNERS
-    //if (dim==2)
-    ////#pragma omp parallel shared(x,JJ,cout) default(none)
-    //{
-      //Real const eps = std::numeric_limits<Real>::epsilon();
-      //Real const eps_root = pow(eps,1./3.);
+    //#pragma omp parallel shared(x,JJ,cout) default(none)
+    {
+      Real const eps = std::numeric_limits<Real>::epsilon();
+      Real const eps_root = pow(eps,1./3.);
+      
+      int                 tag;
+      bool                is_triple;
 
-      //bool        is_triple;
-      //int         tag;
-      //int         n_dofs_u_per_corner = dim;
-      //Point       *point;
-      //Vector_i    mapU_r(dim);
-      //LocalMat_uu Aloc_r(n_dofs_u_per_corner, n_dofs_u_per_corner);
-      //Vector      FUloc_km1(dim);
-      //Vector      FUloc_kp1(dim);
-      //Vector      Ur_k(dim); // rotated
-      //Vector      Ur_kp1(dim); // rotated
-      //Vector      Ur_km1(dim); // rotated
-      //double      h;
-      //volatile    double hh;
+      Coefs_u             u_coefs_k(n_dofs_u_per_corner/dim, dim);
+      Coefs_u             u_coefs_kp1(n_dofs_u_per_corner/dim, dim);
+      Coefs_u             u_coefs_km1(n_dofs_u_per_corner/dim, dim);
+      LocalVec_u          FUloc_km1(n_dofs_u_per_corner);
+      LocalVec_u          FUloc_kp1(n_dofs_u_per_corner);
+      LocalMat_uu         Aloc_r(n_dofs_u_per_corner, n_dofs_u_per_corner);
+      Map_u               mapU_r(n_dofs_u_per_corner);
+      Map_p               mapP_r(n_dofs_p_per_corner);
+      double      h;
+      volatile    double hh;
 
-      ////#pragma omp for
-      //for (int i=0; i<mesh->numNodesTotal(); ++i)
-      //{
-        //point = mesh->getNode(i);
+      //const int tid = omp_get_thread_num();
+      //const int nthreads = omp_get_num_threads();
 
-        //tag = point->getTag();
+      // LOOP NAS ARESTAS DA LINHA TRIPLICE
+      corner_iterator corner = mesh->cornerBegin();
+      corner_iterator corner_end = mesh->cornerEnd();
 
-        //is_triple = (triple_tags.end() != std::find(triple_tags.begin(), triple_tags.end(), tag));
+      if (triple_tags.size() != 0)
+      for (; corner != corner_end; ++corner)
+      {
+        tag = corner->getTag();
+        is_triple = is_in(tag,triple_tags);
+        if (!is_triple)
+          continue;
 
-        //if (!is_triple)
-          //continue;
+        // mapeamento do local para o global:
+        //
+        dof_handler.getVariable(0).getCornerDofs(mapU_r.data(), &*corner);
+        dof_handler.getVariable(1).getCornerDofs(mapP_r.data(), &*corner);
 
-        //dof_handler.getVariable(0).getVertexDofs(mapU_r.data(), &*point);
-
-        //VecGetValues(x, dim, mapU_r.data(), Ur_k.data());
-
-        //h = max(Ur_k.norm(),1.)*eps_root;
-
-        //Ur_kp1 = Ur_k;
-        //Ur_km1 = Ur_k;
-        //for (int i = 0; i < n_dofs_u_per_corner; ++i)
-        //{
-          //Ur_kp1(i) += h;
-          //Ur_km1(i) -= h;
-          //hh = Ur_kp1(i) - Ur_km1(i);
-
-          ////formCornerFunction(point, Ur_kp1, FUloc_kp1);
-          ////formCornerFunction(point, Ur_km1, FUloc_km1);
-
-          //for (int l=0; l<n_dofs_u_per_corner; ++l)
-          //{
-            //Aloc_r(l,i) = (FUloc_kp1(l)-FUloc_km1(l))/hh;
-          //}
-
-        //}
-        ////cout << Aloc_r << " ..." <<  endl;
-        ////MatSetValues(*JJ, mapU_r.size(), mapU_r.data(), mapU_r.size(), mapU_r.data(), Aloc_r.data(),  ADD_VALUES);
-
-
-      //} //end nodes
-    //}
-    //else
-    //if (dim==3)
-    ////#pragma omp parallel shared(x,JJ,cout) default(none)
-    //{
-      //int                 tag;
-      //bool                is_triple;
-
-      //Coefs_u             u_coefs_r(n_dofs_u_per_corner/dim, dim);
-      //LocalVec_u          FUloc(n_dofs_u_per_corner);
-      //LocalMat_uu         Aloc_r(n_dofs_u_per_corner, n_dofs_u_per_corner);
-
-      //Map_u               mapU_r(n_dofs_u_per_corner);
-      //Map_p               mapP_r(n_dofs_p_per_corner);
-
-      ////const int tid = omp_get_thread_num();
-      ////const int nthreads = omp_get_num_threads();
-
-      //// LOOP NAS ARESTAS DA LINHA TRIPLICE
-      //corner_iterator corner = mesh->cornerBegin();
-      //corner_iterator corner_end = mesh->cornerEnd();
-
-      //if (triple_tags.size() != 0)
-      //for (; corner != corner_end; ++corner)
-      //{
-        //tag = corner->getTag();
-        //is_triple = is_in(tag,triple_tags);
-        //if (!is_triple)
-          //continue;
-
-        //// mapeamento do local para o global:
-        ////
-        //dof_handler.getVariable(0).getCornerDofs(mapU_r.data(), &*corner);
-        //dof_handler.getVariable(1).getCornerDofs(mapP_r.data(), &*corner);
-
-        //VecGetValues(x , mapU_r.size(), mapU_r.data(), u_coefs_r.data());
-
-        //formCornerFunction3d(corner,mapU_r,mapP_r,u_coefs_r,FUloc);
+        VecGetValues(x , mapU_r.size(), mapU_r.data(), u_coefs_k.data());
 
         //VecSetValues(f, mapU_r.size(), mapU_r.data(), FUloc.data(), ADD_VALUES);
+        
 
-      //}
+        h = max(u_coefs_k.norm(),1.)*eps_root;
+
+        for (int i = 0; i < n_dofs_u_per_corner; ++i)
+        {
+          u_coefs_kp1 = u_coefs_k;
+          u_coefs_km1 = u_coefs_k;
+
+          u_coefs_kp1(i) += h;
+          u_coefs_km1(i) -= h;
+          hh = u_coefs_kp1(i) - u_coefs_km1(i);
+
+          formCornerFunction(corner,mapU_r,mapP_r,u_coefs_kp1,FUloc_kp1);
+          formCornerFunction(corner,mapU_r,mapP_r,u_coefs_km1,FUloc_km1);
+
+          for (int l=0; l<n_dofs_u_per_corner; ++l)
+          {
+            Aloc_r(l,i) = (FUloc_kp1(l)-FUloc_km1(l))/hh;
+          }
+
+        }        
+        MatSetValues(*JJ, mapU_r.size(), mapU_r.data(), mapU_r.size(), mapU_r.data(), Aloc_r.data(),  ADD_VALUES);
+
+      }
       
 
 
 
-    //}
-
-
+    }
 
 
 
@@ -2359,7 +2322,6 @@ public:
       if (!ja_foi) View(f, "rhs.m","res");
       ja_foi = true;
     }
-
 
     Assembly(f);
 
@@ -2768,9 +2730,9 @@ public:
   // ***********
   // form the residue of the contact line (2D)
   void formCornerFunction(corner_iterator &corner,
-                            Map_u const&/*mapU_r*/,  Map_p const&/*mapP_r*/, // mappers
-                            Coefs_u &u_coefs_r, // coefficients
-                            LocalVec_u &FUloc)
+                          Map_u const&/*mapU_r*/,  Map_p const&/*mapP_r*/, // mappers
+                          Coefs_u &u_coefs_r, // coefficients
+                          LocalVec_u &FUloc)
   {
 
     bool                gen_error = false;
