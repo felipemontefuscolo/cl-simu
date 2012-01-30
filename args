@@ -1,21 +1,22 @@
--dim 3   				  # cell dimension (= space dimension)
--dt 1e-2         # time step
--renumber_dofs 0  # dofs renumbering
--maxts 100       # maximum number of time steps
--print_step 3     # print step
--has_convec 1     # convective term: true or false
--unsteady   1     # steady or unsteady problem
--beta1 0        # Vmesh = bet1 * Ufluid  +  bet2 * Uelastic
--beta2 1
-plot_es 1         # plot exact solution: true or false
--family_files 1   # plot output as 001, 002, 003, ...
--sst 1.e-8        # steady state tol (Unew-Uold)/(Unew)
--theta 1.0        # time discretization theta method
--quadr_c 4        # quadrature degree (cell)
--quadr_f 3        # quadrature degree (facet)
--quadr_r 2        # quadrature degree (corner)
--quadr_e 8        # quadrature degree (exact)
--ale 1
+-dim 3   				      # cell dimension (= space dimension)
+-dt 1e-2              # time step
+-renumber_dofs 0      # dofs renumbering
+-maxts 100            # maximum number of time steps
+-print_step 3         # print step
+-has_convec 1         # convective term: true or false
+-unsteady   1         # steady or unsteady problem
+-boundary_smoothing 0  
+-beta1 0              # Vmesh = bet1 * Ufluid  +  bet2 * Uelastic
+-beta2 1  
+plot_es 1             # plot exact solution: true or false
+-family_files 1       # plot output as 001, 002, 003, ...
+-sst 1.e-8            # steady state tol (Unew-Uold)/(Unew)
+-theta 1.0            # time discretization theta method
+-quadr_c 4            # quadrature degree (cell)
+-quadr_f 3            # quadrature degree (facet)
+-quadr_r 2            # quadrature degree (corner)
+-quadr_e 8            # quadrature degree (exact)
+-ale 1                # 
 
 # Petsc options
 -pc_type asm                        # Preconditioner (one of) none jacobi pbjacobi bjacobi sor lu shell mg eisenstat ilu icc cholesky asm ksp composite redundant nn mat fieldsplit galerkin exotic openmp asa cp bfbt lsc redistribute tfs (PCSetType)
@@ -34,8 +35,8 @@ pc_factor_in_place
 ksp_rtol 1e-11
 
 THREADS
--vec_type seqpthread
--mat_type seqaijpthread
+vec_type seqpthread
+mat_type seqaijpthread
 nthreads 1
 
 fp_trap 1           # stop on floating-point exceptions

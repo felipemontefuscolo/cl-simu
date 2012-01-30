@@ -13,15 +13,16 @@
  */
 
 #include <Fepic/Mesh>
-#include <Fepic/Shape>
 #include <Fepic/Quadrature>
 #include <Fepic/DofHandler>
+#include <Fepic/Shape>
+#include <Eigen/LU>
 #include "petscsnes.h"
 #include <iostream>
 #include <tr1/memory>
 #include <tr1/array>
 #include "mypetsc.hpp"
-#include <Eigen/LU>
+
 
 //#ifdef EIGEN_HAS_OPENMP
 //#undef EIGEN_HAS_OPENMP
@@ -168,6 +169,19 @@ public:
   virtual ~GetDataPressCellVersion() {}
 };
 
+
+template<int Coord>
+class GetDataNormal : public DefaultGetDataVtk
+{
+public:
+  GetDataNormal(double *q_array_, AppCtx const& user_) : user(user_), q_array(q_array_){}
+  double get_data_r(int nodeid) const;
+  AppCtx const& user;
+  double *q_array;
+  virtual ~GetDataNormal() {}
+};
+
+
 class AppCtx
 {
 public:
@@ -217,12 +231,12 @@ public:
     timer.restart();
     dofsUpdate();
     timer.elapsed("CuthillMcKeeRenumber");
-    n_dofs_u_per_cell   = dof_handler.getVariable(0).numDofsPerCell();
-    n_dofs_u_per_facet  = dof_handler.getVariable(0).numDofsPerFacet();
-    n_dofs_u_per_corner = dof_handler.getVariable(0).numDofsPerCorner();
-    n_dofs_p_per_cell   = dof_handler.getVariable(1).numDofsPerCell();
-    n_dofs_p_per_facet  = dof_handler.getVariable(1).numDofsPerFacet();
-    n_dofs_p_per_corner = dof_handler.getVariable(1).numDofsPerCorner();
+    n_dofs_u_per_cell   = dof_handler_vars.getVariable(0).numDofsPerCell();
+    n_dofs_u_per_facet  = dof_handler_vars.getVariable(0).numDofsPerFacet();
+    n_dofs_u_per_corner = dof_handler_vars.getVariable(0).numDofsPerCorner();
+    n_dofs_p_per_cell   = dof_handler_vars.getVariable(1).numDofsPerCell();
+    n_dofs_p_per_facet  = dof_handler_vars.getVariable(1).numDofsPerFacet();
+    n_dofs_p_per_corner = dof_handler_vars.getVariable(1).numDofsPerCorner();
   }
 
   void setUpDefaultOptions()
@@ -235,6 +249,7 @@ public:
     //Re                     = 0.0;
     dt                     = 0.1;
     unsteady               = PETSC_TRUE;
+    boundary_smoothing     = PETSC_TRUE;
     steady_tol             = 1.e-6;
     theta                  = 1;      // time step, theta method
     maxts                  = 1500;   // max num of time steps
@@ -290,6 +305,7 @@ public:
     PetscOptionsBool("-family_files", "plot family output", "main.cpp", family_files, &family_files, PETSC_NULL);
     PetscOptionsBool("-has_convec", "convective term", "main.cpp", has_convec, &has_convec, PETSC_NULL);
     PetscOptionsBool("-unsteady", "unsteady problem", "main.cpp", unsteady, &unsteady, PETSC_NULL);
+    PetscOptionsBool("-boundary_smoothing", "boundary_smoothing", "main.cpp", boundary_smoothing, &boundary_smoothing, PETSC_NULL);
     PetscOptionsBool("-renumber_dofs", "renumber dofs", "main.cpp", renumber_dofs, &renumber_dofs, PETSC_NULL);
     PetscOptionsInt("-quadr_e", "quadrature degree (for calculating the error)", "main.cpp", quadr_degree_err, &quadr_degree_err, PETSC_NULL);
     PetscOptionsInt("-quadr_c", "quadrature degree", "main.cpp", quadr_degree_cell, &quadr_degree_cell, PETSC_NULL);
@@ -481,7 +497,7 @@ public:
     quadr_corner.reset( Quadrature::create(facetof(facetof(ECellType(ct)))) );
     quadr_corner->setOrder(quadr_degree_corner);
     n_qpts_corner = quadr_corner->numPoints();
-    
+
 
     quadr_err.reset( Quadrature::create(ECellType(ct)) );
     quadr_err->setOrder(quadr_degree_err);
@@ -507,32 +523,33 @@ public:
   void dofsCreate()
   {
     // dof handler create
-    dof_handler.setMesh(mesh.get());
-    dof_handler.addVariable("velo",  shape_phi_c.get(), dim);
-    dof_handler.addVariable("pres",  shape_psi_c.get(), 1);
+    dof_handler_vars.setMesh(mesh.get());
+    dof_handler_vars.addVariable("velo",  shape_phi_c.get(), dim);
+    dof_handler_vars.addVariable("pres",  shape_psi_c.get(), 1);
     Matrix<bool, Dynamic, Dynamic> blocks(2,2);
     blocks.setOnes();
     blocks(1,1)=pres_pres_block;
-    dof_handler.setVariablesRelationship(blocks.data());
+    dof_handler_vars.setVariablesRelationship(blocks.data());
 
     // mesh velocity
-    dof_hand_mesh.setMesh(mesh.get());
-    dof_hand_mesh.addVariable("mesh_veloc",  shape_qsi_c.get(), dim);
-    dof_hand_mesh.setVariablesRelationship(blocks.data());
+    dof_handler_mesh.setMesh(mesh.get());
+    dof_handler_mesh.addVariable("mesh_veloc",  shape_phi_c.get(), dim);
+    dof_handler_mesh.setVariablesRelationship(blocks.data());
   }
 
   void dofsUpdate()
   {
-    dof_handler.SetUp();
+    dof_handler_vars.SetUp();
     if (renumber_dofs)
-      dof_handler.CuthillMcKeeRenumber();
-    n_unknowns = dof_handler.numDofs();
-    dof_hand_mesh.SetUp();
-    n_dofs_u_mesh = dof_hand_mesh.numDofs();
+      dof_handler_vars.CuthillMcKeeRenumber();
+    n_unknowns = dof_handler_vars.numDofs();
+    dof_handler_mesh.SetUp();
+    n_dofs_u_mesh = dof_handler_mesh.numDofs();
   }
 
   PetscErrorCode allocPetscObjs()
   {
+
     PetscErrorCode      ierr;
     ierr = SNESCreate(PETSC_COMM_WORLD, &snes);                   CHKERRQ(ierr);
 
@@ -561,10 +578,15 @@ public:
     ierr = VecSetSizes(x_mesh, PETSC_DECIDE, n_dofs_u_mesh);      CHKERRQ(ierr);
     ierr = VecSetFromOptions(x_mesh);                             CHKERRQ(ierr);
 
+    //Vec nml_mesh;
+    ierr = VecCreate(PETSC_COMM_WORLD, &nml_mesh);                  CHKERRQ(ierr);
+    ierr = VecSetSizes(nml_mesh, PETSC_DECIDE, n_dofs_u_mesh);      CHKERRQ(ierr);
+    ierr = VecSetFromOptions(nml_mesh);                             CHKERRQ(ierr);
+
     VectorXi nnz;
     {
       std::vector<std::set<int> > table;
-      dof_handler.getSparsityTable(table);
+      dof_handler_vars.getSparsityTable(table);
 
       nnz.resize(n_unknowns);
 
@@ -575,11 +597,11 @@ public:
       // removendo a diagonal nula
       if (!pres_pres_block)
       {
-        int const n_p_dofs_total = dof_handler.getVariable(1).totalSize();
+        int const n_p_dofs_total = dof_handler_vars.getVariable(1).totalSize();
         //#pragma omp parallel for
         for (int i = 0; i < n_p_dofs_total; ++i)
         {
-          int const dof = dof_handler.getVariable(1).data()[i];
+          int const dof = dof_handler_vars.getVariable(1).data()[i];
           if (dof >= 0)
             ++nnz[dof];
         }
@@ -641,8 +663,8 @@ public:
     for (; cell != cell_end; ++cell)
     {
       // mapeamento do local para o global:
-      dof_handler.getVariable(0).getCellDofs(mapU_c.data(), &*cell);
-      dof_handler.getVariable(1).getCellDofs(mapP_c.data(), &*cell);
+      dof_handler_vars.getVariable(0).getCellDofs(mapU_c.data(), &*cell);
+      dof_handler_vars.getVariable(1).getCellDofs(mapP_c.data(), &*cell);
 
 
       MatSetValues(Jac, mapU_c.size(), mapU_c.data(), mapU_c.size(), mapU_c.data(), Aloc.data(), ADD_VALUES);
@@ -660,11 +682,11 @@ public:
 
     if (!pres_pres_block)
     {
-      int const n_p_dofs_total = dof_handler.getVariable(1).totalSize();
+      int const n_p_dofs_total = dof_handler_vars.getVariable(1).totalSize();
       for (int i = 0; i < n_p_dofs_total; ++i)
       {
         const double zero = 0.0;
-        int const dof = dof_handler.getVariable(1).data()[i];
+        int const dof = dof_handler_vars.getVariable(1).data()[i];
         if (dof>=0)
           MatSetValue(Jac, dof, dof, zero, ADD_VALUES);
       }
@@ -686,8 +708,8 @@ public:
     fprintf(fp, "clear zzz;\n"               );
     fprintf(fp, "B=Jac;\n"                   );
     fprintf(fp, "B(B!=0)=1;\n"               );
-    fprintf(fp, "nU = %d;\n",dof_handler.getVariable(0).numDofs() );
-    fprintf(fp, "nP = %d;\n",dof_handler.getVariable(1).numDofs() );
+    fprintf(fp, "nU = %d;\n",dof_handler_vars.getVariable(0).numDofs() );
+    fprintf(fp, "nP = %d;\n",dof_handler_vars.getVariable(1).numDofs() );
     fprintf(fp, "nT = nU + nP;\n"            );
     fprintf(fp, "K=Jac(1:nU,1:nU);\n"        );
     fprintf(fp, "G=Jac(1:nU,nU+1:nT);\n"     );
@@ -930,6 +952,41 @@ public:
     qsi_c_at_center.resize(nodes_per_cell);
     for (int i = 0; i < nodes_per_cell; ++i)
       qsi_c_at_center(i) = shape_qsi_c->eval(Xc.data(), i);
+
+    // facets func derivatives on your nodes
+    if (dim==2)
+    {
+      std::vector<Eigen::Vector2d> tri_parametric_pts;
+      tri_parametric_pts = genTriParametricPts(  orderForCtype(ECellType(mesh_cell_type))  );
+
+      dLphi_nf.resize(tri_parametric_pts.size());
+
+      for (int k = 0; k < (int)tri_parametric_pts.size(); ++k)
+      {
+        dLphi_nf[k].resize(n_dofs_u_per_facet/dim, dim-1);
+        for (int n = 0; n < n_dofs_u_per_facet/dim; ++n)
+          for (int d = 0; d < dim-1; ++d)
+            dLphi_nf[k](n, d) = shape_phi_f->gradL(tri_parametric_pts[k].data(), n, d);
+      }
+    }
+    else
+    if(dim==3)
+    {
+      std::vector<Eigen::Vector3d> tet_parametric_pts;
+      tet_parametric_pts = genTetParametricPts(  orderForCtype(ECellType(mesh_cell_type))  );
+
+      dLphi_nf.resize(tet_parametric_pts.size());
+
+      for (int k = 0; k < (int)tet_parametric_pts.size(); ++k)
+      {
+        dLphi_nf[k].resize(n_dofs_u_per_facet/dim, dim-1);
+        for (int n = 0; n < n_dofs_u_per_facet/dim; ++n)
+          for (int d = 0; d < dim-1; ++d)
+            dLphi_nf[k](n, d) = shape_phi_f->gradL(tet_parametric_pts[k].data(), n, d);
+      }
+    }
+
+
 
   }
 
@@ -1201,7 +1258,7 @@ public:
       for (int i = xadj[0]; i < xadj[1]; i++)
       {
         point = mesh->getNode(dir_vertices[i]);
-        dof_handler.getVariable(0).getVertexAssociatedDofs(vertice_dofs.data(), point);
+        dof_handler_vars.getVariable(0).getVertexAssociatedDofs(vertice_dofs.data(), point);
         for (int c = 0; c < dim; ++c)
         {
           dir_entries.at(i*dim + c) = vertice_dofs[c];
@@ -1212,7 +1269,7 @@ public:
       for (int i = xadj[1]; i < xadj[2]; i++)
       {
         corner = mesh->getCorner(dir_corners[i-xadj[1]]);
-        dof_handler.getVariable(0).getCornerAssociatedDofs(corner_dofs.data(), corner);
+        dof_handler_vars.getVariable(0).getCornerAssociatedDofs(corner_dofs.data(), corner);
         for (int c = 0; c < dim; ++c)
           dir_entries.at(i*dim + c) = corner_dofs[c];
       }
@@ -1221,7 +1278,7 @@ public:
       for (int i = xadj[2]; i < xadj[3]; i++)
       {
         facet = mesh->getFacet(dir_facets[i-xadj[2]]);
-        dof_handler.getVariable(0).getFacetAssociatedDofs(facet_dofs.data(), facet);
+        dof_handler_vars.getVariable(0).getFacetAssociatedDofs(facet_dofs.data(), facet);
         for (int c = 0; c < dim; ++c)
           dir_entries.at(i*dim + c) = facet_dofs[c];
       }
@@ -1232,7 +1289,7 @@ public:
       for (int i = xadj[3]; i < xadj[4]; i++)
       {
         point = mesh->getNode(dir_normal_vertices[i-xadj[3]]);
-        dof_handler.getVariable(0).getVertexAssociatedDofs(vertice_dofs.data(), point);
+        dof_handler_vars.getVariable(0).getVertexAssociatedDofs(vertice_dofs.data(), point);
         dir_entries.at(shift + i) = vertice_dofs[0];
       }
 
@@ -1240,7 +1297,7 @@ public:
       for (int i = xadj[4]; i < xadj[5]; i++)
       {
         corner = mesh->getCorner(dir_normal_corners[i-xadj[4]]);
-        dof_handler.getVariable(0).getCornerAssociatedDofs(corner_dofs.data(), corner);
+        dof_handler_vars.getVariable(0).getCornerAssociatedDofs(corner_dofs.data(), corner);
         dir_entries.at(shift + i) = corner_dofs[0];
       }
 
@@ -1248,7 +1305,7 @@ public:
       for (int i = xadj[5]; i < xadj[6]; i++)
       {
         facet = mesh->getFacet(dir_normal_facets[i-xadj[5]]);
-        dof_handler.getVariable(0).getFacetAssociatedDofs(facet_dofs.data(), facet);
+        dof_handler_vars.getVariable(0).getFacetAssociatedDofs(facet_dofs.data(), facet);
         dir_entries.at(shift + i) = facet_dofs[0];
       }
 
@@ -1260,9 +1317,9 @@ public:
     {
       int p_dof=-1;
       // find first valid dof
-      for (int i = 0; p_dof<0 && i<dof_handler.getVariable(1).totalSize(); ++i)
+      for (int i = 0; p_dof<0 && i<dof_handler_vars.getVariable(1).totalSize(); ++i)
       {
-        p_dof = dof_handler.getVariable(1).data()[i];
+        p_dof = dof_handler_vars.getVariable(1).data()[i];
       }
       dir_entries.at(dim*xadj[xadj_size-1]) = p_dof;
     }
@@ -1307,12 +1364,20 @@ public:
     double steady_error=1;
     do
     {
+      VecCopy(q,q0); // q0 <- q
+      if (ale) {
+        calcMeshVelocity(q);
+      }
+
+
       if ((time_step%print_step) == 0)
       {
         if (family_files)
         {
           double  *q_array;
+          double  *nml_array;
           VecGetArray(q, &q_array);
+          VecGetArray(nml_mesh, &nml_array);
           vtk_printer.writeVtk();
           vtk_printer.addNodeScalarVtk("u_x",  GetDataVelocity<0>(q_array, *this));
           vtk_printer.addNodeScalarVtk("u_y",  GetDataVelocity<1>(q_array, *this));
@@ -1322,19 +1387,22 @@ public:
             vtk_printer.addCellScalarVtk("pressure", GetDataPressCellVersion(q_array, *this));
           else
             vtk_printer.addNodeScalarVtk("pressure", GetDataPressure(q_array, *this));
-          vtk_printer.printPointTagVtk("point_tag");
+
+          vtk_printer.addNodeScalarVtk("n_x",  GetDataNormal<0>(nml_array, *this));
+          vtk_printer.addNodeScalarVtk("n_y",  GetDataNormal<1>(nml_array, *this));
+          if (dim==3)
+            vtk_printer.addNodeScalarVtk("n_z",   GetDataNormal<2>(nml_array, *this));
+
+          //vtk_printer.printPointTagVtk("point_tag");
           VecRestoreArray(q, &q_array);
+          VecRestoreArray(nml_mesh, &nml_array);
         }
+
 
         cout << endl;
         cout << "current time: " << current_time << endl;
         cout << "time step: "    << time_step  << endl;
         cout << "steady error: " << steady_error << endl << endl;
-      }
-
-      VecCopy(q,q0); // q0 <- q
-      if (ale) {
-        calcMeshVelocity(q);
       }
 
       if (solve_the_sys)
@@ -1354,34 +1422,6 @@ public:
       steady_error = VecNorm(q0, NORM_1)/(Umax==0.?1.:Umax);
     }
     while (time_step < maxts && steady_error > steady_tol);
-
-    // print again
-    //if (!family_files)
-    {
-      double  *q_array;
-      VecGetArray(q, &q_array);
-
-      vtk_printer.writeVtk();
-      vtk_printer.addNodeScalarVtk("u_x",  GetDataVelocity<0>(q_array, *this));
-      vtk_printer.addNodeScalarVtk("u_y",  GetDataVelocity<1>(q_array, *this));
-      if (dim==3)
-        vtk_printer.addNodeScalarVtk("u_z",   GetDataVelocity<2>(q_array, *this));
-      if (shape_psi_c->discontinuous())
-        vtk_printer.addCellScalarVtk("pressure", GetDataPressCellVersion(q_array, *this));
-      else
-        vtk_printer.addNodeScalarVtk("pressure", GetDataPressure(q_array, *this));
-      vtk_printer.printPointTagVtk("point_tag");
-      VecRestoreArray(q, &q_array);
-
-
-      VecRestoreArray(q, &q_array);
-
-      cout << endl;
-      cout << "current time: " << current_time << endl;
-      cout << "time step: "    << time_step  << endl;
-      cout << "steady error: " << steady_error << endl << endl;
-    }
-
 
 
     SNESConvergedReason reason;
@@ -1533,9 +1573,9 @@ public:
 
           // mapeamento do local para o global:
           //
-          dof_handler.getVariable(0).getCellDofs(mapU_c.data(), &*cell);
-          dof_handler.getVariable(1).getCellDofs(mapP_c.data(), &*cell);
-          dof_hand_mesh.getVariable(0).getCellDofs(mapM_c.data(), &*cell);
+          dof_handler_vars.getVariable(0).getCellDofs(mapU_c.data(), &*cell);
+          dof_handler_vars.getVariable(1).getCellDofs(mapP_c.data(), &*cell);
+          dof_handler_mesh.getVariable(0).getCellDofs(mapM_c.data(), &*cell);
 
           /*  Pega os valores das variáveis nos graus de liberdade */
           VecGetValues(x , mapU_c.size(), mapU_c.data(), u_coefs_c_new.data());
@@ -1807,8 +1847,8 @@ public:
 
         if ( (!is_surface) ) continue;
 
-        dof_handler.getVariable(0).getFacetDofs(mapU_f.data(), &*facet);
-        dof_handler.getVariable(1).getFacetDofs(mapP_f.data(), &*facet);
+        dof_handler_vars.getVariable(0).getFacetDofs(mapU_f.data(), &*facet);
+        dof_handler_vars.getVariable(1).getFacetDofs(mapP_f.data(), &*facet);
 
         mesh->getFacetNodesId(&*facet, facet_nodes.data());
         mesh->getNodesCoords(facet_nodes.begin(), facet_nodes.end(), x_coefs_f.data());
@@ -1856,7 +1896,7 @@ public:
 
 
       }
-      
+
     } // end parallel
 
 
@@ -1865,7 +1905,7 @@ public:
     {
       Real const eps = std::numeric_limits<Real>::epsilon();
       Real const eps_root = pow(eps,1./3.);
-      
+
       int                 tag;
       bool                is_triple;
 
@@ -1897,13 +1937,13 @@ public:
 
         // mapeamento do local para o global:
         //
-        dof_handler.getVariable(0).getCornerDofs(mapU_r.data(), &*corner);
-        dof_handler.getVariable(1).getCornerDofs(mapP_r.data(), &*corner);
+        dof_handler_vars.getVariable(0).getCornerDofs(mapU_r.data(), &*corner);
+        dof_handler_vars.getVariable(1).getCornerDofs(mapP_r.data(), &*corner);
 
         VecGetValues(x , mapU_r.size(), mapU_r.data(), u_coefs_k.data());
 
         //VecSetValues(f, mapU_r.size(), mapU_r.data(), FUloc.data(), ADD_VALUES);
-        
+
 
         h = max(u_coefs_k.norm(),1.)*eps_root;
 
@@ -1924,11 +1964,11 @@ public:
             Aloc_r(l,i) = (FUloc_kp1(l)-FUloc_km1(l))/hh;
           }
 
-        }        
+        }
         MatSetValues(*JJ, mapU_r.size(), mapU_r.data(), mapU_r.size(), mapU_r.data(), Aloc_r.data(),  ADD_VALUES);
 
       }
-      
+
 
 
 
@@ -1999,8 +2039,8 @@ public:
 
           // mapeamento do local para o global:
           //
-          dof_handler.getVariable(0).getCellDofs(mapU_c.data(), &*cell);
-          dof_handler.getVariable(1).getCellDofs(mapP_c.data(), &*cell);
+          dof_handler_vars.getVariable(0).getCellDofs(mapU_c.data(), &*cell);
+          dof_handler_vars.getVariable(1).getCellDofs(mapP_c.data(), &*cell);
 
           /*  Pega os valores das variáveis nos graus de liberdade */
           VecGetValues(x , mapU_c.size(), mapU_c.data(), u_coefs_c_new.data());
@@ -2067,8 +2107,8 @@ public:
 
           // mapeamento do local para o global:
           //
-          dof_handler.getVariable(0).getFacetDofs(mapU_f.data(), &*facet);
-          dof_handler.getVariable(1).getFacetDofs(mapP_f.data(), &*facet);
+          dof_handler_vars.getVariable(0).getFacetDofs(mapU_f.data(), &*facet);
+          dof_handler_vars.getVariable(1).getFacetDofs(mapP_f.data(), &*facet);
 
           VecGetValues(x , mapU_f.size(), mapU_f.data(), u_coefs_f.data());
 
@@ -2114,8 +2154,8 @@ public:
 
         // mapeamento do local para o global:
         //
-        dof_handler.getVariable(0).getCornerDofs(mapU_r.data(), &*corner);
-        dof_handler.getVariable(1).getCornerDofs(mapP_r.data(), &*corner);
+        dof_handler_vars.getVariable(0).getCornerDofs(mapU_r.data(), &*corner);
+        dof_handler_vars.getVariable(1).getCornerDofs(mapP_r.data(), &*corner);
 
         VecGetValues(x , mapU_r.size(), mapU_r.data(), u_coefs_r.data());
 
@@ -2163,7 +2203,7 @@ public:
         point->getCoord(X.data());
         tag = point->getTag();
         temp = u_boundary(X, current_time, tag);
-        dof_handler.getVariable(0).getVertexAssociatedDofs(u_vtx_dofs, point);
+        dof_handler_vars.getVariable(0).getVertexAssociatedDofs(u_vtx_dofs, point);
         for (int d = 0; d < dim; d++)
         {
           idx =  u_vtx_dofs[d];
@@ -2193,7 +2233,7 @@ public:
           tag = facet->getTag();
         }
         temp = u_boundary(X, current_time, tag);
-        dof_handler.getVariable(0).getFacetAssociatedDofs(u_facet_dofs, &*facet);
+        dof_handler_vars.getVariable(0).getFacetAssociatedDofs(u_facet_dofs, &*facet);
         for (int d = 0; d < dim; d++)
         {
           idx =  u_facet_dofs[d];
@@ -2221,7 +2261,7 @@ public:
           tag = corner->getTag();
         }
         temp = u_boundary(X, current_time, tag);
-        dof_handler.getVariable(0).getCornerAssociatedDofs(u_corner_dofs, corner);
+        dof_handler_vars.getVariable(0).getCornerAssociatedDofs(u_corner_dofs, corner);
         for (int d = 0; d < dim; d++)
         {
           idx =  u_corner_dofs[d];
@@ -2240,7 +2280,7 @@ public:
         point->getCoord(X.data());
         tag = point->getTag();
         //temp = u_boundary(X, current_time, tag);
-        dof_handler.getVariable(0).getVertexAssociatedDofs(u_vtx_dofs, point);
+        dof_handler_vars.getVariable(0).getVertexAssociatedDofs(u_vtx_dofs, point);
         idx =  u_vtx_dofs[0];
         VecGetValues(x, 1, &idx, &value);
         VecSetValue(f, idx, (value - 0), INSERT_VALUES);
@@ -2269,7 +2309,7 @@ public:
           tag = facet->getTag();
         }
         //temp = u_boundary(X, current_time, tag);
-        dof_handler.getVariable(0).getFacetAssociatedDofs(u_facet_dofs, &*facet);
+        dof_handler_vars.getVariable(0).getFacetAssociatedDofs(u_facet_dofs, &*facet);
         idx =  u_facet_dofs[0];
         VecGetValues(x, 1, &idx, &value);
         VecSetValue(f, idx, (value - 0), INSERT_VALUES);
@@ -2295,7 +2335,7 @@ public:
           tag = corner->getTag();
         }
         //temp = u_boundary(X, current_time, tag);
-        dof_handler.getVariable(0).getCornerAssociatedDofs(u_corner_dofs, corner);
+        dof_handler_vars.getVariable(0).getCornerAssociatedDofs(u_corner_dofs, corner);
         idx =  u_corner_dofs[0];
         VecGetValues(x, 1, &idx, &value);
         VecSetValue(f, idx, (value - 0), INSERT_VALUES);
@@ -2402,7 +2442,7 @@ public:
     tag = cell->getTag();
 
     // get coeficients of the mesh velocity and the old velocity (time step n)
-    dof_hand_mesh.getVariable(0).getCellDofs(mapM_c.data(), &*cell);
+    dof_handler_mesh.getVariable(0).getCellDofs(mapM_c.data(), &*cell);
 
     VecGetValues(u_mesh, mapM_c.size(), mapM_c.data(), v_coefs_c_old.data());
     VecGetValues(q0,     mapU_c.size(), mapU_c.data(), u_coefs_c_old.data());
@@ -2821,7 +2861,7 @@ public:
         printf("ERROR!: solid point not found\n");
         throw;
       }
-      
+
 
       mesh->getNode(corner_nodes(0))->getCoord(point_a.data());
       mesh->getNode(corner_nodes(1))->getCoord(point_b.data());
@@ -3144,8 +3184,8 @@ public:
 
       // mapeamento do local para o global:
       //
-      dof_handler.getVariable(0).getCellDofs(mapU_c.data(), &*cell);
-      dof_handler.getVariable(1).getCellDofs(mapP_c.data(), &*cell);
+      dof_handler_vars.getVariable(0).getCellDofs(mapU_c.data(), &*cell);
+      dof_handler_vars.getVariable(1).getCellDofs(mapP_c.data(), &*cell);
 
       /*  Pega os valores das variáveis nos graus de liberdade */
       VecGetValues(qq, mapU_c.size(), mapU_c.data(), u_coefs_c.data());
@@ -3275,18 +3315,151 @@ public:
 
   }
 
+  void getNormalsFromMesh(Vec *x_mesh)
+  {
+
+    LocalNodes          facet_nodes(nodes_per_facet);
+    Coefs_x             x_coefs(nodes_per_facet, dim);                // coordenadas nodais da célula
+    Coefs_xt            x_coefs_trans(dim, nodes_per_facet);
+    Vector              X;
+    Vector              normal(dim);
+    Tensor              F(dim,dim-1);
+    Map_u               map(n_dofs_u_per_facet);
+    //bool                is_surface, is_solid;
+    int                 tag;
+    bool                virtual_mesh;
+
+    if (x_mesh==NULL)
+      virtual_mesh = false;
+    else
+      virtual_mesh = true;
+
+
+    // LOOP NAS FACES DO CONTORNO
+    facet_iterator facet = mesh->facetBegin();
+    facet_iterator facet_end = mesh->facetEnd();
+    for (; facet != facet_end; ++facet)
+    {
+      tag = facet->getTag();
+
+
+      if (!mesh->inBoundary(&*facet))
+        continue;
+
+      //is_surface = is_in(tag, interface_tags);
+      //is_solid   = is_in(tag, solid_tags);
+      //
+      //if ( !is_surface && !is_solid)
+      //  continue;
+
+      dof_handler_mesh.getVariable(0).getFacetDofs(map.data(), &*facet);
+
+      mesh->getFacetNodesId(&*facet, facet_nodes.data());
+      if (virtual_mesh)
+        VecGetValues(*x_mesh, map.size(), map.data(), x_coefs.data());
+      else
+        mesh->getNodesCoords(facet_nodes.begin(), facet_nodes.end(), x_coefs.data());
+      x_coefs_trans = x_coefs.transpose();
+
+      // find the normal
+      for (int k = 0; k < nodes_per_facet; ++k)
+      {
+        tag = mesh->getNode(facet_nodes(k))->getTag();
+
+        if (is_in(tag, solid_tags))
+          continue;
+
+        F.noalias()   = x_coefs_trans * dLphi_nf[k];
+
+        if (dim==2)
+        {
+          normal(0) = +F(1,0);
+          normal(1) = -F(0,0);
+        }
+        else
+        {
+          normal = F.col(0);
+          X = F.col(1);
+          // a = a x b
+          cross(normal, X);
+        }
+
+        VecSetValues(nml_mesh, dim, map.data()+k*dim, normal.data(), ADD_VALUES);
+
+
+      } // nodes
+
+    }
+    Assembly(nml_mesh);
+
+    point_iterator point = mesh->pointBegin();
+    point_iterator point_end = mesh->pointEnd();
+    for (; point != point_end; ++point)
+    {
+      tag = point->getTag();
+
+      if (!mesh->inBoundary(&*point))
+        continue;
+
+      if (!mesh->isVertex(&*point))
+      {
+        const int m = point->getPosition() - mesh->numVerticesPerCell();
+        Cell const* cell = mesh->getCell(point->getIncidCell());
+        if (dim==3)
+        {
+          const int edge_id = cell->getCornerId(m);
+          Corner const* corner = mesh->getCorner(edge_id);
+          dof_handler_mesh.getVariable(0).getCornerAssociatedDofs(map.data(), corner);
+        }
+        else
+        {
+          const int edge_id = cell->getFacetId(m);
+          Facet const* facet = mesh->getFacet(edge_id);
+          dof_handler_mesh.getVariable(0).getFacetAssociatedDofs(map.data(), facet);
+        }
+      }
+      else
+        dof_handler_mesh.getVariable(0).getVertexDofs(map.data(), &*point);
+
+      if (!is_in(tag, solid_tags) && !is_in(tag, triple_tags))
+      {
+        VecGetValues(nml_mesh, dim, map.data(),normal.data());
+        normal.normalize();
+        VecSetValues(nml_mesh, dim, map.data(),normal.data(), INSERT_VALUES);
+        Assembly(nml_mesh);
+      }
+      else
+      {
+        if (virtual_mesh)
+          VecGetValues(*x_mesh, dim, map.data(), X.data());
+        else
+          point->getCoord(X.data());
+        normal = -solid_normal(X,current_time,tag);
+
+        VecSetValues(nml_mesh, dim, map.data(), normal.data(), INSERT_VALUES);
+
+      }
+
+    }
+
+
+
+  }
+
   // @param[in] q unknows vector with fluid velocity
   // @param[out] u_mesh
   PetscErrorCode calcMeshVelocity(Vec const& q)
   {
     int        nodeid;
-    double     *x_mesh_array;
+    //double     *x_mesh_array;
     bool const u_has_edge_assoc_dof = shape_phi_c->numDofsAssociatedToFacet()+shape_phi_c->numDofsAssociatedToCorner() > 0;
 
     Vector     Xm(dim); // X mean
     Vector     Xi(dim);
+    Vector     dX(dim);
+    Vector     normal(dim);
     Vector     tmp(dim), tmp2(dim);
-    Vector     U(dim), Ue(dim), Umsh(dim); // Ue := elastic velocity
+    Vector     Uf(dim), Ue(dim), Umsh(dim); // Ue := elastic velocity
     int        tag;
     int        iVs[128], *iVs_end;
     Vector_i   vtx_dofs_umesh(dim);  // indices de onde pegar a velocidade
@@ -3295,86 +3468,212 @@ public:
     LocalNodes edge_dofs_fluid((2+u_has_edge_assoc_dof)*dim);
     Vector_i   edge_nodes(3);
     Tensor     R(dim,dim);
+    bool       in_boundary;
+    int        id;
 
-    VecGetArray(x_mesh, &x_mesh_array);
+    //VecGetArray(x_mesh, &x_mesh_array);
 
-    // valor inicial da suavização laplaciana
+    //
+    // Initial guess for laplacian smoothing.
+    // Note that LS is done at timestep n+1.
+    //
     point_iterator point = mesh->pointBegin();
     point_iterator point_end = mesh->pointEnd();
     for (; point != point_end; ++point)
     {
       if (!mesh->isVertex(&*point))
           continue;
-      dof_hand_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh.data(), &*point);
+      dof_handler_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh.data(), &*point);
+      dof_handler_vars.getVariable(0).getVertexDofs(vtx_dofs_fluid.data(), &*point);
+      VecGetValues(q, dim, vtx_dofs_fluid.data(), Uf.data());
+      id = mesh->getPointId(&*point);
+      getRotationMatrix(R,&id,1);
       point->getCoord(Xi.data());
-      MyVecSetValues(x_mesh_array, dim, vtx_dofs_umesh.data(), Xi.data());
-      // debug
-      //VecSetValues(x_mesh, dim, vtx_dofs_umesh.data(), Xi.data(), INSERT_VALUES);
+      Xi += R.transpose()*Uf*dt;
+      VecSetValues(x_mesh, dim, vtx_dofs_umesh.data(), Xi.data(), INSERT_VALUES);
+    }
+    if (dim==2 && u_has_edge_assoc_dof)
+    {
+      facet_iterator edge = mesh->facetBegin();
+      facet_iterator edge_end = mesh->facetEnd();
+      for (; edge != edge_end; ++edge)
+      {
+        mesh->getFacetNodesId(&*edge, edge_nodes.data());
+        dof_handler_mesh.getVariable(0).getFacetAssociatedDofs(edge_dofs_umesh.data(), &*edge);
+        dof_handler_vars.getVariable(0).getFacetAssociatedDofs(edge_dofs_fluid.data(), &*edge);
+        VecGetValues(q, dim, edge_dofs_fluid.data(), Uf.data());
+        mesh->getNode(edge_nodes(2))->getCoord(Xi.data());
+        getRotationMatrix(R,&edge_nodes(2),1);
+        Xi += R.transpose()*Uf*dt;
+        VecSetValues(x_mesh, dim, edge_dofs_umesh.data(), Xi.data(), INSERT_VALUES);
+      }
+    }
+    else if (dim==3 && u_has_edge_assoc_dof)
+    {
+      corner_iterator edge = mesh->cornerBegin();
+      corner_iterator edge_end = mesh->cornerEnd();
+      for (; edge != edge_end; ++edge)
+      {
+        mesh->getCornerNodesId(&*edge, edge_nodes.data());
+        dof_handler_mesh.getVariable(0).getCornerAssociatedDofs(edge_dofs_umesh.data(), &*edge);
+        dof_handler_vars.getVariable(0).getCornerAssociatedDofs(edge_dofs_fluid.data(), &*edge);
+        VecGetValues(q, dim, edge_dofs_fluid.data(), Uf.data());
+        mesh->getNode(edge_nodes(2))->getCoord(Xi.data());
+        getRotationMatrix(R,&edge_nodes(2),1);
+        Xi += R.transpose()*Uf*dt;
+        VecSetValues(x_mesh, dim, edge_dofs_umesh.data(), Xi.data(), INSERT_VALUES);
+      }
     }
 
-
+    Assembly(x_mesh);
 
     /* suavização laplaciana */
     point = mesh->pointBegin();
     point_end = mesh->pointEnd();
-    for (int smooth_it = 0; smooth_it < 5; ++smooth_it)
+    for (int smooth_it = 0; smooth_it < 1; ++smooth_it)
+    {
+      getNormalsFromMesh(&x_mesh);
+
       for (; point != point_end; ++point)
       {
-        if (!mesh->isVertex(&*point))
+
+        in_boundary = mesh->inBoundary(&*point);
+
+        if (!boundary_smoothing && in_boundary)
           continue;
+
         tag = point->getTag();
-        if (  is_in(tag,interface_tags) || is_in(tag,triple_tags) || is_in(tag,solid_tags) ||
-            is_in(tag,dirichlet_tags) || is_in(tag,neumann_tags)  )
-          continue;
 
-        Xm = Vector::Zero(dim);
-
-        iVs_end = mesh->connectedVtcs(&*point, iVs);
-
-        Assembly(x_mesh);
-        for (int *it = iVs; it != iVs_end ; ++it)
+        if (mesh->isVertex(&*point))
         {
-          dof_hand_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh.data(), mesh->getNode(*it));
-          MyVecGetValues(x_mesh_array, dim, vtx_dofs_umesh.data(), tmp.data());
-          // debug
-          //VecGetValues(x_mesh, dim, vtx_dofs_umesh.data(), tmp.data());
-          Xm += tmp;
+          //if (  is_in(tag,interface_tags) || is_in(tag,triple_tags) || is_in(tag,solid_tags) ||
+          //    is_in(tag,dirichlet_tags) || is_in(tag,neumann_tags)  )
+          ////if (is_in(tag,triple_tags))
+          //  continue;
+
+          Xm = Vector::Zero(dim);
+          iVs_end = mesh->connectedVtcs(&*point, iVs);
+
+          if (!in_boundary)
+          {
+            for (int *it = iVs; it != iVs_end ; ++it)
+            {
+              dof_handler_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh.data(), mesh->getNode(*it));
+              // debug
+              VecGetValues(x_mesh, dim, vtx_dofs_umesh.data(), tmp.data());
+              Xm += tmp;
+            }
+            Xm /= (iVs_end-iVs);
+            dof_handler_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh.data(), &*point);
+            VecSetValues(x_mesh, dim, vtx_dofs_umesh.data(), Xm.data(), INSERT_VALUES);
+          }
+          else
+          {
+            int N=0;
+            for (int *it = iVs; it != iVs_end ; ++it)
+            {
+              if (!mesh->inBoundary((mesh->getNode(*it))))
+                continue;
+              dof_handler_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh.data(), mesh->getNode(*it));
+              // debug
+              VecGetValues(x_mesh, dim, vtx_dofs_umesh.data(), tmp.data());
+              ++N;
+              Xm += tmp;
+            }
+            dof_handler_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh.data(), &*point);
+            VecGetValues(x_mesh, dim, vtx_dofs_umesh.data(), Xi.data());
+
+            if (dim==3)
+              Xm = (N*Xi + 2*Xm)/(3*N);
+              //Xm = Xm/N;
+            else
+              Xm = (N*Xi + Xm)/(2*N);
+
+            dX = Xm - Xi;
+            VecGetValues(nml_mesh, dim, vtx_dofs_umesh.data(), normal.data());
+            dX -= normal.dot(dX)*normal;
+            Xi += 0.1*dX;
+            
+            VecSetValues(x_mesh, dim, vtx_dofs_umesh.data(), Xi.data(), INSERT_VALUES);
+          }
+
         }
-        Xm /= (iVs_end-iVs);
+        //
+        // mid node
+        //
+        else
+        {
+          if (!in_boundary)
+            continue;
 
-        dof_hand_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh.data(), &*point);
-        MyVecSetValues(x_mesh_array, dim, vtx_dofs_umesh.data(), Xm.data());
-        // debug
-        //VecSetValues(x_mesh, dim, vtx_dofs_umesh.data(), Xm.data(), INSERT_VALUES);
-      }
+          const int m = point->getPosition() - mesh->numVerticesPerCell();
+          Cell const* icell = mesh->getCell(point->getIncidCell());
+          if (dim==3)
+          {
+            Corner *edge = mesh->getCorner(icell->getCornerId(m));
+            dof_handler_mesh.getVariable(0).getCornerDofs(edge_dofs_umesh.data(), &*edge);
+            dof_handler_vars.getVariable(0).getCornerDofs(edge_dofs_fluid.data(), &*edge);
+            mesh->getCornerNodesId(&*edge, edge_nodes.data());
+          }
+          else // dim=2
+          {
+            Facet *edge = mesh->getFacet(icell->getFacetId(m));
+            dof_handler_mesh.getVariable(0).getFacetDofs(edge_dofs_umesh.data(), &*edge);
+            dof_handler_vars.getVariable(0).getFacetDofs(edge_dofs_fluid.data(), &*edge);
+            mesh->getFacetNodesId(&*edge, edge_nodes.data());
+          }
+
+          VecGetValues(x_mesh, dim, edge_dofs_umesh.data(), Xm.data());    // Umsh0
+          VecGetValues(x_mesh, dim, edge_dofs_umesh.data()+dim, tmp.data());    // Umsh0
+          VecGetValues(x_mesh, dim, edge_dofs_umesh.data()+2*dim, Xi.data());    // Umsh0
+
+          //Xm = (Xm+tmp+2*Xi)/4.;
+          Xm = (Xm+tmp)/2.;
+
+          dX = Xm - Xi;
+          VecGetValues(nml_mesh, dim, edge_dofs_umesh.data()+2*dim, normal.data());
+          dX -= normal.dot(dX)*normal;
+          Xi += dX;
+          VecSetValues(x_mesh, dim, edge_dofs_umesh.data()+2*dim, Xi.data(), INSERT_VALUES);
+          Assembly(x_mesh);
+
+        }
+
+      } // end point
+    } // end smooth
+    Assembly(x_mesh);
+    
 
 
-    /* calculando a velocidade da malha nos vértices*/
+    /* calculando a velocidade da malha*/
     point = mesh->pointBegin();
     point_end = mesh->pointEnd();
     for (; point != point_end; ++point)
     {
       nodeid = mesh->getPointId(&*point);
-
+      in_boundary = mesh->inBoundary(&*point);
       tag = point->getTag();
 
+      //
+      //  vertex
+      //
       if (mesh->isVertex(&*point))
       {
-        dof_hand_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh.data(), &*point);
-        dof_handler.getVariable(0).getVertexDofs(vtx_dofs_fluid.data(), &*point);
+        dof_handler_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh.data(), &*point);
+        dof_handler_vars.getVariable(0).getVertexDofs(vtx_dofs_fluid.data(), &*point);
 
         // pega a velocidade do fluido
-        VecGetValues(q, dim, vtx_dofs_fluid.data(), U.data());
+        VecGetValues(q, dim, vtx_dofs_fluid.data(), Uf.data());
         // pega a coordenada suavizada
-        MyVecGetValues(x_mesh_array, dim, vtx_dofs_umesh.data(), Xm.data());
+        VecGetValues(x_mesh, dim, vtx_dofs_umesh.data(), Xm.data());
         // pega a coordenada atual
         point->getCoord(Xi.data());
 
-        if (  is_in(tag,interface_tags) || is_in(tag,triple_tags) || is_in(tag,solid_tags) ||
-              is_in(tag,dirichlet_tags) || is_in(tag,neumann_tags)  )
+
+        if ((!boundary_smoothing && in_boundary) || is_in(tag,triple_tags))
         {
           // se esta na sup., a vel. da malha é igual a do fluido
-          Umsh = U;
+          Umsh = Uf;
           VecSetValues(u_mesh, dim, vtx_dofs_umesh.data(), Umsh.data(),INSERT_VALUES);
           continue;
         }
@@ -3385,110 +3684,89 @@ public:
 
         //mesh.getNode(i)->setCoord(Xi + dt*(bet1*U+bet2*Ue));
 
-        Umsh = beta1*U + beta2*Ue;
+        if (in_boundary)
+          Umsh = R*Ue;
+        else
+          Umsh = beta1*Uf + beta2*Ue;
 
         VecSetValues(u_mesh, dim, vtx_dofs_umesh.data(), Umsh.data(), INSERT_VALUES);
+      }
+      else
+      //
+      // mid node
+      //
+      {
+        const int m = point->getPosition() - mesh->numVerticesPerCell();
+        Cell const* icell = mesh->getCell(point->getIncidCell());
+        if (dim==3)
+        {
+          Corner *edge = mesh->getCorner(icell->getCornerId(m));
+          dof_handler_mesh.getVariable(0).getCornerDofs(edge_dofs_umesh.data(), &*edge);
+          dof_handler_vars.getVariable(0).getCornerDofs(edge_dofs_fluid.data(), &*edge);
+          mesh->getCornerNodesId(&*edge, edge_nodes.data());
+        }
+        else // dim=2
+        {
+          Facet *edge = mesh->getFacet(icell->getFacetId(m));
+          dof_handler_mesh.getVariable(0).getFacetDofs(edge_dofs_umesh.data(), &*edge);
+          dof_handler_vars.getVariable(0).getFacetDofs(edge_dofs_fluid.data(), &*edge);
+          mesh->getFacetNodesId(&*edge, edge_nodes.data());
+        }
+
+        VecGetValues(q, dim, edge_dofs_fluid.data()+2*dim, Uf.data());
+        // umesh = ufluid
+        if ((!boundary_smoothing && in_boundary) || is_in(tag,triple_tags))
+        {
+          // se esta na sup., a vel. da malha é igual a do fluido
+          Umsh = Uf;
+          VecSetValues(u_mesh, dim, edge_dofs_fluid.data()+2*dim, Umsh.data(),INSERT_VALUES);
+          continue;
+        }
+
+        // se está na interface
+        if (in_boundary )
+        //if (is_in(tag,triple_tags) )
+        {
+          point->getCoord(Xi.data());
+          VecGetValues(x_mesh, dim, edge_dofs_umesh.data()+2*dim, Xm.data());
+          Ue = (Xm - Xi)/dt;
+          getRotationMatrix(R,&nodeid,1);
+          Umsh = R*Ue;
+          VecSetValues(u_mesh, dim, edge_dofs_umesh.data()+2*dim, Umsh.data(),INSERT_VALUES);
+        }
+        else // se está no interior do domínio, arrasta o nó para o centro da aresta
+        {
+
+          VecGetValues(x_mesh, dim, edge_dofs_umesh.data(), Xm.data());    // Umsh0
+          VecGetValues(x_mesh, dim, edge_dofs_umesh.data()+dim, Xi.data());    // Umsh0
+
+          Xm = (Xm+Xi)/2.;
+
+          point->getCoord(Xi.data());
+
+          Umsh = (Xm-Xi)/dt;
+
+          getRotationMatrix(R,edge_nodes.data()+2,1);                 // mid node
+          Umsh = R*Umsh;
+
+          VecSetValues(u_mesh, dim, edge_dofs_umesh.data()+2*dim, Umsh.data(), INSERT_VALUES);
+        }
       }
 
 
     } // end point loop
 
 
-
-    /* calculando a velocidade da malha nas arestas*/
-
-    if (u_has_edge_assoc_dof)
-    {
-      if (dim==3) // MESMO QUE O 2D trocando Facet por Corner
-      {
-        corner_iterator edge = mesh->cornerBegin();
-        corner_iterator edge_end = mesh->cornerEnd();
-        for (; edge != edge_end; ++edge)
-        {
-          tag = edge->getTag();
-
-          mesh->getCornerNodesId(&*edge, edge_nodes.data());
-
-          dof_hand_mesh.getVariable(0).getCornerDofs(edge_dofs_umesh.data(), &*edge);
-          dof_handler.getVariable(0).getCornerDofs(edge_dofs_fluid.data(), &*edge);
-          mesh->getCornerNodesId(&*edge, edge_nodes.data());
-
-          // se está na interface e a velocidade tem grau de liberdade na aresta
-          if ( (is_in(tag,interface_tags) || is_in(tag,triple_tags) || is_in(tag,solid_tags) ||
-                is_in(tag,dirichlet_tags) || is_in(tag,neumann_tags)) &&  u_has_edge_assoc_dof)
-          {
-            VecGetValues(q, dim, edge_dofs_fluid.data()+2*dim, U.data());
-            VecSetValues(u_mesh, dim, edge_dofs_umesh.data()+2*dim, U.data(),INSERT_VALUES);
-          }
-          else // se está no interior do domínio, então a velocidade da aresta é a média em seus nós
-          {
-            // primeiro nó
-            getRotationMatrix(R,edge_nodes.data(),1);                         // primeiro nó 0
-            VecGetValues(u_mesh, dim, edge_dofs_umesh.data(), Umsh.data());    // Umsh0
-            rotate_RtA(R,Umsh,tmp2);
-
-            // segundo nó
-            getRotationMatrix(R,edge_nodes.data()+1,1);                 // segundo nó  1
-            VecGetValues(u_mesh, dim, edge_dofs_umesh.data()+dim, tmp.data()); // Umsh1
-            rotate_RtA(R,tmp,tmp2);
-
-            Umsh += tmp;
-            Umsh /= 2.;
-            VecSetValues(u_mesh, dim, edge_dofs_umesh.data()+2*dim, Umsh.data(), INSERT_VALUES);
-          }
-        } // end loop
-      } // end dim==3
-      else
-      if (dim==2)
-      {
-        facet_iterator edge = mesh->facetBegin();
-        facet_iterator edge_end = mesh->facetEnd();
-        for (; edge != edge_end; ++edge)
-        {
-          tag = edge->getTag();
-
-          mesh->getFacetNodesId(&*edge, edge_nodes.data());
-
-          dof_hand_mesh.getVariable(0).getFacetDofs(edge_dofs_umesh.data(), &*edge);
-          dof_handler.getVariable(0).getFacetDofs(edge_dofs_fluid.data(), &*edge);
-          mesh->getFacetNodesId(&*edge, edge_nodes.data());
-
-          // se está na interface e a velocidade tem grau de liberdade na aresta
-          if ( (is_in(tag,interface_tags) || is_in(tag,triple_tags) || is_in(tag,solid_tags) ||
-                is_in(tag,dirichlet_tags) || is_in(tag,neumann_tags)) &&  u_has_edge_assoc_dof)
-          {
-            VecGetValues(q, dim, edge_dofs_fluid.data()+2*dim, U.data());
-            VecSetValues(u_mesh, dim, edge_dofs_umesh.data()+2*dim, U.data(),INSERT_VALUES);
-          }
-          else // se está no interior do domínio, então a velocidade da aresta é a média em seus nós
-          {
-            // primeiro nó
-            getRotationMatrix(R,edge_nodes.data(),1);                         // primeiro nó 0
-            VecGetValues(u_mesh, dim, edge_dofs_umesh.data(), Umsh.data());    // Umsh0
-            rotate_RtA(R,Umsh,tmp2);
-
-            // segundo nó
-            getRotationMatrix(R,edge_nodes.data()+1,1);                 // segundo nó  1
-            VecGetValues(u_mesh, dim, edge_dofs_umesh.data()+dim, tmp.data()); // Umsh1
-            rotate_RtA(R,tmp,tmp2);
-
-            Umsh += tmp;
-            Umsh /= 2.;
-            VecSetValues(u_mesh, dim, edge_dofs_umesh.data()+2*dim, Umsh.data(), INSERT_VALUES);
-          }
-        } // end loop
-      } // end dim==2
-
-    }
-
     Assembly(u_mesh);
-    VecRestoreArray(x_mesh, &x_mesh_array);
+    //VecRestoreArray(x_mesh, &x_mesh_array);
 
     PetscFunctionReturn(0);
   }
 
 
-
+  //
+  // MOVE MESH
+  //
   PetscErrorCode moveMesh()
   {
     Vector      Xi(dim), tmp(dim);
@@ -3509,7 +3787,7 @@ public:
     {
       if (mesh->isVertex(&*point))
       {
-        dof_hand_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh.data(), &*point);
+        dof_handler_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh.data(), &*point);
 
         VecGetValues(u_mesh, dim, vtx_dofs_umesh.data(), Umsh.data());
 
@@ -3538,9 +3816,9 @@ public:
 
           // mid node
           point = point_iterator(mesh.get(),mesh->getNode(edge_nodes[2]));
-          //dof_hand_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh, point);
+          //dof_handler_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh, point);
 
-          dof_hand_mesh.getVariable(0).getCornerAssociatedDofs(edge_dofs.data(), &*edge);
+          dof_handler_mesh.getVariable(0).getCornerAssociatedDofs(edge_dofs.data(), &*edge);
 
           VecGetValues(u_mesh, dim, edge_dofs.data(), Umsh.data());
 
@@ -3565,9 +3843,9 @@ public:
 
           // mid node
           point = point_iterator(mesh.get(),mesh->getNode(edge_nodes[2]));
-          //dof_hand_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh, point);
+          //dof_handler_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh, point);
 
-          dof_hand_mesh.getVariable(0).getFacetAssociatedDofs(edge_dofs.data(), &*edge);
+          dof_handler_mesh.getVariable(0).getFacetAssociatedDofs(edge_dofs.data(), &*edge);
 
           VecGetValues(u_mesh, dim, edge_dofs.data(), Umsh.data());
 
@@ -3585,6 +3863,8 @@ public:
 
     }
 
+    getNormalsFromMesh(NULL);
+
     PetscFunctionReturn(0);
   }
 
@@ -3597,6 +3877,7 @@ public:
     Destroy(q0);
     Destroy(u_mesh);
     Destroy(x_mesh);
+    Destroy(nml_mesh);
     //Destroy(ksp);
     //Destroy(snes);
     SNESDestroy(&snes);
@@ -3612,6 +3893,7 @@ public:
   PetscBool   has_convec;
   PetscBool   unsteady;
   PetscBool   renumber_dofs;
+  PetscBool   boundary_smoothing;
   double      dt;
   double      steady_tol;
   double      theta;
@@ -3639,8 +3921,8 @@ public:
   std::vector<int> solid_tags;
   std::vector<int> triple_tags;
 
-  DofHandler                   dof_handler;
-  DofHandler                   dof_hand_mesh;
+  DofHandler                   dof_handler_vars;
+  DofHandler                   dof_handler_mesh;
   MeshIoMsh                    msh_reader;
   MeshIoVtk                    vtk_printer;
   shared_ptr<Mesh>             mesh;
@@ -3699,6 +3981,8 @@ public:
   VecOfMat                     dLqsi_c;       // matriz de gradiente no elemento unitário
   VecOfMat                     dLqsi_f;       // matriz de gradiente no elemento unitário (facet)
   VecOfMat                     dLqsi_r;       // matriz de gradiente no elemento unitário (corner)
+  // normal
+  VecOfMat                     dLphi_nf;       // matriz de gradiente nos nós de uma facet
   // velocity, cell
   VectorXd                     bble;          // bubble function evaluated at quadrature points
   VecOfVec                     dLbble;
@@ -3748,7 +4032,7 @@ public:
   Timer         timer;
 
   // petsc vectors
-  Vec                 q0, q, res, u_mesh, x_mesh;
+  Vec                 q0, q, res, u_mesh, x_mesh, nml_mesh/**/;
   Mat                 Jac;
   SNES                snes;         /* nonlinear solver context */
   KSP    			        ksp;
@@ -3764,7 +4048,7 @@ double GetDataVelocity<Coord>::get_data_r(int nodeid) const
   Vector Ur(user.dim);
   Vector tmp(user.dim);
   user.getRotationMatrix(R,&nodeid,1);
-  int dofs[user.dim * 3];
+  int dofs[user.dim];
   if (!user.mesh->isVertex(point))
   {
     const int m = point->getPosition() - user.mesh->numVerticesPerCell();
@@ -3772,32 +4056,23 @@ double GetDataVelocity<Coord>::get_data_r(int nodeid) const
     if (user.dim==3)
     {
       const int edge_id = cell->getCornerId(m);
-      user.dof_handler.getVariable(0).getCornerDofs(dofs, user.mesh->getCorner(edge_id));
+      user.dof_handler_vars.getVariable(0).getCornerAssociatedDofs(dofs, user.mesh->getCorner(edge_id));
     }
     else
     {
       const int edge_id = cell->getFacetId(m);
-      user.dof_handler.getVariable(0).getFacetDofs(dofs, user.mesh->getFacet(edge_id));
+      user.dof_handler_vars.getVariable(0).getFacetAssociatedDofs(dofs, user.mesh->getFacet(edge_id));
     }
-    bool const u_has_edge_assoc_dof = user.shape_phi_c->numDofsAssociatedToFacet() +
-                                      user.shape_phi_c->numDofsAssociatedToCorner() > 0;
-    if (u_has_edge_assoc_dof)
-    {
-      for (int i = 0; i < user.dim; ++i)
-        Ur(i) = q_array[dofs[2*user.dim + i]];
-      //return q_array[dofs[2*user.dim + Coord]];
-    }
-    else
-    {
-      for (int i = 0; i < user.dim; ++i)
-        Ur(i) = (q_array[dofs[i]] + q_array[dofs[user.dim+i]])/2.;
-      //return (q_array[dofs[Coord]] + q_array[dofs[user.dim+Coord]])/2.;
-    }
+
+    for (int i = 0; i < user.dim; ++i)
+      Ur(i) = q_array[dofs[i]];
+    //return q_array[dofs[2*user.dim + Coord]];
+
   }
   else
   {
     //Vector_i dofs(user.dim);
-    user.dof_handler.getVariable(0).getVertexDofs(dofs, point);
+    user.dof_handler_vars.getVariable(0).getVertexDofs(dofs, point);
     for (int i = 0; i < user.dim; ++i)
       Ur(i) = q_array[dofs[i]];
   }
@@ -3818,17 +4093,17 @@ double GetDataPressure::get_data_r(int nodeid) const
     if (user.dim==3)
     {
       const int edge_id = cell->getCornerId(m);
-      user.dof_handler.getVariable(1).getCornerDofs(dofs, user.mesh->getCorner(edge_id));
+      user.dof_handler_vars.getVariable(1).getCornerDofs(dofs, user.mesh->getCorner(edge_id));
     }
     else
     {
       const int edge_id = cell->getFacetId(m);
-      user.dof_handler.getVariable(1).getFacetDofs(dofs, user.mesh->getFacet(edge_id));
+      user.dof_handler_vars.getVariable(1).getFacetDofs(dofs, user.mesh->getFacet(edge_id));
     }
     return (q_array[dofs[0]] + q_array[dofs[1]])/2.;
   }
   int dof;
-  user.dof_handler.getVariable(1).getVertexDofs(&dof, point);
+  user.dof_handler_vars.getVariable(1).getVertexDofs(&dof, point);
   return q_array[dof];
   return 0;
 }
@@ -3836,11 +4111,47 @@ double GetDataPressure::get_data_r(int nodeid) const
 double GetDataPressCellVersion::get_data_r(int cellid) const
 {
   // assume que só há 1 grau de liberdade na célula
-  int dof[user.dof_handler.getVariable(1).numDofsPerCell()];
-  user.dof_handler.getVariable(1).getCellDofs(dof, user.mesh->getCell(cellid));
+  int dof[user.dof_handler_vars.getVariable(1).numDofsPerCell()];
+  user.dof_handler_vars.getVariable(1).getCellDofs(dof, user.mesh->getCell(cellid));
   return q_array[dof[0]];
 }
 
+template<int Coord>
+double GetDataNormal<Coord>::get_data_r(int nodeid) const
+{
+  Point const* point = user.mesh->getNode(nodeid);
+  Vector Normal(user.dim);
+  int dofs[user.dim];
+  if (!user.mesh->isVertex(point))
+  {
+    const int m = point->getPosition() - user.mesh->numVerticesPerCell();
+    Cell const* cell = user.mesh->getCell(point->getIncidCell());
+    if (user.dim==3)
+    {
+      const int edge_id = cell->getCornerId(m);
+      user.dof_handler_vars.getVariable(0).getCornerAssociatedDofs(dofs, user.mesh->getCorner(edge_id));
+    }
+    else
+    {
+      const int edge_id = cell->getFacetId(m);
+      user.dof_handler_vars.getVariable(0).getFacetAssociatedDofs(dofs, user.mesh->getFacet(edge_id));
+    }
+
+    for (int i = 0; i < user.dim; ++i)
+      Normal(i) = q_array[dofs[i]];
+    //return q_array[dofs[2*user.dim + Coord]];
+
+  }
+  else
+  {
+    //Vector_i dofs(user.dim);
+    user.dof_handler_mesh.getVariable(0).getVertexDofs(dofs, point);
+    for (int i = 0; i < user.dim; ++i)
+      Normal(i) = q_array[dofs[i]];
+  }
+
+  return Normal(Coord);
+}
 
 
 /* petsc functions*/
@@ -3876,8 +4187,8 @@ int main(int argc, char **argv)
   // print info
   cout << "mesh: " << user.filename << endl;
   user.mesh->printInfo();
-  cout << "\n# velocity unknows: " << user.dof_handler.getVariable(0).numDofs();
-  cout << "\n# preassure unknows: " << user.dof_handler.getVariable(1).numDofs() << endl;
+  cout << "\n# velocity unknows: " << user.dof_handler_vars.getVariable(0).numDofs();
+  cout << "\n# preassure unknows: " << user.dof_handler_vars.getVariable(1).numDofs() << endl;
   user.mesh->printStatistics();
   user.mesh->timer.printTimes();
 
@@ -4123,7 +4434,7 @@ void cross(AnyVector & a, AnyVector const& b)
     if (line_normal.dot(X-aux) < 0)
       line_normal *= -1;
 
-    dof_handler.getVariable(0).getVertexDofs(vtx_dofs_fluid.data(), &*point);
+    dof_handler_vars.getVariable(0).getVertexDofs(vtx_dofs_fluid.data(), &*point);
 
     nodeid = mesh->getPointId(point);
     getRotationMatrix(R, &nodeid, 1);
