@@ -48,43 +48,6 @@ typedef Matrix<MatrixXd, Dynamic,1>  VecOfMat;
 typedef Matrix<double, Dynamic,1,0,3,1>              Vector;
 typedef Matrix<double, Dynamic,Dynamic,RowMajor,3,3> Tensor;
 
-typedef Matrix<int, Dynamic,1,0,3,1>              Vector_i;
-typedef Matrix<int, Dynamic,Dynamic,RowMajor,3,3> Tensor_i;
-
-typedef Matrix<double, Dynamic,Dynamic,RowMajor,MAX_DOFS_U/3,3> Coefs_u;
-typedef Matrix<double, Dynamic,Dynamic,RowMajor,MAX_NNODES  ,3> Coefs_v;
-typedef Matrix<double, Dynamic,      1,       0,MAX_DOFS_P  ,1> Coefs_p;
-typedef Matrix<double, Dynamic,Dynamic,       0,MAX_DOFS_P  ,3> Coefs_p3;
-typedef Matrix<double, Dynamic,Dynamic,RowMajor,MAX_NNODES  ,3> Coefs_x;
-
-
-// transpose
-typedef Matrix<double, Dynamic,Dynamic,RowMajor,3,MAX_DOFS_U/3> Coefs_ut;
-typedef Matrix<double, Dynamic,Dynamic,RowMajor,3,MAX_NNODES  > Coefs_vt;
-typedef Matrix<double, Dynamic,Dynamic,RowMajor,3,MAX_NNODES  > Coefs_xt;
-
-typedef Matrix<double, Dynamic,1,0,MAX_DOFS_U  > LocalVec_u;
-typedef Matrix<double, Dynamic,1,0,MAX_NNODES*3> LocalVec_v;
-typedef Matrix<double, Dynamic,1,0,MAX_DOFS_P  > LocalVec_p;
-typedef Matrix<double, Dynamic,1,0,MAX_NNODES*3> LocalVec_x;
-typedef Matrix<double, Dynamic,1,0,MAX_DOFS_U+MAX_DOFS_P> LocalVec_all;
-
-typedef Matrix<int, Dynamic,1,0,MAX_NNODES  > LocalNodes;
-typedef Matrix<int, Dynamic,1,0,MAX_DOFS_U  > Map_u;
-typedef Matrix<int, Dynamic,1,0,MAX_NNODES*3> Map_v;
-typedef Matrix<int, Dynamic,1,0,MAX_DOFS_P  > Map_p;
-typedef Matrix<int, Dynamic,1,0,MAX_NNODES*3> Map_x;
-
-typedef Matrix<double, Dynamic,Dynamic,RowMajor,MAX_DOFS_U,MAX_DOFS_U> LocalMat_uu;
-typedef Matrix<double, Dynamic,Dynamic,RowMajor,MAX_DOFS_U,MAX_DOFS_P> LocalMat_up;
-typedef Matrix<double, Dynamic,Dynamic,RowMajor,MAX_DOFS_P,MAX_DOFS_U> LocalMat_pu;
-typedef Matrix<double, Dynamic,Dynamic,RowMajor,MAX_DOFS_P,MAX_DOFS_P> LocalMat_pp;
-typedef Matrix<double, Dynamic,Dynamic,RowMajor,MAX_DOFS_U,         3> LocalMat_u3;
-typedef Matrix<double, Dynamic,Dynamic,RowMajor,         3,MAX_DOFS_U> LocalMat_3u;
-typedef Matrix<double, Dynamic,Dynamic,RowMajor,MAX_DOFS_P,         3> LocalMat_p3;
-typedef Matrix<double, Dynamic,Dynamic,RowMajor,         3,MAX_DOFS_P> LocalMat_3p;
-
-
 
 template<class Vec, class T>
 bool is_in(T value, Vec const& v)
@@ -1484,22 +1447,22 @@ public:
     {
 
       //MatrixXd            u_coefs_c(n_dofs_u_per_cell/dim, dim);
-      Coefs_ut            u_coefs_c_trans(dim,n_dofs_u_per_cell/dim);       // n+1 também
-      Coefs_u             u_coefs_c_old(n_dofs_u_per_cell/dim, dim);        // n
-      Coefs_ut            u_coefs_c_old_trans(dim,n_dofs_u_per_cell/dim);   //
-      Coefs_v             v_coefs_c_old(nodes_per_cell, dim);        // convective velocity; n
-      Coefs_vt            v_coefs_c_old_trans(dim,nodes_per_cell);   //
-      Coefs_u             u_coefs_c_new(n_dofs_u_per_cell/dim, dim);        // n+1
-      Coefs_ut            u_coefs_c_new_trans(dim,n_dofs_u_per_cell/dim);   //
-      Coefs_p             p_coefs_c(n_dofs_p_per_cell);                  // valores de P na célula
-      Coefs_x             x_coefs_c(nodes_per_cell, dim);                // coordenadas nodais da célula
-      Coefs_xt            x_coefs_c_trans(dim, nodes_per_cell);          // coordenadas nodais da célula
+      MatrixXd            u_coefs_c_trans(dim,n_dofs_u_per_cell/dim);       // n+1 também
+      MatrixXd             u_coefs_c_old(n_dofs_u_per_cell/dim, dim);        // n
+      MatrixXd            u_coefs_c_old_trans(dim,n_dofs_u_per_cell/dim);   //
+      MatrixXd             v_coefs_c_old(nodes_per_cell, dim);        // convective velocity; n
+      MatrixXd            v_coefs_c_old_trans(dim,nodes_per_cell);   //
+      MatrixXd             u_coefs_c_new(n_dofs_u_per_cell/dim, dim);        // n+1
+      MatrixXd            u_coefs_c_new_trans(dim,n_dofs_u_per_cell/dim);   //
+      VectorXd             p_coefs_c(n_dofs_p_per_cell);                  // valores de P na célula
+      MatrixXd             x_coefs_c(nodes_per_cell, dim);                // coordenadas nodais da célula
+      MatrixXd            x_coefs_c_trans(dim, nodes_per_cell);          // coordenadas nodais da célula
       Tensor              F_c(dim,dim);
       Tensor              invF_c(dim,dim);
       Tensor              invFT_c(dim,dim);
-      Coefs_u             dxphi_c(n_dofs_u_per_cell/dim, dim);
-      Coefs_p3            dxpsi_c(n_dofs_p_per_cell, dim);
-      Coefs_x             dxqsi_c(nodes_per_cell, dim);
+      MatrixXd             dxphi_c(n_dofs_u_per_cell/dim, dim);
+      MatrixXd            dxpsi_c(n_dofs_p_per_cell, dim);
+      MatrixXd             dxqsi_c(nodes_per_cell, dim);
       Vector              dxbble(dim);
       Tensor              dxU(dim,dim);   // grad u
       Tensor              dxUb(dim,dim);  // grad u bble
@@ -1511,7 +1474,7 @@ public:
       //double              Pqp;
       Vector              Uqp_old(dim);
       Vector              Uconv_old(dim);
-      LocalNodes          cell_nodes(nodes_per_cell);
+      VectorXi          cell_nodes(nodes_per_cell);
       double              Jx;
       double              weight;
       double              visc;
@@ -1519,33 +1482,33 @@ public:
       double              hk2;
       double              tau=0;
       double              bble_integ=0;
-      LocalMat_uu         Aloc(n_dofs_u_per_cell, n_dofs_u_per_cell);
-      LocalMat_up         Gloc(n_dofs_u_per_cell, n_dofs_p_per_cell);
-      LocalMat_pu         Dloc(n_dofs_p_per_cell, n_dofs_u_per_cell);
-      LocalMat_pp         Eloc(n_dofs_p_per_cell, n_dofs_p_per_cell);   // GSL, BC
-      LocalMat_up         Cloc(n_dofs_u_per_cell, n_dofs_p_per_cell);   // GSL
+      MatrixXd         Aloc(n_dofs_u_per_cell, n_dofs_u_per_cell);
+      MatrixXd         Gloc(n_dofs_u_per_cell, n_dofs_p_per_cell);
+      MatrixXd         Dloc(n_dofs_p_per_cell, n_dofs_u_per_cell);
+      MatrixXd         Eloc(n_dofs_p_per_cell, n_dofs_p_per_cell);   // GSL, BC
+      MatrixXd         Cloc(n_dofs_u_per_cell, n_dofs_p_per_cell);   // GSL
       Tensor              iBbb(dim, dim);                               // BC, i : inverse ..it is not the inverse to CR element
-      LocalMat_3u         Bbn(dim, n_dofs_u_per_cell);                  // BC
-      LocalMat_u3         Bnb(n_dofs_u_per_cell, dim);                  // BC
-      LocalMat_p3         Dpb(n_dofs_p_per_cell, dim);                  // BC
-      LocalMat_3p         Gbp(dim, n_dofs_p_per_cell);                  // BC
-      LocalMat_u3         Gnx(n_dofs_u_per_cell, dim);                  // CR ;; suffix x means p gradient
+      MatrixXd         Bbn(dim, n_dofs_u_per_cell);                  // BC
+      MatrixXd         Bnb(n_dofs_u_per_cell, dim);                  // BC
+      MatrixXd         Dpb(n_dofs_p_per_cell, dim);                  // BC
+      MatrixXd         Gbp(dim, n_dofs_p_per_cell);                  // BC
+      MatrixXd         Gnx(n_dofs_u_per_cell, dim);                  // CR ;; suffix x means p gradient
       Vector              FUb(dim);                                     // BC
 
       double              delta_cd;
       int                 tag;
 
-      Map_u               mapU_c(n_dofs_u_per_cell);
-      Map_u               mapU_r(n_dofs_u_per_corner);
-      Map_p               mapP_c(n_dofs_p_per_cell);
-      Map_p               mapP_r(n_dofs_p_per_corner);
+      VectorXi               mapU_c(n_dofs_u_per_cell);
+      VectorXi               mapU_r(n_dofs_u_per_corner);
+      VectorXi               mapP_c(n_dofs_p_per_cell);
+      VectorXi               mapP_r(n_dofs_p_per_corner);
       // mesh velocity
-      Map_v               mapM_c(dim*nodes_per_cell);
-      Map_v               mapM_f(dim*nodes_per_facet);
-      Map_v               mapM_r(dim*nodes_per_corner);
+      VectorXi               mapM_c(dim*nodes_per_cell);
+      VectorXi               mapM_f(dim*nodes_per_facet);
+      VectorXi               mapM_r(dim*nodes_per_corner);
 
-      LocalMat_uu    R(n_dofs_u_per_cell,n_dofs_u_per_cell);
-      LocalMat_uu    tmp(n_dofs_u_per_cell,n_dofs_u_per_cell);
+      MatrixXd    R(n_dofs_u_per_cell,n_dofs_u_per_cell);
+      MatrixXd    tmp(n_dofs_u_per_cell,n_dofs_u_per_cell);
 
       //const int tid = omp_get_thread_num();
       //const int nthreads = omp_get_num_threads();
@@ -1588,9 +1551,9 @@ public:
           rotate_RtA(R,u_coefs_c_old,tmp);
           rotate_RtA(R,v_coefs_c_old,tmp);
 
-          v_coefs_c_old_trans.noalias() = v_coefs_c_old.transpose();
-          u_coefs_c_old_trans.noalias() = u_coefs_c_old.transpose();
-          u_coefs_c_trans.noalias() = u_coefs_c_new.transpose();
+          v_coefs_c_old_trans = v_coefs_c_old.transpose();
+          u_coefs_c_old_trans = u_coefs_c_old.transpose();
+          u_coefs_c_trans = u_coefs_c_new.transpose();
 
 
           visc = niu(current_time, tag);
@@ -1611,7 +1574,7 @@ public:
           {
             cell_volume = 0;
             for (int qp = 0; qp < n_qpts_cell; ++qp) {
-              F_c.noalias() = x_coefs_c_trans * dLqsi_c[qp];
+              F_c = x_coefs_c_trans * dLqsi_c[qp];
               Jx = determinant(F_c,dim);
               cell_volume += Jx * quadr_cell->weight(qp);
             }
@@ -1630,27 +1593,27 @@ public:
             Bnb.setZero();
             Bbn.setZero();
 
-            Xc.noalias() = x_coefs_c_trans * qsi_c_at_center; // center of the cell
+            Xc = x_coefs_c_trans * qsi_c_at_center; // center of the cell
           }
           //cout << "--------------------------------------------\n";
           for (int qp = 0; qp < n_qpts_cell; ++qp)
           {
-            F_c.noalias()    = x_coefs_c_trans * dLqsi_c[qp];
+            F_c    = x_coefs_c_trans * dLqsi_c[qp];
             inverseAndDet(F_c, dim, invF_c,Jx);
             invFT_c= invF_c.transpose();
 
-            dxphi_c.noalias() = dLphi_c[qp] * invF_c;
-            dxpsi_c.noalias() = dLpsi_c[qp] * invF_c;
-            dxqsi_c.noalias() = dLqsi_c[qp] * invF_c;
+            dxphi_c = dLphi_c[qp] * invF_c;
+            dxpsi_c = dLpsi_c[qp] * invF_c;
+            dxqsi_c = dLqsi_c[qp] * invF_c;
 
-            dxP.noalias()  = dxpsi_c.transpose() * p_coefs_c;
-            dxU.noalias()  = u_coefs_c_trans * dxphi_c;
+            dxP  = dxpsi_c.transpose() * p_coefs_c;
+            dxU  = u_coefs_c_trans * dxphi_c;
 
-            Xqp.noalias()  = x_coefs_c_trans * qsi_c[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
-            Uqp.noalias()  = u_coefs_c_trans * phi_c[qp];
+            Xqp  = x_coefs_c_trans * qsi_c[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
+            Uqp  = u_coefs_c_trans * phi_c[qp];
             //Pqp  = p_coefs_c.dot(psi_c[qp]);
-            Uqp_old.noalias() = u_coefs_c_old_trans * phi_c[qp];
-            Uconv_old.noalias() = Uqp_old - v_coefs_c_old_trans * qsi_c[qp];
+            Uqp_old = u_coefs_c_old_trans * phi_c[qp];
+            Uconv_old = Uqp_old - v_coefs_c_old_trans * qsi_c[qp];
             //Uconv_old = Uqp_old;
 
             weight = quadr_cell->weight(qp);
@@ -1775,10 +1738,10 @@ public:
 
             Dpb  = Gbp.transpose();
 
-            Aloc.noalias() -= Bnb*iBbb*Bbn;
-            Gloc.noalias() -= Bnb*iBbb*Gbp;
-            Dloc.noalias() -= Dpb*iBbb*Bbn;
-            Eloc.noalias() = -Dpb*iBbb*Gbp;
+            Aloc -= Bnb*iBbb*Bbn;
+            Gloc -= Bnb*iBbb*Gbp;
+            Dloc -= Dpb*iBbb*Bbn;
+            Eloc = -Dpb*iBbb*Gbp;
 
           }
           if(behaviors & BH_GLS)
@@ -1787,7 +1750,7 @@ public:
           }
           if(behaviors & BH_bble_condens_CR)
           {
-            Aloc.noalias() += (  (Gnx*iBbb/bble_integ - bble_integ*Bnb)*Gnx.transpose() - Gnx*Bbn )/bble_integ;
+            Aloc += (  (Gnx*iBbb/bble_integ - bble_integ*Bnb)*Gnx.transpose() - Gnx*Bbn )/bble_integ;
           }
 
           rotate_RARt(R, Aloc, tmp);
@@ -1817,23 +1780,23 @@ public:
 
       int                 tag;
       PetscBool          is_surface;
-      LocalNodes          facet_nodes(nodes_per_facet);
+      VectorXi          facet_nodes(nodes_per_facet);
       double              Jx;
       double              weight;
-      Coefs_x             x_coefs_f(nodes_per_facet, dim);                // coordenadas nodais da célula
-      Coefs_xt            x_coefs_f_trans(dim, nodes_per_facet);
+      MatrixXd             x_coefs_f(nodes_per_facet, dim);                // coordenadas nodais da célula
+      MatrixXd            x_coefs_f_trans(dim, nodes_per_facet);
       Vector              normal(dim);
       Tensor              F_f(dim,dim-1);
       Tensor              invF_f(dim-1,dim);
-      Coefs_u             dxphi_f(n_dofs_u_per_facet/dim, dim);
+      MatrixXd             dxphi_f(n_dofs_u_per_facet/dim, dim);
       Vector              Xqp(dim);
-      LocalMat_uu         Aloc_f(n_dofs_u_per_facet, n_dofs_u_per_facet);
+      MatrixXd         Aloc_f(n_dofs_u_per_facet, n_dofs_u_per_facet);
 
-      Map_u               mapU_f(n_dofs_u_per_facet);
-      Map_p               mapP_f(n_dofs_p_per_facet);
+      VectorXi               mapU_f(n_dofs_u_per_facet);
+      VectorXi               mapP_f(n_dofs_p_per_facet);
 
-      LocalMat_uu    R(n_dofs_u_per_facet,n_dofs_u_per_facet);
-      LocalMat_uu    tmp;
+      MatrixXd    R(n_dofs_u_per_facet,n_dofs_u_per_facet);
+      MatrixXd    tmp;
 
       // LOOP NAS FACES DO CONTORNO
       facet_iterator facet = mesh->facetBegin();
@@ -1866,17 +1829,17 @@ public:
 
         for (int qp = 0; qp < n_qpts_facet; ++qp)
         {
-          F_f.noalias()   = x_coefs_f_trans * dLqsi_f[qp];
+          F_f   = x_coefs_f_trans * dLqsi_f[qp];
 
-          tmp.noalias() = F_f.transpose()*F_f;
+          tmp = F_f.transpose()*F_f;
           Jx = sqrt(determinant(tmp, tmp.rows()));
           invert(tmp, tmp.rows());
-          invF_f.noalias() = tmp*F_f.transpose();
+          invF_f = tmp*F_f.transpose();
 
 
           weight = quadr_facet->weight(qp);
-          Xqp.noalias()  = x_coefs_f_trans * qsi_f[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
-          dxphi_f.noalias() = dLphi_f[qp] * invF_f;
+          Xqp  = x_coefs_f_trans * qsi_f[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
+          dxphi_f = dLphi_f[qp] * invF_f;
 
 
           for (int i = 0; i < n_dofs_u_per_facet/dim; ++i)
@@ -1909,14 +1872,14 @@ public:
       int                 tag;
       bool                is_triple;
 
-      Coefs_u             u_coefs_k(n_dofs_u_per_corner/dim, dim);
-      Coefs_u             u_coefs_kp1(n_dofs_u_per_corner/dim, dim);
-      Coefs_u             u_coefs_km1(n_dofs_u_per_corner/dim, dim);
-      LocalVec_u          FUloc_km1(n_dofs_u_per_corner);
-      LocalVec_u          FUloc_kp1(n_dofs_u_per_corner);
-      LocalMat_uu         Aloc_r(n_dofs_u_per_corner, n_dofs_u_per_corner);
-      Map_u               mapU_r(n_dofs_u_per_corner);
-      Map_p               mapP_r(n_dofs_p_per_corner);
+      MatrixXd             u_coefs_k(n_dofs_u_per_corner/dim, dim);
+      MatrixXd             u_coefs_kp1(n_dofs_u_per_corner/dim, dim);
+      MatrixXd             u_coefs_km1(n_dofs_u_per_corner/dim, dim);
+      VectorXd          FUloc_km1(n_dofs_u_per_corner);
+      VectorXd          FUloc_kp1(n_dofs_u_per_corner);
+      MatrixXd         Aloc_r(n_dofs_u_per_corner, n_dofs_u_per_corner);
+      VectorXi               mapU_r(n_dofs_u_per_corner);
+      VectorXi               mapP_r(n_dofs_p_per_corner);
       double      h;
       volatile    double hh;
 
@@ -2011,14 +1974,14 @@ public:
     VecZeroEntries(f);
     //#pragma omp parallel default(none) shared(x,f,cout)
     {
-      LocalVec_u          FUloc(n_dofs_u_per_cell);
-      LocalVec_p          FPloc(n_dofs_p_per_cell);
+      VectorXd          FUloc(n_dofs_u_per_cell);
+      VectorXd          FPloc(n_dofs_p_per_cell);
 
-      Coefs_u             u_coefs_c_new(n_dofs_u_per_cell/dim, dim);
-      Coefs_p             p_coefs_c(n_dofs_p_per_cell);
+      MatrixXd             u_coefs_c_new(n_dofs_u_per_cell/dim, dim);
+      VectorXd             p_coefs_c(n_dofs_p_per_cell);
 
-      Map_u               mapU_c(n_dofs_u_per_cell);
-      Map_p               mapP_c(n_dofs_p_per_cell);
+      VectorXi               mapU_c(n_dofs_u_per_cell);
+      VectorXi               mapP_c(n_dofs_p_per_cell);
 
       //const int tid = omp_get_thread_num();
       //const int nthreads = omp_get_num_threads();
@@ -2064,14 +2027,14 @@ public:
     // LOOP NAS FACES DO CONTORNO
     //#pragma omp parallel default(none) shared(x,f,cout)
     {
-      LocalVec_u          FUloc(n_dofs_u_per_facet);
-      //LocalVec_p          FPloc(n_dofs_p_per_facet); // don't need it
+      VectorXd          FUloc(n_dofs_u_per_facet);
+      //VectorXd          FPloc(n_dofs_p_per_facet); // don't need it
 
-      Coefs_u             u_coefs_f(n_dofs_u_per_facet/dim, dim);
-      Coefs_p             p_coefs_f(n_dofs_p_per_facet);
+      MatrixXd             u_coefs_f(n_dofs_u_per_facet/dim, dim);
+      VectorXd             p_coefs_f(n_dofs_p_per_facet);
 
-      Map_u               mapU_f(n_dofs_u_per_facet);
-      Map_p               mapP_f(n_dofs_p_per_facet);
+      VectorXi               mapU_f(n_dofs_u_per_facet);
+      VectorXi               mapP_f(n_dofs_p_per_facet);
 
       bool is_neumann;
       bool is_surface;
@@ -2130,11 +2093,11 @@ public:
       int                 tag;
       bool                is_triple;
 
-      Coefs_u             u_coefs_r(n_dofs_u_per_corner/dim, dim);
-      LocalVec_u          FUloc(n_dofs_u_per_corner);
+      MatrixXd             u_coefs_r(n_dofs_u_per_corner/dim, dim);
+      VectorXd          FUloc(n_dofs_u_per_corner);
 
-      Map_u               mapU_r(n_dofs_u_per_corner);
-      Map_p               mapP_r(n_dofs_p_per_corner);
+      VectorXi               mapU_r(n_dofs_u_per_corner);
+      VectorXi               mapP_r(n_dofs_p_per_corner);
 
       //const int tid = omp_get_thread_num();
       //const int nthreads = omp_get_num_threads();
@@ -2374,30 +2337,30 @@ public:
   // ***********
   // form the residue of the cell
   void formCellFunction(cell_iterator &cell,
-                                  Map_u &mapU_c,  Map_p &/*mapP_c*/, // mappers
-                                  Coefs_u &u_coefs_c_new,  Coefs_p &p_coefs_c, // coefficients
-                                  LocalVec_u &FUloc, LocalVec_p &FPloc) // output: local residue
+                                  VectorXi &mapU_c,  VectorXi &/*mapP_c*/, // mappers
+                                  MatrixXd &u_coefs_c_new,  VectorXd &p_coefs_c, // coefficients
+                                  VectorXd &FUloc, VectorXd &FPloc) // output: local residue
   {
 
     /* local data */
     int                 tag;
     //MatrixXd            u_coefs_c(n_dofs_u_per_cell/dim, dim);
-    Coefs_ut            u_coefs_c_trans(dim, n_dofs_u_per_cell/dim);       // n+theta
-    Coefs_u             u_coefs_c_old(n_dofs_u_per_cell/dim, dim);         // n
-    Coefs_ut            u_coefs_c_old_trans(dim, n_dofs_u_per_cell/dim);   //
-    Coefs_v             v_coefs_c_old(nodes_per_cell, dim);                // mesh velocity; n
-    Coefs_vt            v_coefs_c_old_trans(dim, nodes_per_cell);          //
-    //Coefs_u             u_coefs_c_new(n_dofs_u_per_cell/dim, dim);         // n+1
-    Coefs_ut            u_coefs_c_new_trans(dim, n_dofs_u_per_cell/dim);   //
-    //Coefs_p             p_coefs_c(n_dofs_p_per_cell);
-    Coefs_x             x_coefs_c(nodes_per_cell, dim);
-    Coefs_xt            x_coefs_c_trans(dim, nodes_per_cell);
+    MatrixXd            u_coefs_c_trans(dim, n_dofs_u_per_cell/dim);       // n+theta
+    MatrixXd             u_coefs_c_old(n_dofs_u_per_cell/dim, dim);         // n
+    MatrixXd            u_coefs_c_old_trans(dim, n_dofs_u_per_cell/dim);   //
+    MatrixXd             v_coefs_c_old(nodes_per_cell, dim);                // mesh velocity; n
+    MatrixXd            v_coefs_c_old_trans(dim, nodes_per_cell);          //
+    //MatrixXd             u_coefs_c_new(n_dofs_u_per_cell/dim, dim);         // n+1
+    MatrixXd            u_coefs_c_new_trans(dim, n_dofs_u_per_cell/dim);   //
+    //VectorXd             p_coefs_c(n_dofs_p_per_cell);
+    MatrixXd             x_coefs_c(nodes_per_cell, dim);
+    MatrixXd            x_coefs_c_trans(dim, nodes_per_cell);
     Tensor              F_c(dim,dim);
     Tensor              invF_c(dim,dim);
     Tensor              invFT_c(dim,dim);
-    Coefs_u             dxphi_c(n_dofs_u_per_cell/dim, dim);
-    Coefs_p3            dxpsi_c(n_dofs_p_per_cell, dim);       // EXCEÇÃO
-    Coefs_x             dxqsi_c(nodes_per_cell, dim);
+    MatrixXd             dxphi_c(n_dofs_u_per_cell/dim, dim);
+    MatrixXd            dxpsi_c(n_dofs_p_per_cell, dim);       // EXCEÇÃO
+    MatrixXd             dxqsi_c(nodes_per_cell, dim);
     Vector              dxbble(dim);
     Tensor              dxU(dim,dim);   // grad u
     Tensor              dxUb(dim,dim);  // grad u bble
@@ -2413,15 +2376,15 @@ public:
     Vector              dUdt(dim);
     double              Pqp=0;
     double              bble_integ=0;
-    //LocalVec_u          FUloc(n_dofs_u_per_cell); // subvetor da função f (parte de U)
-    //LocalVec_p          FPloc(n_dofs_p_per_cell);     // subvetor da função f (parte de P)
+    //VectorXd          FUloc(n_dofs_u_per_cell); // subvetor da função f (parte de U)
+    //VectorXd          FPloc(n_dofs_p_per_cell);     // subvetor da função f (parte de P)
     Tensor              iBbb(dim, dim);                               // BC, i : inverse ..it is not the inverse to CR element
-    LocalMat_u3         Bnb(n_dofs_u_per_cell, dim);
-    LocalMat_3p         Gbp(dim, n_dofs_p_per_cell);
-    LocalMat_u3         Gnx(n_dofs_u_per_cell, dim);                  // CR ;; suffix x means p gradient
+    MatrixXd         Bnb(n_dofs_u_per_cell, dim);
+    MatrixXd         Gbp(dim, n_dofs_p_per_cell);
+    MatrixXd         Gnx(n_dofs_u_per_cell, dim);                  // CR ;; suffix x means p gradient
     Vector              FUb(dim);
     Vector              FPx(dim); // pressure gradient
-    LocalNodes          cell_nodes(nodes_per_cell);
+    VectorXi          cell_nodes(nodes_per_cell);
     double              Jx=0;
     double              weight=0;
     double              visc=-1; // viscosity
@@ -2430,10 +2393,10 @@ public:
     double              tau=0;
     double              delta_cd=0;
 
-    Map_v               mapM_c(dim*nodes_per_cell); // mesh velocity
+    VectorXi               mapM_c(dim*nodes_per_cell); // mesh velocity
 
-    LocalMat_uu         R(n_dofs_u_per_cell,n_dofs_u_per_cell);
-    LocalMat_uu         tmp;
+    MatrixXd         R(n_dofs_u_per_cell,n_dofs_u_per_cell);
+    MatrixXd         tmp;
 
 
 
@@ -2481,7 +2444,7 @@ public:
     {
       cell_volume = 0;
       for (int qp = 0; qp < n_qpts_cell; ++qp) {
-        F_c.noalias() = x_coefs_c.transpose() * dLqsi_c[qp];
+        F_c = x_coefs_c.transpose() * dLqsi_c[qp];
         Jx = determinant(F_c,dim);
         cell_volume += Jx * quadr_cell->weight(qp);
       }
@@ -2499,32 +2462,32 @@ public:
       FUb.setZero();
       FPx.setZero();
 
-      Xc.noalias() = x_coefs_c_trans * qsi_c_at_center; // center of the cell
+      Xc = x_coefs_c_trans * qsi_c_at_center; // center of the cell
     }
 
     // Quadrature
     for (int qp = 0; qp < n_qpts_cell; ++qp)
     {
-      F_c.noalias() = x_coefs_c_trans * dLqsi_c[qp];
+      F_c = x_coefs_c_trans * dLqsi_c[qp];
       inverseAndDet(F_c,dim,invF_c,Jx);
       invFT_c= invF_c.transpose();
 
-      dxphi_c.noalias() = dLphi_c[qp] * invF_c;
-      dxpsi_c.noalias() = dLpsi_c[qp] * invF_c;
-      dxqsi_c.noalias() = dLqsi_c[qp] * invF_c;
+      dxphi_c = dLphi_c[qp] * invF_c;
+      dxpsi_c = dLpsi_c[qp] * invF_c;
+      dxqsi_c = dLqsi_c[qp] * invF_c;
 
-      dxP.noalias()  = dxpsi_c.transpose() * p_coefs_c;
-      dxU.noalias()  = u_coefs_c_trans * dxphi_c;       // n+theta
-      dxU_new.noalias() = u_coefs_c_new_trans* dxphi_c; // n+1
+      dxP  = dxpsi_c.transpose() * p_coefs_c;
+      dxU  = u_coefs_c_trans * dxphi_c;       // n+theta
+      dxU_new = u_coefs_c_new_trans* dxphi_c; // n+1
 
-      Xqp.noalias()  = x_coefs_c_trans * qsi_c[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
-      Uqp.noalias()  = u_coefs_c_trans * phi_c[qp];
+      Xqp  = x_coefs_c_trans * qsi_c[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
+      Uqp  = u_coefs_c_trans * phi_c[qp];
       Pqp            = p_coefs_c.dot(psi_c[qp]);
-      Uqp_old.noalias() = u_coefs_c_old_trans * phi_c[qp]; // n
-      Uconv_old.noalias() = Uqp_old - v_coefs_c_old_trans * qsi_c[qp];
+      Uqp_old = u_coefs_c_old_trans * phi_c[qp]; // n
+      Uconv_old = Uqp_old - v_coefs_c_old_trans * qsi_c[qp];
       //Uconv_old = Uqp_old;
-      Uqp_new.noalias() = u_coefs_c_new_trans * phi_c[qp]; // n+1
-      dUdt.noalias()    = (Uqp_new-Uqp_old)/dt;
+      Uqp_new = u_coefs_c_new_trans * phi_c[qp]; // n+1
+      dUdt    = (Uqp_new-Uqp_old)/dt;
 
       weight = quadr_cell->weight(qp);
 
@@ -2639,13 +2602,13 @@ public:
       //iBbb = iBbb.inverse().eval();
       invert(iBbb,dim);
 
-      FUloc.noalias() -= Bnb*iBbb*FUb;
-      FPloc.noalias() -= Gbp.transpose()*iBbb*FUb;
+      FUloc -= Bnb*iBbb*FUb;
+      FPloc -= Gbp.transpose()*iBbb*FUb;
     }
 
     if(behaviors & BH_bble_condens_CR)
     {
-      FUloc.noalias() += ( (Gnx*iBbb/bble_integ - bble_integ*Bnb)*FPx - Gnx*FUb )/bble_integ;
+      FUloc += ( (Gnx*iBbb/bble_integ - bble_integ*Bnb)*FPx - Gnx*FUb )/bble_integ;
     }
 
     rotate_RA(R,FUloc,tmp);
@@ -2657,36 +2620,36 @@ public:
   // ***********
   // form the residue of the facet
   void formFacetFunction(facet_iterator &facet,
-                         Map_u const&/*mapU_f*/,  Map_p const&/*mapP_f*/, // mappers
-                         Coefs_u &u_coefs_f,  Coefs_p &/*p_coefs_f*/, // coefficients
-                         LocalVec_u &FUloc) // output: local residue
+                         VectorXi const&/*mapU_f*/,  VectorXi const&/*mapP_f*/, // mappers
+                         MatrixXd &u_coefs_f,  VectorXd &/*p_coefs_f*/, // coefficients
+                         VectorXd &FUloc) // output: local residue
   {
     int                 tag;
     bool                is_neumann;
     bool                is_surface;
     bool                is_solid;
-    //Coefs_u             u_coefs_f(n_dofs_u_per_facet/dim, dim);
-    //Coefs_p             p_coefs_f(n_dofs_p_per_facet);
-    Coefs_ut            u_coefs_f_trans(dim, n_dofs_u_per_facet/dim);
-    Coefs_x             x_coefs_f(nodes_per_facet, dim);
-    Coefs_xt            x_coefs_f_trans(dim, nodes_per_facet);
+    //MatrixXd             u_coefs_f(n_dofs_u_per_facet/dim, dim);
+    //VectorXd             p_coefs_f(n_dofs_p_per_facet);
+    MatrixXd            u_coefs_f_trans(dim, n_dofs_u_per_facet/dim);
+    MatrixXd             x_coefs_f(nodes_per_facet, dim);
+    MatrixXd            x_coefs_f_trans(dim, nodes_per_facet);
     Tensor              F_f(dim,dim-1);
     Tensor              invF_f(dim-1,dim);
-    Coefs_u             dxphi_f(n_dofs_u_per_facet/dim, dim);
+    MatrixXd             dxphi_f(n_dofs_u_per_facet/dim, dim);
     Tensor              dxU_f(dim,dim);   // grad u
     Vector              Xqp(dim);
     Vector              Uqp(dim);
-    //LocalVec_u          FUloc(n_dofs_u_per_facet);
-    LocalMat_uu         Aloc_f(n_dofs_u_per_facet, n_dofs_u_per_facet);
-    LocalNodes          facet_nodes(nodes_per_facet);
+    //VectorXd          FUloc(n_dofs_u_per_facet);
+    MatrixXd         Aloc_f(n_dofs_u_per_facet, n_dofs_u_per_facet);
+    VectorXi          facet_nodes(nodes_per_facet);
     Vector              normal(dim);
     double              Jx=0;
     double              weight=0;
 
-    Map_v               mapM_f(dim*nodes_per_facet);
+    VectorXi               mapM_f(dim*nodes_per_facet);
 
-    LocalMat_uu         R(n_dofs_u_per_facet,n_dofs_u_per_facet);
-    LocalMat_uu         tmp;
+    MatrixXd         R(n_dofs_u_per_facet,n_dofs_u_per_facet);
+    MatrixXd         tmp;
 
     // ----- computations ------
     FUloc.setZero();
@@ -2703,31 +2666,31 @@ public:
 
     mesh->getFacetNodesId(&*facet, facet_nodes.data());
     mesh->getNodesCoords(facet_nodes.begin(), facet_nodes.end(), x_coefs_f.data());
-    x_coefs_f_trans.noalias() = x_coefs_f.transpose();
+    x_coefs_f_trans = x_coefs_f.transpose();
 
     getRotationMatrix(R,facet_nodes,facet_nodes.size());
 
     rotate_RtA(R,u_coefs_f,tmp);
-    u_coefs_f_trans.noalias() = u_coefs_f.transpose();
+    u_coefs_f_trans = u_coefs_f.transpose();
 
 
 
     for (int qp = 0; qp < n_qpts_facet; ++qp)
     {
 
-      F_f.noalias()   = x_coefs_f_trans * dLqsi_f[qp];
+      F_f   = x_coefs_f_trans * dLqsi_f[qp];
 
-      tmp.noalias() = F_f.transpose()*F_f;
+      tmp = F_f.transpose()*F_f;
       Jx = sqrt(determinant(tmp, tmp.rows()));
       invert(tmp, tmp.rows());
-      invF_f.noalias() = tmp*F_f.transpose();
+      invF_f = tmp*F_f.transpose();
 
 
       weight  = quadr_facet->weight(qp);
-      Xqp.noalias()     = x_coefs_f_trans * qsi_f[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
-      dxphi_f.noalias() = dLphi_f[qp] * invF_f;
-      dxU_f.noalias()   = u_coefs_f_trans * dxphi_f; // n+theta
-      Uqp.noalias()  = u_coefs_f_trans * phi_f[qp];
+      Xqp     = x_coefs_f_trans * qsi_f[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
+      dxphi_f = dLphi_f[qp] * invF_f;
+      dxU_f   = u_coefs_f_trans * dxphi_f; // n+theta
+      Uqp  = u_coefs_f_trans * phi_f[qp];
 
       if (is_neumann)
         for (int i = 0; i < n_dofs_u_per_facet/dim; ++i)
@@ -2770,27 +2733,27 @@ public:
   // ***********
   // form the residue of the contact line (2D)
   void formCornerFunction(corner_iterator &corner,
-                          Map_u const&/*mapU_r*/,  Map_p const&/*mapP_r*/, // mappers
-                          Coefs_u &u_coefs_r, // coefficients
-                          LocalVec_u &FUloc)
+                          VectorXi const&/*mapU_r*/,  VectorXi const&/*mapP_r*/, // mappers
+                          MatrixXd &u_coefs_r, // coefficients
+                          VectorXd &FUloc)
   {
 
     bool                gen_error = false;
     int                 tag;
     bool                is_triple;
-    //Coefs_u             u_coefs_r(n_dofs_u_per_corner/dim, dim);
-    Coefs_ut            u_coefs_r_trans(dim, n_dofs_u_per_corner/dim);
-    Coefs_x             x_coefs_r(nodes_per_corner, dim);
-    Coefs_xt            x_coefs_r_trans(dim, nodes_per_corner);
+    //MatrixXd             u_coefs_r(n_dofs_u_per_corner/dim, dim);
+    MatrixXd            u_coefs_r_trans(dim, n_dofs_u_per_corner/dim);
+    MatrixXd             x_coefs_r(nodes_per_corner, dim);
+    MatrixXd            x_coefs_r_trans(dim, nodes_per_corner);
     Tensor              F_r(dim,dim-2);
     Tensor              invF_r(dim-2,dim);
-    Coefs_u             dxphi_r(n_dofs_u_per_corner/dim, dim);
+    MatrixXd             dxphi_r(n_dofs_u_per_corner/dim, dim);
     Tensor              dxU_r(dim,dim);   // grad u
     Vector              Xqp(dim);
     Vector              Uqp(dim);
-    //LocalVec_u          FUloc(n_dofs_u_per_corner);
-    //LocalMat_uu         Aloc_r(n_dofs_u_per_corner, n_dofs_u_per_corner);
-    LocalNodes          corner_nodes(nodes_per_corner);
+    //VectorXd          FUloc(n_dofs_u_per_corner);
+    //MatrixXd         Aloc_r(n_dofs_u_per_corner, n_dofs_u_per_corner);
+    VectorXi          corner_nodes(nodes_per_corner);
     Vector              normal(dim);
     Vector              line_normal(dim);
     Vector              solid_point(dim); // ponto na superfície do sólido .. ele é único
@@ -2806,12 +2769,12 @@ public:
     int                 *iCs_it;
     Cell                *fluid_cell;
 
-    //Map_u               mapU_r(n_dofs_u_per_corner);
-    //Map_p               mapP_r(n_dofs_p_per_corner);
-    Map_v               mapM_r(dim*nodes_per_corner);
+    //VectorXi               mapU_r(n_dofs_u_per_corner);
+    //VectorXi               mapP_r(n_dofs_p_per_corner);
+    VectorXi               mapM_r(dim*nodes_per_corner);
 
-    LocalMat_uu         R(n_dofs_u_per_corner,n_dofs_u_per_corner);
-    LocalMat_uu         tmp;
+    MatrixXd         R(n_dofs_u_per_corner,n_dofs_u_per_corner);
+    MatrixXd         tmp;
 
 
     tag = corner->getTag();
@@ -2923,7 +2886,7 @@ public:
 
     //mesh->getCornerNodesId(&*corner, corner_nodes.data());
     mesh->getNodesCoords(corner_nodes.begin(), corner_nodes.end(), x_coefs_r.data());
-    x_coefs_r_trans.noalias() = x_coefs_r.transpose();
+    x_coefs_r_trans = x_coefs_r.transpose();
 
     getRotationMatrix(R,corner_nodes,corner_nodes.size());
 
@@ -2935,7 +2898,7 @@ public:
     {
       if (dim==3)
       {
-        F_r.noalias()   = x_coefs_r_trans * dLqsi_r[qp];
+        F_r   = x_coefs_r_trans * dLqsi_r[qp];
         Jx = F_r.norm();
       }
       else
@@ -2945,10 +2908,10 @@ public:
       //invF_r = F_r.transpose()/(Jx*Jx);
 
       weight  = quadr_corner->weight(qp);
-      Xqp.noalias() = x_coefs_r_trans * qsi_r[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
-      //dxphi_r.noalias() = dLphi_r[qp] * invF_r;
-      //dxU_r.noalias()   = u_coefs_r_trans * dxphi_r; // n+theta
-      Uqp.noalias()  = u_coefs_r_trans * phi_r[qp];
+      Xqp = x_coefs_r_trans * qsi_r[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
+      //dxphi_r = dLphi_r[qp] * invF_r;
+      //dxU_r   = u_coefs_r_trans * dxphi_r; // n+theta
+      Uqp  = u_coefs_r_trans * phi_r[qp];
 
       if (dim==3)
       {
@@ -2987,7 +2950,7 @@ public:
 
   //// R size: ndofu x ndofu
   template<class AnyStaticMAtrix, class AnyStaticVector>
-  void getRotationMatrix(AnyStaticMAtrix & R, AnyStaticVector/*LocalNodes*/ const& nodes, int const n_nodes) const
+  void getRotationMatrix(AnyStaticMAtrix & R, AnyStaticVector/*VectorXi*/ const& nodes, int const n_nodes) const
   {
     //const int n_nodes = nodes.size();
     //const bool mesh_has_edge_nodes  = mesh->numNodesPerCell() > mesh->numVerticesPerCell();
@@ -3020,16 +2983,16 @@ public:
 
       point->getCoord(X.data());
 
-      normal.noalias() = solid_normal(X,current_time,tag);
+      normal = solid_normal(X,current_time,tag);
 
-      R.block(i*dim,i*dim,1,dim).noalias()  = normal.transpose();
+      R.block(i*dim,i*dim,1,dim)  = normal.transpose();
       tmp.setZero();
       if (dim==2)
       {
         tmp(0) = -normal(1);
         tmp(1) =  normal(0);
         tmp.normalize();
-        R.block(i*dim+1,i*dim,1,dim).noalias()  = tmp.transpose();
+        R.block(i*dim+1,i*dim,1,dim)  = tmp.transpose();
       }
       else
       if (dim==3)
@@ -3043,7 +3006,7 @@ public:
           tmp(1) = 0;
           tmp(2) = -normal(0)/aux;
 
-          R.block(i*dim+1,i*dim,1,dim).noalias()  = tmp.transpose();
+          R.block(i*dim+1,i*dim,1,dim)  = tmp.transpose();
 
           tmp(0) =  -normal(1)*normal(0)/aux;
           tmp(1) =  aux;
@@ -3057,14 +3020,14 @@ public:
           tmp(1) =  normal(0)/aux;
           tmp(2) = 0;
 
-          R.block(i*dim+1,i*dim,1,dim).noalias()  = tmp.transpose();
+          R.block(i*dim+1,i*dim,1,dim)  = tmp.transpose();
 
           tmp(0) =  -normal(2)*normal(0)/aux;
           tmp(1) =  -normal(2)*normal(1)/aux;
           tmp(2) =  aux;
         }
 
-        R.block(i*dim+2,i*dim,1,dim).noalias()  = tmp.transpose();
+        R.block(i*dim+2,i*dim,1,dim)  = tmp.transpose();
       }
 
 
@@ -3084,7 +3047,7 @@ public:
       int const n = R.cols();
       tmp.resize(n,1);
       Map<VectorXd> v(M.data(),n);
-      tmp.noalias() = R.transpose()*v;
+      tmp = R.transpose()*v;
       v=tmp;
     }
     else
@@ -3092,7 +3055,7 @@ public:
       int const m = R.rows();
       int const n = M.cols();
       tmp.resize(m,n);
-      tmp.noalias() = R.transpose()*M;
+      tmp = R.transpose()*M;
       M = tmp;
     }
   }
@@ -3106,7 +3069,7 @@ public:
       int const n = R.cols();
       tmp.resize(n,1);
       Map<VectorXd> v(M.data(),n);
-      tmp.noalias() = R*v;
+      tmp = R*v;
       v=tmp;
     }
     else
@@ -3114,7 +3077,7 @@ public:
       int const m = R.rows();
       int const n = M.cols();
       tmp.resize(m,n);
-      tmp.noalias() = R*M;
+      tmp = R*M;
       M = tmp;
     }
   }
@@ -3125,7 +3088,7 @@ public:
   {
     int const m = R.rows();
     tmp.resize(m,m);
-    tmp.noalias() = R*M*R.transpose();
+    tmp = R*M*R.transpose();
     M = tmp;
   }
 
@@ -3135,7 +3098,7 @@ public:
     int const m = M.rows();
     int const n = R.cols();
     tmp.resize(m,n);
-    tmp.noalias() = M*R.transpose();
+    tmp = M*R.transpose();
     M = tmp;
   }
 
@@ -3158,7 +3121,7 @@ public:
     Vector              Uqp(dim);
 
     double              Pqp;
-    LocalNodes          cell_nodes(nodes_per_cell);
+    VectorXi          cell_nodes(nodes_per_cell);
     double              Jx;
     double              weight;
     int                 tag;
@@ -3168,12 +3131,12 @@ public:
     double              grad_u_L2_norm = 0.;
     double              grad_p_L2_norm = 0.;
 
-    Map_u               mapU_c(n_dofs_u_per_cell);
-    Map_u               mapU_r(n_dofs_u_per_corner);
-    Map_p               mapP_c(n_dofs_p_per_cell);
-    Map_p               mapP_r(n_dofs_p_per_corner);
-    Map_v               mapM_c(dim*nodes_per_cell);
-    Map_v               mapM_r(dim*nodes_per_corner);
+    VectorXi               mapU_c(n_dofs_u_per_cell);
+    VectorXi               mapU_r(n_dofs_u_per_corner);
+    VectorXi               mapP_c(n_dofs_p_per_cell);
+    VectorXi               mapP_r(n_dofs_p_per_corner);
+    VectorXi               mapM_c(dim*nodes_per_cell);
+    VectorXi               mapM_r(dim*nodes_per_corner);
 
 
     cell_iterator cell = mesh->cellBegin();
@@ -3243,7 +3206,7 @@ public:
       const int n_facets_total = mesh->numFacetsTotal();
       Facet const* facet(NULL);
       double hmin_local=99999999, dist(0);
-      LocalNodes facet_nodes(nodes_per_facet);
+      VectorXi facet_nodes(nodes_per_facet);
       Vector Xa(dim), Xb(dim);
 
       //#pragma omp for nowait
@@ -3278,7 +3241,7 @@ public:
       const int n_corners_total = mesh->numCornersTotal();
       Corner const* corner(NULL);
       double hmin_local=99999999, dist(0);
-      LocalNodes corner_nodes(nodes_per_corner);
+      VectorXi corner_nodes(nodes_per_corner);
       Vector Xa(dim), Xb(dim);
 
       //#pragma omp for nowait
@@ -3318,13 +3281,13 @@ public:
   void getNormalsFromMesh(Vec *x_mesh)
   {
 
-    LocalNodes          facet_nodes(nodes_per_facet);
-    Coefs_x             x_coefs(nodes_per_facet, dim);                // coordenadas nodais da célula
-    Coefs_xt            x_coefs_trans(dim, nodes_per_facet);
+    VectorXi          facet_nodes(nodes_per_facet);
+    MatrixXd             x_coefs(nodes_per_facet, dim);                // coordenadas nodais da célula
+    MatrixXd            x_coefs_trans(dim, nodes_per_facet);
     Vector              X;
     Vector              normal(dim);
     Tensor              F(dim,dim-1);
-    Map_u               map(n_dofs_u_per_facet);
+    VectorXi               map(n_dofs_u_per_facet);
     //bool                is_surface, is_solid;
     int                 tag;
     bool                virtual_mesh;
@@ -3369,7 +3332,7 @@ public:
         if (is_in(tag, solid_tags))
           continue;
 
-        F.noalias()   = x_coefs_trans * dLphi_nf[k];
+        F   = x_coefs_trans * dLphi_nf[k];
 
         if (dim==2)
         {
@@ -3462,11 +3425,11 @@ public:
     Vector     Uf(dim), Ue(dim), Umsh(dim); // Ue := elastic velocity
     int        tag;
     int        iVs[128], *iVs_end;
-    Vector_i   vtx_dofs_umesh(dim);  // indices de onde pegar a velocidade
-    Vector_i   vtx_dofs_fluid(dim); // indices de onde pegar a velocidade
-    LocalNodes edge_dofs_umesh(3*dim);
-    LocalNodes edge_dofs_fluid((2+u_has_edge_assoc_dof)*dim);
-    Vector_i   edge_nodes(3);
+    VectorXi   vtx_dofs_umesh(dim);  // indices de onde pegar a velocidade
+    VectorXi   vtx_dofs_fluid(dim); // indices de onde pegar a velocidade
+    VectorXi edge_dofs_umesh(3*dim);
+    VectorXi edge_dofs_fluid((2+u_has_edge_assoc_dof)*dim);
+    VectorXi   edge_nodes(3);
     Tensor     R(dim,dim);
     bool       in_boundary;
     int        id;
@@ -3771,11 +3734,11 @@ public:
   {
     Vector      Xi(dim), tmp(dim);
     Vector      U(dim), Umsh(dim);
-    Vector_i    vtx_dofs_umesh(3); // indices de onde pegar a velocidade
+    VectorXi    vtx_dofs_umesh(3); // indices de onde pegar a velocidade
     //int       vtx_dofs_fluid[3]; // indices de onde pegar a velocidade
     //int       tag;
-    Vector_i    edge_dofs(dim);
-    Vector_i    edge_nodes(3);
+    VectorXi    edge_dofs(dim);
+    VectorXi    edge_nodes(3);
     Tensor      R(dim,dim);
     int         nodeid;
     //int         edge_id;
@@ -4071,13 +4034,13 @@ double GetDataVelocity<Coord>::get_data_r(int nodeid) const
   }
   else
   {
-    //Vector_i dofs(user.dim);
+    //VectorXi dofs(user.dim);
     user.dof_handler_vars.getVariable(0).getVertexDofs(dofs, point);
     for (int i = 0; i < user.dim; ++i)
       Ur(i) = q_array[dofs[i]];
   }
 
-  tmp.noalias() = R.transpose()*Ur;
+  tmp = R.transpose()*Ur;
   return tmp(Coord);
 }
 
@@ -4144,7 +4107,7 @@ double GetDataNormal<Coord>::get_data_r(int nodeid) const
   }
   else
   {
-    //Vector_i dofs(user.dim);
+    //VectorXi dofs(user.dim);
     user.dof_handler_mesh.getVariable(0).getVertexDofs(dofs, point);
     for (int i = 0; i < user.dim; ++i)
       Normal(i) = q_array[dofs[i]];
@@ -4385,7 +4348,7 @@ void cross(AnyVector & a, AnyVector const& b)
     Vector aux(dim);
     Vector normal(dim); // solid normal
     Vector X(dim);
-    Vector_i vtx_dofs_fluid(dim);
+    VectorXi vtx_dofs_fluid(dim);
     int nodeid;
     //Vector FUloc(dim);
     Vector U(dim);
@@ -4439,7 +4402,7 @@ void cross(AnyVector & a, AnyVector const& b)
     nodeid = mesh->getPointId(point);
     getRotationMatrix(R, &nodeid, 1);
 
-    U.noalias() = R.transpose()*Ur;
+    U = R.transpose()*Ur;
 
     FUloc(0) = (-gama(X, current_time, tag)*cos_theta0() + zeta(0,0)*line_normal.dot(U))*line_normal(0);
     FUloc(1) = (-gama(X, current_time, tag)*cos_theta0() + zeta(0,0)*line_normal.dot(U))*line_normal(1);
