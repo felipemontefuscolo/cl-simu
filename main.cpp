@@ -1237,6 +1237,10 @@ PetscErrorCode AppCtx::solveTimeProblem()
   // Solve nonlinear system
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   setInitialConditions();
+  
+  // suaviza a malha inicial
+  
+  
   current_time = 0;
   time_step = 0;
   double Umax=0;
@@ -1433,86 +1437,62 @@ void AppCtx::computeError(Vec &qq, double tt)
   grad_u_L2_norm = sqrt(grad_u_L2_norm);
   grad_p_L2_norm = sqrt(grad_p_L2_norm);
 
-  // compute hmin
-  double hmin=99999999;
-  const int high_order = mesh->numNodesPerCell() > mesh->numVerticesPerCell();
+  // compute hmean
+  double hmean=0;
   // ASSUME QUE SÓ POSSA TER NO MÁXIMO 1 NÓ POR ARESTA
 
+  VectorXi edge_nodes(3);
+  Vector Xa(dim), Xb(dim);
+  int n_edges=0;
+
   if (dim==2)
-  //#pragma omp parallel default(none) shared(hmin)
+  //#pragma omp parallel default(none) shared(hmean)
   {
-    const int n_facets_total = mesh->numFacetsTotal();
-    Facet const* facet(NULL);
-    double hmin_local=99999999, dist(0);
-    VectorXi facet_nodes(nodes_per_facet);
-    Vector Xa(dim), Xb(dim);
+    const int n_edges_total = mesh->numFacetsTotal();
+    Facet const* edge(NULL);
 
     //#pragma omp for nowait
-    for (int a = 0; a < n_facets_total; ++a)
+    for (int a = 0; a < n_edges_total; ++a)
     {
-      facet = mesh->getFacet(a);
-      if (facet->disabled())
+      edge = mesh->getFacet(a);
+      if (edge->disabled())
         continue;
 
-      mesh->getFacetNodesId(&*facet, facet_nodes.data());
+      mesh->getFacetNodesId(&*edge, edge_nodes.data());
 
-      mesh->getNode(facet_nodes[0])->getCoord(Xa.data());
-
-      for (int i = 1; i < nodes_per_facet-high_order; ++i)
-      {
-        mesh->getNode(facet_nodes[i])->getCoord(Xb.data());
-        dist = (Xa-Xb).norm();
-        if (hmin_local >  dist)
-          hmin_local = dist;
-      }
-    }
-    //#pragma omp critical
-    {
-      if (hmin_local < hmin)
-        hmin = hmin_local;
+      mesh->getNode(edge_nodes[0])->getCoord(Xa.data());
+      mesh->getNode(edge_nodes[1])->getCoord(Xb.data());
+      hmean += (Xa-Xb).norm();
+      ++n_edges;
     }
   }
 
   if (dim==3)
-  //#pragma omp parallel default(none) shared(cout,hmin)
+  //#pragma omp parallel default(none) shared(cout,hmean)
   {
-    const int n_corners_total = mesh->numCornersTotal();
-    Corner const* corner(NULL);
-    double hmin_local=99999999, dist(0);
-    VectorXi corner_nodes(nodes_per_corner);
-    Vector Xa(dim), Xb(dim);
+    const int n_edges_total = mesh->numCornersTotal();
+    Corner const* edge(NULL);
 
     //#pragma omp for nowait
-    for (int a = 0; a < n_corners_total; ++a)
+    for (int a = 0; a < n_edges_total; ++a)
     {
-      corner = mesh->getCorner(a);
-      if (corner->disabled())
+      edge = mesh->getCorner(a);
+      if (edge->disabled())
         continue;
 
-      mesh->getCornerNodesId(&*corner, corner_nodes.data());
+      mesh->getCornerNodesId(&*edge, edge_nodes.data());
 
-      mesh->getNode(corner_nodes[0])->getCoord(Xa.data());
-
-
-      for (int i = 1; i < nodes_per_corner-high_order; ++i)
-      {
-        mesh->getNode(corner_nodes[i])->getCoord(Xb.data());
-        dist = (Xa-Xb).norm();
-        if (hmin_local >  dist)
-          hmin_local = dist;
-
-      }
-    }
-    //#pragma omp critical
-    {
-      if (hmin_local < hmin)
-        hmin = hmin_local;
+      mesh->getNode(edge_nodes[0])->getCoord(Xa.data());
+      mesh->getNode(edge_nodes[1])->getCoord(Xb.data());
+      hmean += (Xa-Xb).norm();
+      ++n_edges;
     }
   }
+  hmean /= n_edges;
 
   cout << endl;
-  cout << "# hmin            u_L2_norm         p_L2_norm         grad_u_L2_norm    grad_p_L2_norm" << endl;
-  printf("%.15lf %.15lf %.15lf %.15lf %.15lf\n",hmin, u_L2_norm, p_L2_norm, grad_u_L2_norm, grad_p_L2_norm);
+  cout << "# hmean            u_L2_norm         p_L2_norm         grad_u_L2_norm    grad_p_L2_norm" << endl;
+  printf("%.15lf %.15lf %.15lf %.15lf %.15lf\n",hmean, u_L2_norm, p_L2_norm, grad_u_L2_norm, grad_p_L2_norm);
 
 }
 
@@ -1778,7 +1758,7 @@ void AppCtx::smoothsMesh(Vec &x_mesh)
         dX = Xm - Xi;
         VecGetValues(nml_mesh, dim, edge_dofs_umesh.data()+2*dim, normal.data());
         dX -= normal.dot(dX)*normal;
-        Xi += dX;
+        Xi += 0.3*dX;
         VecSetValues(x_mesh, dim, edge_dofs_umesh.data()+2*dim, Xi.data(), INSERT_VALUES);
         Assembly(x_mesh);
 

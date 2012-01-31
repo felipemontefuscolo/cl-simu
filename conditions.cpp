@@ -25,7 +25,7 @@ Vector u_initial(Vector const& X, int tag);
 double p_initial(Vector const& X, int tag);
 Vector solid_normal(Vector const& X, double t, int tag);
 
-#define PROBLEM_TYPE 8
+#define PROBLEM_TYPE 4
 
 
 #define CAVITY_2D_3D 1 // navier-stokes
@@ -341,7 +341,7 @@ double p_initial(Vector const& X, int tag)
 #if (PROBLEM_TYPE==STATIC_BB)
 double pho(Vector const& X, int tag)
 {
-  return 1.0;
+  return 0.0;
 }
 double cos_theta0()
 {
@@ -733,12 +733,12 @@ Vector solid_normal(Vector const& X, double t, int tag)
 #if (PROBLEM_TYPE==RAMP2D3D)
 double pho(Vector const& X, int tag)
 {
-  return 0.2;
+  return 0.0;
 }
 
 double cos_theta0()
 {
-  return -0.7;
+  return -0.7*0;
 }
 
 double zeta(double u_norm, double angle)
