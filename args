@@ -1,7 +1,7 @@
 -dim 2   				      # cell dimension (= space dimension)
 -dt 1e-2              # time step
 -renumber_dofs 0      # dofs renumbering
--maxts 6            # maximum number of time steps
+-maxts 10            # maximum number of time steps
 -print_step 3         # print step
 -has_convec 1         # convective term: true or false
 -unsteady   1         # steady or unsteady problem
@@ -70,21 +70,21 @@ options: dir_tags, neum_tags, interf_tags, solid_tags, triple_tags
 # sloshing (5;0;2;3,4;20,21)
 # ramp ( ; ;2;3;20,21)
 
-# ramp:         interf_tags 2 solid_tags 3 triple_tags 20,21
-# satic drop:  -interf_tags 2
+# ramp:        -interf_tags 2 -solid_tags 3 -triple_tags 20,21
+# satic drop:  interf_tags 2
 
 ############################################################################
 
--function_space 1 # P1P1 (or Q1Q1) GLS stabilization
+function_space 1 # P1P1 (or Q1Q1) GLS stabilization
 function_space 2 # P1+P1 with bubble condensation
-function_space 3 # P2+Pm1 with bubble condensation and pressure gradient elimination
+-function_space 3 # P2+Pm1 with bubble condensation and pressure gradient elimination
 function_space 4 # P2P1 (or Q2Q1)
 function_space 5 # P1+P1
 function_space 6 # P2P0 
 function_space 7 # P2+Pm1 full
 
--mesh_type 8      # TRIANGLE3        = 0x8,
-mesh_type 16     # TRIANGLE6        = 0x10,
+mesh_type 8      # TRIANGLE3        = 0x8,
+-mesh_type 16     # TRIANGLE6        = 0x10,
 mesh_type 32     # QUADRANGLE4      = 0x20,
 mesh_type 64     # QUADRANGLE8      = 0x40,
 mesh_type 128    # QUADRANGLE9      = 0x80,
@@ -98,8 +98,8 @@ mesh_type 4096   # HEXAHEDRON27     = 0x1000,
 2nd
 fin  results/osc_drop/mesh/drop.msh
 fout results/osc_drop/mesh/drop.vtk
--fin  results/static_drop/2d/mesh/sdrop.msh
--fout results/static_drop/2d/mesh/sdrop.vtk
+fin  results/static_drop/2d/mesh/sdrop.msh
+fout results/static_drop/2d/mesh/sdrop.vtk
 fin  results/static_drop/3d/mesh/drop-1st-04.msh
 fin  results/static_drop/3d/mesh/drop.msh
 fout results/static_drop/3d/mesh/bla.vtk
@@ -115,8 +115,8 @@ fin  results/sloshing/2d/mesh/slosh.msh
 fout results/sloshing/2d/mesh/slosh.vtk
 fin  results/anything3d/cavity.msh
 fout results/anything3d/cavity.vtk
-fin  results/ramp/2d/mesh/ramp-ho.msh
-fout results/ramp/2d/mesh/ramp.vtk
+-fin  results/ramp/2d/mesh/ramp.msh
+-fout results/ramp/2d/mesh/ramp.vtk
 fin  results/ramp/3d/ramp.msh
 fout results/ramp/3d/ramp.vtk
 fin  results/russab/2d/mesh/russa.msh

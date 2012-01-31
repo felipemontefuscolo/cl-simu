@@ -25,7 +25,7 @@ Vector u_initial(Vector const& X, int tag);
 double p_initial(Vector const& X, int tag);
 Vector solid_normal(Vector const& X, double t, int tag);
 
-#define PROBLEM_TYPE 4
+#define PROBLEM_TYPE 8
 
 
 #define CAVITY_2D_3D 1 // navier-stokes
@@ -738,7 +738,7 @@ double pho(Vector const& X, int tag)
 
 double cos_theta0()
 {
-  return -0.7*0;
+  return -0.7;
 }
 
 double zeta(double u_norm, double angle)

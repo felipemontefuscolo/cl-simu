@@ -1266,15 +1266,17 @@ PetscErrorCode AppCtx::solveTimeProblem()
         vtk_printer.addNodeScalarVtk("uy",  GetDataVelocity<1>(q_array, *this));
         if (dim==3)
           vtk_printer.addNodeScalarVtk("uz",   GetDataVelocity<2>(q_array, *this));
+          
+        vtk_printer.addNodeScalarVtk("nx",  GetDataNormal<0>(nml_array, *this));
+        vtk_printer.addNodeScalarVtk("ny",  GetDataNormal<1>(nml_array, *this));
+        if (dim==3)
+          vtk_printer.addNodeScalarVtk("nz",   GetDataNormal<2>(nml_array, *this));
+        
         if (shape_psi_c->discontinuous())
           vtk_printer.addCellScalarVtk("pressure", GetDataPressCellVersion(q_array, *this));
         else
           vtk_printer.addNodeScalarVtk("pressure", GetDataPressure(q_array, *this));
 
-        vtk_printer.addNodeScalarVtk("nx",  GetDataNormal<0>(nml_array, *this));
-        vtk_printer.addNodeScalarVtk("ny",  GetDataNormal<1>(nml_array, *this));
-        if (dim==3)
-          vtk_printer.addNodeScalarVtk("nz",   GetDataNormal<2>(nml_array, *this));
 
         //vtk_printer.printPointTagVtk("point_tag");
         VecRestoreArray(q, &q_array);
@@ -1503,7 +1505,7 @@ void AppCtx::updateNormals(Vec *x_mesh)
   VectorXi          facet_nodes(nodes_per_facet);
   MatrixXd          x_coefs(nodes_per_facet, dim);                // coordenadas nodais da célula
   MatrixXd          x_coefs_trans(dim, nodes_per_facet);
-  Vector            X;
+  Vector            X(dim);
   Vector            normal(dim);
   Tensor            F(dim,dim-1);
   VectorXi          map(n_dofs_u_per_facet);
@@ -1619,11 +1621,9 @@ void AppCtx::updateNormals(Vec *x_mesh)
       normal = -solid_normal(X,current_time,tag);
 
       VecSetValues(nml_mesh, dim, map.data(), normal.data(), INSERT_VALUES);
-
     }
 
   }
-
 
 
 }
