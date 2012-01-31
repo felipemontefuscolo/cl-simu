@@ -121,7 +121,7 @@ void inline ViewXPM(Mat &K, const char* name = "MATRIX") {
 // REFERÊNCIA:
 // PETSC_DIR/src/mat/impls/aij/seq
 // a: jac_array
-void MyMatSumValues(PetscScalar* a, PetscInt *ai, PetscInt *aj, PetscInt m,const PetscInt im[],PetscInt n,const PetscInt in[],PetscScalar v[])
+void inline MyMatSumValues(PetscScalar* a, PetscInt *ai, PetscInt *aj, PetscInt m,const PetscInt im[],PetscInt n,const PetscInt in[],PetscScalar v[])
 {
   PetscInt     *rp,k,low,high,t,row,nrow,i,col,l;
   PetscScalar    *ap,*aa = a;
@@ -158,19 +158,19 @@ void MyMatSumValues(PetscScalar* a, PetscInt *ai, PetscInt *aj, PetscInt m,const
   }
 }
 
-void MyVecGetValues(double const* array,int mapsize, int const* mapdata, double * data)
+void inline MyVecGetValues(double const* array,int mapsize, int const* mapdata, double * data)
 {
   for (int i = 0; i < mapsize; ++i)
     data[i] = array[mapdata[i]];
 }
 
-void MyVecSetValues(double * array,int mapsize, int const* mapdata, double const* data)
+void inline MyVecSetValues(double * array,int mapsize, int const* mapdata, double const* data)
 {
   for (int i = 0; i < mapsize; ++i)
     array[mapdata[i]] = data[i];
 }
 
-void VecSumValues(double *f_array, int mapsize, int const* mapdata, double const* data)
+void inline VecSumValues(double *f_array, int mapsize, int const* mapdata, double const* data)
 {
   for (int i = 0; i < mapsize; ++i)
     f_array[mapdata[i]] += data[i];

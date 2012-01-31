@@ -5,7 +5,7 @@
 -print_step 3         # print step
 -has_convec 1         # convective term: true or false
 -unsteady   1         # steady or unsteady problem
--boundary_smoothing 0  
+-boundary_smoothing 1  
 -beta1 0              # Vmesh = bet1 * Ufluid  +  bet2 * Uelastic
 -beta2 1  
 plot_es 1             # plot exact solution: true or false

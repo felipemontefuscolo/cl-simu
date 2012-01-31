@@ -1,6 +1,6 @@
 EXE			+= main
-SOURCES	+= main.cpp
-OBJECTS	+= main.o conditions.o
+SOURCES	+= main.cpp residue.cpp jacobian.cpp
+OBJECTS	+= main.o conditions.o residue.o jacobian.o
 #PETSC_ARCH=linux-gnu-c++-debug
 PETSC_ARCH=linux-gnu-c++
 
@@ -20,12 +20,14 @@ include ${FEPIC_DIR}/conf/variables
 PETSC_KSP_LIB += -L$(FEP_LIBS_DIR) -lfepic $(FEP_LDFLAGS)
 
 
-main: main.o conditions.o chkopts
+main: main.o conditions.o jacobian.o residue.o chkopts
 	-${CLINKER} -o $(EXE) $(OBJECTS) ${PETSC_KSP_LIB}
-
 
 conditions.o: conditions.cpp
 	g++ -c -Wall -Wextra -I${FEPIC_DIR} conditions.cpp -o conditions.o
+
+#jacobian.o: jacobian.cpp
+#	g++ -c -Wall -Wextra -I${FEPIC_DIR} jacobian.cpp -o jacobian.o
 
 dclean:
 	${RM} *.o
