@@ -432,7 +432,7 @@ void AppCtx::formCellFunction(cell_iterator &cell,
   double              tau=0;
   double              delta_cd=0;
 
-  VectorXi               mapM_c(dim*nodes_per_cell); // mesh velocity
+  VectorXi            mapM_c(dim*nodes_per_cell); // mesh velocity
 
   MatrixXd         R(n_dofs_u_per_cell,n_dofs_u_per_cell);
   MatrixXd         tmp;

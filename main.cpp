@@ -412,7 +412,7 @@ void AppCtx::dofsCreate()
 
   // mesh velocity
   dof_handler_mesh.setMesh(mesh.get());
-  dof_handler_mesh.addVariable("mesh_veloc",  shape_phi_c.get(), dim);
+  dof_handler_mesh.addVariable("mesh_veloc",  shape_qsi_c.get(), dim);
   dof_handler_mesh.setVariablesRelationship(blocks.data());
 }
 
@@ -1440,6 +1440,7 @@ void AppCtx::computeError(Vec &qq, double tt)
   // compute hmean
   double hmean=0;
   // ASSUME QUE SÓ POSSA TER NO MÁXIMO 1 NÓ POR ARESTA
+
 
   VectorXi edge_nodes(3);
   Vector Xa(dim), Xb(dim);
