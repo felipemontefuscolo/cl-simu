@@ -1240,10 +1240,10 @@ PetscErrorCode AppCtx::solveTimeProblem()
   
   // suaviza a malha inicial
   
-  
+  printf("initial volume: %.15lf \n", getMeshVolume());
   current_time = 0;
   time_step = 0;
-  double Umax=0;
+  double Qmax=0;
   double steady_error=1;
   do
   {
@@ -1278,7 +1278,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
           vtk_printer.addNodeScalarVtk("pressure", GetDataPressure(q_array, *this));
 
 
-        //vtk_printer.printPointTagVtk("point_tag");
+        vtk_printer.printPointTagVtk("point_tag");
         VecRestoreArray(q, &q_array);
         VecRestoreArray(nml_mesh, &nml_array);
       }
@@ -1302,11 +1302,41 @@ PetscErrorCode AppCtx::solveTimeProblem()
     current_time += dt;
     time_step += 1;
 
-    Umax = VecNorm(q, NORM_1);
+    Qmax = VecNorm(q, NORM_1);
     VecAXPY(q0,-1.0,q);
-    steady_error = VecNorm(q0, NORM_1)/(Umax==0.?1.:Umax);
+    steady_error = VecNorm(q0, NORM_1)/(Qmax==0.?1.:Qmax);
   }
   while (time_step < maxts && steady_error > steady_tol);
+
+  if (family_files)
+  {
+    double  *q_array;
+    double  *nml_array;
+    VecGetArray(q, &q_array);
+    VecGetArray(nml_mesh, &nml_array);
+    vtk_printer.writeVtk();
+    vtk_printer.addNodeScalarVtk("ux",  GetDataVelocity<0>(q_array, *this));
+    vtk_printer.addNodeScalarVtk("uy",  GetDataVelocity<1>(q_array, *this));
+    if (dim==3)
+      vtk_printer.addNodeScalarVtk("uz",   GetDataVelocity<2>(q_array, *this));
+      
+    vtk_printer.addNodeScalarVtk("nx",  GetDataNormal<0>(nml_array, *this));
+    vtk_printer.addNodeScalarVtk("ny",  GetDataNormal<1>(nml_array, *this));
+    if (dim==3)
+      vtk_printer.addNodeScalarVtk("nz",   GetDataNormal<2>(nml_array, *this));
+    
+    if (shape_psi_c->discontinuous())
+      vtk_printer.addCellScalarVtk("pressure", GetDataPressCellVersion(q_array, *this));
+    else
+      vtk_printer.addNodeScalarVtk("pressure", GetDataPressure(q_array, *this));
+
+
+    vtk_printer.printPointTagVtk("point_tag");
+    VecRestoreArray(q, &q_array);
+    VecRestoreArray(nml_mesh, &nml_array);
+  }
+
+  printf("final volume: %.15lf \n", getMeshVolume());
 
 
   SNESConvergedReason reason;
@@ -1640,7 +1670,7 @@ void AppCtx::smoothsMesh(Vec &x_mesh)
   Vector     normal(dim);
   Vector     tmp(dim), tmp2(dim);
   Vector     Uf(dim), Ue(dim), Umsh(dim); // Ue := elastic velocity
-  //int        tag;
+  int        tag;
   int        iVs[128], *iVs_end;
   VectorXi   vtx_dofs_umesh(dim);  // indices de onde pegar a velocidade
   VectorXi   vtx_dofs_fluid(dim); // indices de onde pegar a velocidade
@@ -1667,14 +1697,14 @@ void AppCtx::smoothsMesh(Vec &x_mesh)
       if (!boundary_smoothing && in_boundary)
         continue;
 
-      //tag = point->getTag();
+      tag = point->getTag();
 
       if (mesh->isVertex(&*point))
       {
         //if (  is_in(tag,interface_tags) || is_in(tag,triple_tags) || is_in(tag,solid_tags) ||
         //    is_in(tag,dirichlet_tags) || is_in(tag,neumann_tags)  )
-        ////if (is_in(tag,triple_tags))
-        //  continue;
+        if (is_in(tag,triple_tags))
+          continue;
 
         Xm = Vector::Zero(dim);
         iVs_end = mesh->connectedVtcs(&*point, iVs);
@@ -1697,27 +1727,32 @@ void AppCtx::smoothsMesh(Vec &x_mesh)
           int N=0;
           for (int *it = iVs; it != iVs_end ; ++it)
           {
-            if (!mesh->inBoundary((mesh->getNode(*it))))
+            Point const* viz_pt = mesh->getNode(*it);
+            if (viz_pt->getTag()!=tag && !is_in( viz_pt->getTag(), triple_tags ))
               continue;
             dof_handler_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh.data(), mesh->getNode(*it));
             // debug
             VecGetValues(x_mesh, dim, vtx_dofs_umesh.data(), tmp.data());
             ++N;
             Xm += tmp;
+            
           }
+          
           dof_handler_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh.data(), &*point);
           VecGetValues(x_mesh, dim, vtx_dofs_umesh.data(), Xi.data());
-
+          
           if (dim==3)
             Xm = (N*Xi + 2*Xm)/(3*N);
             //Xm = Xm/N;
           else
-            Xm = (N*Xi + Xm)/(2*N);
+            //Xm = (N*Xi + Xm)/(2*N);
+            Xm = Xm/N;
+          //
 
           dX = Xm - Xi;
           VecGetValues(nml_mesh, dim, vtx_dofs_umesh.data(), normal.data());
           dX -= normal.dot(dX)*normal;
-          Xi += 0.05*dX;
+          Xi += dX;
           
           VecSetValues(x_mesh, dim, vtx_dofs_umesh.data(), Xi.data(), INSERT_VALUES);
         }
@@ -2075,6 +2110,58 @@ PetscErrorCode AppCtx::moveMesh()
   updateNormals(NULL);
 
   PetscFunctionReturn(0);
+}
+
+double AppCtx::getMaxVelocity()
+{
+  Vector     Uf(dim); // Ue := elastic velocity
+  VectorXi   vtx_dofs_fluid(dim); // indices de onde pegar a velocidade
+  double     Umax=0;
+
+    
+  point_iterator point = mesh->pointBegin();
+  point_iterator point_end = mesh->pointEnd();
+  for (; point != point_end; ++point)
+  {
+    if (!mesh->isVertex(&*point))
+        continue;
+    dof_handler_vars.getVariable(0).getVertexDofs(vtx_dofs_fluid.data(), &*point);
+    VecGetValues(q, dim, vtx_dofs_fluid.data(), Uf.data());
+    Umax = max(Umax,Uf.norm());
+  }
+  return Umax;
+}
+
+double AppCtx::getMeshVolume()
+{
+  MatrixXd            x_coefs_c(nodes_per_cell, dim);
+  MatrixXd            x_coefs_c_trans(dim, nodes_per_cell);  
+  Tensor              F_c(dim,dim), invF_c(dim,dim), invFT_c(dim,dim);
+  VectorXi            cell_nodes(nodes_per_cell);
+  double              Jx;
+  //int                 tag;
+  double              volume=0;
+
+  cell_iterator cell = mesh->cellBegin();
+  cell_iterator cell_end = mesh->cellEnd();
+  for (; cell != cell_end; ++cell)
+  {
+    //tag = cell->getTag();
+
+    mesh->getCellNodesId(&*cell, cell_nodes.data());
+    mesh->getNodesCoords(cell_nodes.begin(), cell_nodes.end(), x_coefs_c.data());
+    x_coefs_c_trans = x_coefs_c.transpose();
+
+    for (int qp = 0; qp < n_qpts_err; ++qp)
+    {
+      F_c    = x_coefs_c_trans * dLqsi_err[qp];
+      Jx     = F_c.determinant();
+      volume += Jx * quadr_err->weight(qp);
+
+    } // fim quadratura
+
+  } // end elementos
+  return volume;
 }
 
 

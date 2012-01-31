@@ -399,6 +399,9 @@ public:
     M = tmp;
   }
 
+  double getMeshVolume();
+  double getMaxVelocity();
+
   void computeError(Vec &qq, double tt);
   void updateNormals(Vec *x_mesh);
   void smoothsMesh(Vec &x_mesh);

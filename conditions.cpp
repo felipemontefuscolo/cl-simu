@@ -738,7 +738,7 @@ double pho(Vector const& X, int tag)
 
 double cos_theta0()
 {
-  return -0.7;
+  return -0.70;
 }
 
 double zeta(double u_norm, double angle)
@@ -757,7 +757,7 @@ double gama(Vector const& X, double t, int tag)
 }
 double niu(double t, int tag)
 {
-  return 2.;
+  return 1;
 }
 Vector force(Vector const& X, double t, int tag)
 {

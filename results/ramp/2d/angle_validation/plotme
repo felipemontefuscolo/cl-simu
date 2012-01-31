@@ -1,0 +1,10 @@
+set xrange [0:2]
+
+plot 'exact45a' u ($2):($3) w l
+rep 'static45a.ply'
+
+rep 'exact90a' u ($2):($3) w l
+rep 'static90a.ply'
+
+rep 'exact135a' u ($2):($3) w l
+rep 'static135a.ply'

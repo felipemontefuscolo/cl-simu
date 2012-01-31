@@ -1,0 +1,11 @@
+Element: p2-p1
+
+gama = 1.5
+visc = 0.5
+grav = -1.
+
+# nodes:   965
+# cells:   454
+
+dt = 1e-2
+-boundary_smoothing 1  
