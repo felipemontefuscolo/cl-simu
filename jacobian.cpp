@@ -168,7 +168,16 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec x,Mat *Jac, Mat* /*prejac*
           Bnb.setZero();
           Bbn.setZero();
 
-          Xc = x_coefs_c_trans * qsi_c_at_center; // center of the cell
+          cell_volume = 0;
+          Xc.setZero();
+          for (int qp = 0; qp < n_qpts_cell; ++qp) {
+            F_c = x_coefs_c_trans * dLqsi_c[qp];
+            Jx = determinant(F_c,dim);
+            Xqp  = x_coefs_c_trans * qsi_c[qp];
+            cell_volume += Jx * quadr_cell->weight(qp);
+            Xc += Jx * quadr_cell->weight(qp) * Xqp;
+          }
+          Xc /= cell_volume;
         }
         //cout << "--------------------------------------------\n";
         for (int qp = 0; qp < n_qpts_cell; ++qp)

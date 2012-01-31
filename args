@@ -1,4 +1,4 @@
--dim 3   				      # cell dimension (= space dimension)
+-dim 2   				      # cell dimension (= space dimension)
 -dt 1e-2              # time step
 -renumber_dofs 0      # dofs renumbering
 -maxts 6            # maximum number of time steps
@@ -42,7 +42,7 @@ nthreads 4
 fp_trap 1           # stop on floating-point exceptions
 -on_error_abort 1
 log_trace stdout
-malloc_debug 1
+-malloc_debug 1
 snes_fd 0
 -snes_ls basic      # line search: basic, cubic, quadratic
 -snes_type ksponly   # Nonlinear solver method (one of) ls tr test picard ksponly vi ngmres sorqn
@@ -75,20 +75,20 @@ options: dir_tags, neum_tags, interf_tags, solid_tags, triple_tags
 
 ############################################################################
 
-function_space 1 # P1P1 (or Q1Q1) GLS stabilization
--function_space 2 # P1+P1 with bubble condensation
+-function_space 1 # P1P1 (or Q1Q1) GLS stabilization
+function_space 2 # P1+P1 with bubble condensation
 function_space 3 # P2+Pm1 with bubble condensation and pressure gradient elimination
 function_space 4 # P2P1 (or Q2Q1)
-function_space 5 # P1+P1       // BROKEN
+function_space 5 # P1+P1
 function_space 6 # P2P0 
-function_space 7 # P2+Pm1 full  // BROKEN                                                     
+function_space 7 # P2+Pm1 full
 
-mesh_type 8      # TRIANGLE3        = 0x8,
+-mesh_type 8      # TRIANGLE3        = 0x8,
 mesh_type 16     # TRIANGLE6        = 0x10,
 mesh_type 32     # QUADRANGLE4      = 0x20,
 mesh_type 64     # QUADRANGLE8      = 0x40,
 mesh_type 128    # QUADRANGLE9      = 0x80,
--mesh_type 256    # TETRAHEDRON4     = 0x100,
+mesh_type 256    # TETRAHEDRON4     = 0x100,
 mesh_type 512    # TETRAHEDRON10    = 0x200,
 mesh_type 1024   # HEXAHEDRON8      = 0x400,
 mesh_type 2048   # HEXAHEDRON20     = 0x800,
@@ -98,11 +98,11 @@ mesh_type 4096   # HEXAHEDRON27     = 0x1000,
 2nd
 fin  results/osc_drop/mesh/drop.msh
 fout results/osc_drop/mesh/drop.vtk
-fin  results/static_drop/2d/mesh/sdrop1st-04.msh
-fout results/static_drop/2d/mesh/sdrop1st-04.vtk
+-fin  results/static_drop/2d/mesh/sdrop.msh
+-fout results/static_drop/2d/mesh/sdrop.vtk
 fin  results/static_drop/3d/mesh/drop-1st-04.msh
--fin  results/static_drop/3d/mesh/drop.msh
--fout results/static_drop/3d/mesh/bla.vtk
+fin  results/static_drop/3d/mesh/drop.msh
+fout results/static_drop/3d/mesh/bla.vtk
 fin  results/osc_drop/mesh/drop.msh
 fout results/osc_drop/mesh/drop.vtk
 fin  results/kovasznay/mesh/kovas.msh
