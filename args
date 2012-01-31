@@ -37,7 +37,7 @@ ksp_rtol 1e-11
 THREADS
 vec_type seqpthread
 mat_type seqaijpthread
-nthreads 1
+nthreads 4
 
 fp_trap 1           # stop on floating-point exceptions
 -on_error_abort 1

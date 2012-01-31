@@ -552,7 +552,7 @@ void AppCtx::formCellFunction(cell_iterator &cell,
       for (int c = 0; c < dim; ++c)
       {
         FUloc(i*dim + c) += Jx*weight*
-                ( (dUdt(c) + has_convec*Uconv_old.dot(dxU.row(c)))*phi_c[qp][i] + // aceleração
+                ( pho(Xqp,tag)*(dUdt(c) + has_convec*Uconv_old.dot(dxU.row(c)))*phi_c[qp][i] + // aceleração
                   visc*dxphi_c.row(i).dot(dxU.row(c) + dxU.col(c).transpose()) - //rigidez
                   Pqp*dxphi_c(i,c) - // pressão
                   force(Xqp,current_time,tag)(c)*phi_c[qp][i]   ); // força
@@ -577,7 +577,7 @@ void AppCtx::formCellFunction(cell_iterator &cell,
           {
             delta_cd = c==d;
             Bnb(j*dim + d, c) += Jx*weight*
-                                  (  delta_cd * phi_c[qp][j] *(bble[qp]/dt + has_convec*theta*Uconv_old.dot(dxbble))  // advecção
+                                  (  delta_cd * phi_c[qp][j] *pho(Xqp,tag)*(bble[qp]/dt + has_convec*theta*Uconv_old.dot(dxbble))  // advecção
                                   + theta*visc*(delta_cd * dxphi_c.row(j).dot(dxbble) + dxphi_c(j,c)*dxbble(d)) );    // rigidez
 
           }
@@ -593,12 +593,12 @@ void AppCtx::formCellFunction(cell_iterator &cell,
         {
           delta_cd = c==d;
           iBbb(c, d) += Jx*weight*
-                      ( bble[qp]* delta_cd *(bble[qp]/dt+ has_convec*theta*Uconv_old.dot(dxbble) ) // advecção
+                      ( bble[qp]* delta_cd *pho(Xqp,tag)*(bble[qp]/dt+ has_convec*theta*Uconv_old.dot(dxbble) ) // advecção
                         +theta*visc*(delta_cd* dxbble.dot(dxbble)  + dxbble(d)*dxbble(c)) ); // rigidez
         }
 
         FUb(c) += Jx*weight*
-                  ( bble[qp]*(dUdt(c) + has_convec*Uconv_old.dot(dxU.row(c))) + // parte convectiva
+                  ( bble[qp]*pho(Xqp,tag)*(dUdt(c) + has_convec*Uconv_old.dot(dxU.row(c))) + // parte convectiva
                     visc*dxbble.dot(dxU.row(c) + dxU.col(c).transpose()) - //rigidez
                     Pqp*dxbble(c) -                     // pressão
                     force(Xqp,current_time,tag)(c)*bble[qp]   ); // força
@@ -611,12 +611,12 @@ void AppCtx::formCellFunction(cell_iterator &cell,
       {
         for (int c = 0; c < dim; c++)
         {
-          FUloc(i*dim + c) += Jx*weight* has_convec*tau*Uconv_old.dot(dxphi_c.row(i))* (dUdt(c) + has_convec*Uconv_old.dot(dxU.row(c)) + dxP(c) - force(Xqp,current_time,tag)(c));
+          FUloc(i*dim + c) += Jx*weight* has_convec*tau*pho(Xqp,tag)*Uconv_old.dot(dxphi_c.row(i))* ( pho(Xqp,tag)*(dUdt(c) + has_convec*Uconv_old.dot(dxU.row(c))) + dxP(c) - force(Xqp,current_time,tag)(c));
 
         }
       }
       for (int i = 0; i < n_dofs_p_per_cell; ++i)
-        FPloc(i) += Jx*weight *tau*dxpsi_c.row(i).dot(-dUdt - has_convec*dxU*Uconv_old - dxP  + force(Xqp,current_time,tag));
+        FPloc(i) += Jx*weight *tau*dxpsi_c.row(i).dot( pho(Xqp,tag)*(-dUdt - has_convec*dxU*Uconv_old) - dxP  + force(Xqp,current_time,tag));
     }
 
     if (behaviors & BH_bble_condens_CR)

@@ -12,6 +12,7 @@ const double pi  = 3.141592653589793;
 const double pi2 = pi*pi;
 inline double sqr(double v) {return v*v;}
 
+double pho(Vector const& X, int tag);
 double gama(Vector const& X, double t, int tag);
 double niu(double t, int tag);
 Vector force(Vector const& X, double t, int tag);
@@ -40,6 +41,10 @@ Vector solid_normal(Vector const& X, double t, int tag);
 #define RAMP3D       11
 
 #if (PROBLEM_TYPE==CAVITY_2D_3D)
+double pho(Vector const& X, int tag)
+{
+  return 1.0;
+}
 double cos_theta0()
 {
   return 0.5;
@@ -119,6 +124,10 @@ double p_initial(Vector const& X, int tag)
 #endif
 
 #if (PROBLEM_TYPE==KOVASZNAY_2D)
+double pho(Vector const& X, int tag)
+{
+  return 1.0;
+}
 double cos_theta0()
 {
   return 0.5;
@@ -212,6 +221,10 @@ double p_initial(Vector const& X, int tag)
 #endif
 
 #if (PROBLEM_TYPE==STOKES_JD_2D)
+double pho(Vector const& X, int tag)
+{
+  return 1.0;
+}
 double cos_theta0()
 {
   return 0.5;
@@ -326,6 +339,10 @@ double p_initial(Vector const& X, int tag)
 #endif
 
 #if (PROBLEM_TYPE==STATIC_BB)
+double pho(Vector const& X, int tag)
+{
+  return 1.0;
+}
 double cos_theta0()
 {
   return 0.5;
@@ -398,6 +415,10 @@ Vector solid_normal(Vector const& X, double t, int tag)
 #endif
 
 #if (PROBLEM_TYPE==SLOSH_2D)
+double pho(Vector const& X, int tag)
+{
+  return 1.0;
+}
 double cos_theta0()
 {
   return 0.;
@@ -499,6 +520,10 @@ double p_initial(Vector const& X, int tag)
 #endif
 
 #if (PROBLEM_TYPE==ANYTHING_3D)
+double pho(Vector const& X, int tag)
+{
+  return 1.0;
+}
 
 double cos_theta0()
 {
@@ -620,6 +645,10 @@ double p_initial(Vector const& X, int tag)
 #endif
 
 #if (PROBLEM_TYPE==OSCI_BB)
+double pho(Vector const& X, int tag)
+{
+  return 1.0;
+}
 
 double cos_theta0()
 {
@@ -702,6 +731,10 @@ Vector solid_normal(Vector const& X, double t, int tag)
 #endif
 
 #if (PROBLEM_TYPE==RAMP2D3D)
+double pho(Vector const& X, int tag)
+{
+  return 0.2;
+}
 
 double cos_theta0()
 {
@@ -724,7 +757,7 @@ double gama(Vector const& X, double t, int tag)
 }
 double niu(double t, int tag)
 {
-  return 1;
+  return 2.;
 }
 Vector force(Vector const& X, double t, int tag)
 {
@@ -822,6 +855,10 @@ double p_initial(Vector const& X, int tag)
 #endif
 
 #if (PROBLEM_TYPE==RUSSA2D)
+double pho(Vector const& X, int tag)
+{
+  return 1.0;
+}
 
 double cos_theta0()
 {
@@ -942,6 +979,10 @@ double p_initial(Vector const& X, int tag)
 
 
 #if (PROBLEM_TYPE==ANGLE2D)
+double pho(Vector const& X, int tag)
+{
+  return 1.0;
+}
 
 double cos_theta0()
 {

@@ -212,7 +212,7 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec x,Mat *Jac, Mat* /*prejac*
                 {
                   delta_cd = c==d;
                   Aloc(i*dim + c, j*dim + d) += Jx*weight*
-                                                ( delta_cd*phi_c[qp][i]* (phi_c[qp][j]/dt + has_convec*theta * Uconv_old.dot(dxphi_c.row(j)))   // advecção
+                                                ( delta_cd*phi_c[qp][i]* pho(Xqp,tag)*(phi_c[qp][j]/dt + has_convec*theta * Uconv_old.dot(dxphi_c.row(j)))   // advecção
                                                   +theta*visc*( delta_cd * dxphi_c.row(i).dot(dxphi_c.row(j)) + dxphi_c(i,d)*dxphi_c(j,c))   ); // rigidez
 
                 }
@@ -239,11 +239,11 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec x,Mat *Jac, Mat* /*prejac*
                 {
                   delta_cd = c==d;
                   Bbn(c, j*dim + d) += Jx*weight*
-                                        (  delta_cd *bble[qp] *(phi_c[qp][j]/dt + has_convec*theta*Uconv_old.dot(dxphi_c.row(j)))  // advecção
+                                        (  delta_cd *bble[qp] *pho(Xqp,tag)*(phi_c[qp][j]/dt + has_convec*theta*Uconv_old.dot(dxphi_c.row(j)))  // advecção
                                         + theta*visc*(delta_cd * dxphi_c.row(j).dot(dxbble) + dxphi_c(j,c)*dxbble(d)) );    // rigidez
 
                   Bnb(j*dim + d, c) += Jx*weight*
-                                        (  delta_cd * phi_c[qp][j] *(bble[qp]/dt + has_convec*theta*Uconv_old.dot(dxbble))  // advecção
+                                        (  delta_cd * phi_c[qp][j] *pho(Xqp,tag)*(bble[qp]/dt + has_convec*theta*Uconv_old.dot(dxbble))  // advecção
                                         + theta*visc*(delta_cd * dxphi_c.row(j).dot(dxbble) + dxphi_c(j,c)*dxbble(d)) );    // rigidez
                 }
               }
@@ -258,7 +258,7 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec x,Mat *Jac, Mat* /*prejac*
               {
                 delta_cd = c==d;
                 iBbb(c, d) += Jx*weight*
-                            ( bble[qp]* delta_cd *(bble[qp]/dt+ has_convec*theta*Uconv_old.dot(dxbble) ) // advecção
+                            ( bble[qp]* delta_cd *pho(Xqp,tag)*(bble[qp]/dt+ has_convec*theta*Uconv_old.dot(dxbble) ) // advecção
                               +theta*visc*(delta_cd* dxbble.dot(dxbble)  + dxbble(d)*dxbble(c)) ); // rigidez
               }
 
@@ -272,9 +272,9 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec x,Mat *Jac, Mat* /*prejac*
               for (int j = 0; j < n_dofs_u_per_cell/dim; j++)
                 for (int d = 0; d < dim; d++)
                 {
-                  Dloc(i, j*dim + d) -= Jx*weight* tau*dxpsi_c(i,d)*( phi_c[qp][j]/dt + has_convec*theta*Uconv_old.dot(dxphi_c.row(j)) );
+                  Dloc(i, j*dim + d) -= Jx*weight* tau*dxpsi_c(i,d)*pho(Xqp,tag)*( phi_c[qp][j]/dt + has_convec*theta*Uconv_old.dot(dxphi_c.row(j)) );
 
-                  Cloc(j*dim + d,i) += Jx*weight *tau* has_convec* Uconv_old.dot(dxphi_c.row(j)) * dxpsi_c(i,d);
+                  Cloc(j*dim + d,i) += Jx*weight *tau* pho(Xqp,tag)*has_convec* Uconv_old.dot(dxphi_c.row(j)) * dxpsi_c(i,d);
                 }
 
             for (int i = 0; i < n_dofs_u_per_cell/dim; ++i)
@@ -283,7 +283,7 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec x,Mat *Jac, Mat* /*prejac*
                   for (int d = 0; d < dim; ++d)
                   {
                     delta_cd = c==d;
-                    Aloc(i*dim + c, j*dim + d) += Jx*weight*tau*delta_cd*has_convec*Uconv_old.dot(dxphi_c.row(i))*(phi_c[qp][j]/dt + theta*has_convec*Uconv_old.dot(dxphi_c.row(j)));
+                    Aloc(i*dim + c, j*dim + d) += Jx*weight*tau*delta_cd*has_convec*pho(Xqp,tag)*Uconv_old.dot(dxphi_c.row(i))*pho(Xqp,tag)*(phi_c[qp][j]/dt + theta*has_convec*Uconv_old.dot(dxphi_c.row(j)));
                   }
 
             for (int i = 0; i < n_dofs_p_per_cell; ++i)
@@ -353,25 +353,25 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec x,Mat *Jac, Mat* /*prejac*
   //#pragma omp parallel default(none)  shared(JJ,x,cout)
   {
 
-    int                 tag;
+    int                tag;
     PetscBool          is_surface;
-    VectorXi          facet_nodes(nodes_per_facet);
-    double              Jx;
-    double              weight;
-    MatrixXd             x_coefs_f(nodes_per_facet, dim);                // coordenadas nodais da célula
-    MatrixXd            x_coefs_f_trans(dim, nodes_per_facet);
-    Vector              normal(dim);
-    Tensor              F_f(dim,dim-1);
-    Tensor              invF_f(dim-1,dim);
-    MatrixXd             dxphi_f(n_dofs_u_per_facet/dim, dim);
-    Vector              Xqp(dim);
-    MatrixXd         Aloc_f(n_dofs_u_per_facet, n_dofs_u_per_facet);
+    VectorXi           facet_nodes(nodes_per_facet);
+    double             Jx;
+    double             weight;
+    MatrixXd           x_coefs_f(nodes_per_facet, dim);                // coordenadas nodais da célula
+    MatrixXd           x_coefs_f_trans(dim, nodes_per_facet);
+    Vector             normal(dim);
+    Tensor             F_f(dim,dim-1);
+    Tensor             invF_f(dim-1,dim);
+    MatrixXd           dxphi_f(n_dofs_u_per_facet/dim, dim);
+    Vector             Xqp(dim);
+    MatrixXd           Aloc_f(n_dofs_u_per_facet, n_dofs_u_per_facet);
 
-    VectorXi               mapU_f(n_dofs_u_per_facet);
-    VectorXi               mapP_f(n_dofs_p_per_facet);
+    VectorXi           mapU_f(n_dofs_u_per_facet);
+    VectorXi           mapP_f(n_dofs_p_per_facet);
 
-    MatrixXd    R(n_dofs_u_per_facet,n_dofs_u_per_facet);
-    MatrixXd    tmp;
+    MatrixXd           R(n_dofs_u_per_facet,n_dofs_u_per_facet);
+    MatrixXd           tmp;
 
     // LOOP NAS FACES DO CONTORNO
     facet_iterator facet = mesh->facetBegin();
@@ -447,15 +447,15 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec x,Mat *Jac, Mat* /*prejac*
     int                 tag;
     bool                is_triple;
 
-    MatrixXd             u_coefs_k(n_dofs_u_per_corner/dim, dim);
-    MatrixXd             u_coefs_kp1(n_dofs_u_per_corner/dim, dim);
-    MatrixXd             u_coefs_km1(n_dofs_u_per_corner/dim, dim);
+    MatrixXd          u_coefs_k(n_dofs_u_per_corner/dim, dim);
+    MatrixXd          u_coefs_kp1(n_dofs_u_per_corner/dim, dim);
+    MatrixXd          u_coefs_km1(n_dofs_u_per_corner/dim, dim);
     VectorXd          FUloc_km1(n_dofs_u_per_corner);
     VectorXd          FUloc_kp1(n_dofs_u_per_corner);
-    MatrixXd         Aloc_r(n_dofs_u_per_corner, n_dofs_u_per_corner);
-    VectorXi               mapU_r(n_dofs_u_per_corner);
-    VectorXi               mapP_r(n_dofs_p_per_corner);
-    double      h;
+    MatrixXd          Aloc_r(n_dofs_u_per_corner, n_dofs_u_per_corner);
+    VectorXi          mapU_r(n_dofs_u_per_corner);
+    VectorXi          mapP_r(n_dofs_p_per_corner);
+    double            h;
     volatile    double hh;
 
     //const int tid = omp_get_thread_num();

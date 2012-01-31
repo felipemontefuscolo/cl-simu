@@ -57,6 +57,7 @@ enum Behaviors {
 
 class AppCtx;
 
+double pho(Vector const& X, int tag);
 double gama(Vector const& X, double t, int tag);
 double cos_theta0();
 double zeta(double u_norm, double angle);
@@ -71,6 +72,7 @@ Tensor grad_u_exact(Vector const& X, double t, int tag);
 Vector u_initial(Vector const& X, int tag);
 double p_initial(Vector const& X, int tag);
 Vector solid_normal(Vector const& X, double t, int tag);
+
 
 inline double sqr(double v) {return v*v;}
 
@@ -197,11 +199,9 @@ void cross(AnyVector & a, AnyVector const& b)
 }
 
 
-
-
-
-
-
+//
+// User Class
+//
 class AppCtx
 {
 public:
@@ -400,7 +400,8 @@ public:
   }
 
   void computeError(Vec &qq, double tt);
-  void getNormalsFromMesh(Vec *x_mesh);
+  void updateNormals(Vec *x_mesh);
+  void smoothsMesh(Vec &x_mesh);
   // @param[in] q unknows vector with fluid velocity
   // @param[out] u_mesh
   PetscErrorCode calcMeshVelocity(Vec const& q);
