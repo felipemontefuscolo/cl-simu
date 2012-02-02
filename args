@@ -1,8 +1,8 @@
--dim 2  				      # cell dimension (= space dimension)
+-dim 3  				      # cell dimension (= space dimension)
 -dt 1e-2             # time step
 -renumber_dofs 0      # dofs renumbering
--maxts 1           # maximum number of time steps
--print_step 1       # print step
+-maxts 9           # maximum number of time steps
+-print_step 3       # print step
 -has_convec 1         # convective term: true or false
 -unsteady   1         # steady or unsteady problem
 -boundary_smoothing 0
@@ -85,12 +85,12 @@ function_space 6 # P2P0
 function_space 7 # P2+Pm1 full
 
 mesh_type 8      # TRIANGLE3        = 0x8,
--mesh_type 16     # TRIANGLE6        = 0x10,
+mesh_type 16     # TRIANGLE6        = 0x10,
 mesh_type 32     # QUADRANGLE4      = 0x20,
 mesh_type 64     # QUADRANGLE8      = 0x40,
 mesh_type 128    # QUADRANGLE9      = 0x80,
 mesh_type 256    # TETRAHEDRON4     = 0x100,
-mesh_type 512    # TETRAHEDRON10    = 0x200,
+-mesh_type 512    # TETRAHEDRON10    = 0x200,
 mesh_type 1024   # HEXAHEDRON8      = 0x400,
 mesh_type 2048   # HEXAHEDRON20     = 0x800,
 mesh_type 4096   # HEXAHEDRON27     = 0x1000,
@@ -116,10 +116,10 @@ fin  results/sloshing/2d/mesh/slosh.msh
 fout results/sloshing/2d/mesh/slosh.vtk
 fin  results/anything3d/cavity.msh
 fout results/anything3d/cavity.vtk
--fin  results/ramp/2d/mesh/ramp.msh
--fout results/ramp/2d/mesh/ramp.vtk
-fin  results/ramp/3d/ramp.msh
-fout results/ramp/3d/simple.vtk
+fin  results/ramp/2d/mesh/ramp.msh
+fout results/ramp/2d/mesh/ramp.vtk
+-fin  results/ramp/3d/ramp.msh
+-fout results/ramp/3d/cretino.vtk
 fin  results/russab/2d/mesh/russa.msh
 fout results/russab/2d/mesh/cretino.vtk
 fin  results/angle/2d/mesh/angle.msh

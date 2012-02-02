@@ -843,33 +843,33 @@ void AppCtx::evaluateQuadraturePts()
   // facets func derivatives on your nodes
   if (dim==2)
   {
-    std::vector<Eigen::Vector2d> tri_parametric_pts;
-    tri_parametric_pts = genTriParametricPts(  orderForCtype(ECellType(mesh_cell_type))  );
+    std::vector<double> parametric_pts;
+    parametric_pts = genLineParametricPts(  orderForCtype(ECellType(mesh_cell_type))  );
 
-    dLphi_nf.resize(tri_parametric_pts.size());
+    dLphi_nf.resize(parametric_pts.size());
 
-    for (int k = 0; k < (int)tri_parametric_pts.size(); ++k)
+    for (int k = 0; k < (int)parametric_pts.size(); ++k)
     {
       dLphi_nf[k].resize(n_dofs_u_per_facet/dim, dim-1);
       for (int n = 0; n < n_dofs_u_per_facet/dim; ++n)
         for (int d = 0; d < dim-1; ++d)
-          dLphi_nf[k](n, d) = shape_phi_f->gradL(tri_parametric_pts[k].data(), n, d);
+          dLphi_nf[k](n, d) = shape_phi_f->gradL(&parametric_pts[k], n, d);
     }
   }
   else
   if(dim==3)
   {
-    std::vector<Eigen::Vector3d> tet_parametric_pts;
-    tet_parametric_pts = genTetParametricPts(  orderForCtype(ECellType(mesh_cell_type))  );
+    std::vector<Eigen::Vector2d> parametric_pts;
+    parametric_pts = genTriParametricPts(  orderForCtype(ECellType(mesh_cell_type))  );
 
-    dLphi_nf.resize(tet_parametric_pts.size());
+    dLphi_nf.resize(parametric_pts.size());
 
-    for (int k = 0; k < (int)tet_parametric_pts.size(); ++k)
+    for (int k = 0; k < (int)parametric_pts.size(); ++k)
     {
       dLphi_nf[k].resize(n_dofs_u_per_facet/dim, dim-1);
       for (int n = 0; n < n_dofs_u_per_facet/dim; ++n)
         for (int d = 0; d < dim-1; ++d)
-          dLphi_nf[k](n, d) = shape_phi_f->gradL(tet_parametric_pts[k].data(), n, d);
+          dLphi_nf[k](n, d) = shape_phi_f->gradL(parametric_pts[k].data(), n, d);
     }
   }
 
@@ -1554,7 +1554,8 @@ void AppCtx::updateNormals(Vec *x_mesh)
   Tensor            F(dim,dim-1);
   VectorXi          map(n_dofs_u_per_facet);
   //bool               is_surface, is_solid;
-  int               tag, tag_other;
+  int               tag;
+  //int               tag_other;
   bool              virtual_mesh;
 
   if (x_mesh==NULL)
@@ -1571,8 +1572,9 @@ void AppCtx::updateNormals(Vec *x_mesh)
     tag = facet->getTag();
 
 
-    if (!mesh->inBoundary(&*facet))
+    if (is_in(tag, solid_tags) || !mesh->inBoundary(&*facet))
       continue;
+
 
     //is_surface = is_in(tag, interface_tags);
     //is_solid   = is_in(tag, solid_tags);
@@ -1592,10 +1594,8 @@ void AppCtx::updateNormals(Vec *x_mesh)
     // find the normal
     for (int k = 0; k < nodes_per_facet; ++k)
     {
-      tag_other = mesh->getNode(facet_nodes(k))->getTag();
+      //tag_other = mesh->getNode(facet_nodes(k))->getTag();
 
-      if (is_in(tag_other, solid_tags))
-        continue;
 
       F   = x_coefs_trans * dLphi_nf[k];
 
@@ -1649,7 +1649,7 @@ void AppCtx::updateNormals(Vec *x_mesh)
     else
       dof_handler_mesh.getVariable(0).getVertexDofs(map.data(), &*point);
 
-    if (!is_in(tag, solid_tags) && !is_in(tag, triple_tags))
+    if (!is_in(tag, solid_tags))// && !is_in(tag, triple_tags))
     {
       VecGetValues(nml_mesh, dim, map.data(),normal.data());
       normal.normalize();
