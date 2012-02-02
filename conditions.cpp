@@ -775,7 +775,7 @@ Vector u_boundary(Vector const& X, double t, int tag)
 {
   double x = X(0);
   double y = X(1);
-  Vector v(Vector::Zero(2));
+  Vector v(Vector::Zero(X.size()));
 
   return v;
 }

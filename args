@@ -1,11 +1,11 @@
 -dim 3  				      # cell dimension (= space dimension)
 -dt 1e-2             # time step
 -renumber_dofs 0      # dofs renumbering
--maxts 9           # maximum number of time steps
+-maxts 30         # maximum number of time steps
 -print_step 3       # print step
 -has_convec 1         # convective term: true or false
 -unsteady   1         # steady or unsteady problem
--boundary_smoothing 0
+-boundary_smoothing 1
 -print_ca 1
 -beta1 0              # Vmesh = bet1 * Ufluid  +  bet2 * Uelastic
 -beta2 1  
@@ -45,7 +45,7 @@ nthreads 4
 log_trace stdout
 -malloc_debug 1
 snes_fd 0
--snes_ls basic      # line search: basic, cubic, quadratic
+snes_ls basic      # line search: basic, cubic, quadratic
 -snes_type ksponly   # Nonlinear solver method (one of) ls tr test picard ksponly vi ngmres sorqn
 snes_test_display 1 # compare f.e. jacobian with f.d. jacobian
 snes_monitor_cancel 1 # cancela monitoramento

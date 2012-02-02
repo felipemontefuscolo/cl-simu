@@ -740,9 +740,9 @@ void AppCtx::evaluateQuadraturePts()
     psi_r[qp].resize(n_dofs_p_per_corner);
     qsi_r[qp].resize(nodes_per_corner);
 
-    dLphi_r[qp].resize(n_dofs_u_per_corner/dim, dim);
-    dLpsi_r[qp].resize(n_dofs_p_per_corner, dim);
-    dLqsi_r[qp].resize(nodes_per_corner, dim);
+    dLphi_r[qp].resize(n_dofs_u_per_corner/dim, 1 /* = dim-2*/);
+    dLpsi_r[qp].resize(n_dofs_p_per_corner, 1 /* = dim-2*/);
+    dLqsi_r[qp].resize(nodes_per_corner, 1 /* = dim-2*/);
 
     for (int n = 0; n < n_dofs_u_per_corner/dim; ++n)
     {
@@ -1297,7 +1297,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
       cout << endl;
       cout << "current time: " << current_time << endl;
       cout << "time step: "    << time_step  << endl;
-      cout << "steady error: " << steady_error << endl << endl;
+      cout << "steady error: " << steady_error << endl;
     }
 
     if (solve_the_sys)
@@ -1317,6 +1317,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
     steady_error = VecNorm(q0, NORM_1)/(Qmax==0.?1.:Qmax);
   }
   while (time_step < maxts && steady_error > steady_tol);
+  cout << endl;
 
   if (family_files)
   {
@@ -1377,10 +1378,6 @@ PetscErrorCode AppCtx::solveTimeProblem()
   if (solve_the_sys)
     MatrixInfo(Jac);
 
-  cout << "AFFFFFFFFFFFFFFF " << dLphi_nf.size() << endl;
-  cout << "AFFFFFFFFFFFFFFF " << nodes_per_facet << endl;
-  
-
   int lits;
   SNESGetLinearSolveIterations(snes,&lits);
 
@@ -1400,9 +1397,9 @@ void AppCtx::computeError(Vec &qq, double tt)
   MatrixXd            x_coefs_c(nodes_per_cell, dim);
   MatrixXd            x_coefs_c_trans(dim, nodes_per_cell);
   Tensor              F_c(dim,dim), invF_c(dim,dim), invFT_c(dim,dim);
-  MatrixXd            dxphi_err;
-  MatrixXd            dxpsi_err;
-  MatrixXd            dxqsi_err;
+  MatrixXd            dxphi_err(n_dofs_u_per_cell/dim, dim);
+  MatrixXd            dxpsi_err(n_dofs_p_per_cell, dim);
+  MatrixXd            dxqsi_err(nodes_per_cell, dim);
   Tensor              dxU(dim,dim); // grad u
   Vector              dxP(dim);     // grad p
   Vector              Xqp(dim);
@@ -1863,7 +1860,7 @@ PetscErrorCode AppCtx::calcMeshVelocity(Vec const& q)
     id = mesh->getPointId(&*point);
     getRotationMatrix(R,&id,1);
     point->getCoord(Xi.data());
-    Xi += R.transpose()*Uf*dt;
+    Xi = Xi + dt*R.transpose()*Uf;
     VecSetValues(x_mesh, dim, vtx_dofs_umesh.data(), Xi.data(), INSERT_VALUES);
   }
   if (dim==2 && u_has_edge_assoc_dof)
@@ -1878,7 +1875,7 @@ PetscErrorCode AppCtx::calcMeshVelocity(Vec const& q)
       VecGetValues(q, dim, edge_dofs_fluid.data(), Uf.data());
       mesh->getNode(edge_nodes(2))->getCoord(Xi.data());
       getRotationMatrix(R,&edge_nodes(2),1);
-      Xi += R.transpose()*Uf*dt;
+      Xi = Xi + dt*R.transpose()*Uf;
       VecSetValues(x_mesh, dim, edge_dofs_umesh.data(), Xi.data(), INSERT_VALUES);
     }
   }
@@ -1894,7 +1891,7 @@ PetscErrorCode AppCtx::calcMeshVelocity(Vec const& q)
       VecGetValues(q, dim, edge_dofs_fluid.data(), Uf.data());
       mesh->getNode(edge_nodes(2))->getCoord(Xi.data());
       getRotationMatrix(R,&edge_nodes(2),1);
-      Xi += R.transpose()*Uf*dt;
+      Xi = Xi + dt*R.transpose()*Uf;
       VecSetValues(x_mesh, dim, edge_dofs_umesh.data(), Xi.data(), INSERT_VALUES);
     }
   }

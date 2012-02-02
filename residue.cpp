@@ -792,17 +792,17 @@ void AppCtx::formCornerFunction(corner_iterator &corner,
   bool                is_triple;
   //MatrixXd             u_coefs_r(n_dofs_u_per_corner/dim, dim);
   MatrixXd            u_coefs_r_trans(dim, n_dofs_u_per_corner/dim);
-  MatrixXd             x_coefs_r(nodes_per_corner, dim);
+  MatrixXd            x_coefs_r(nodes_per_corner, dim);
   MatrixXd            x_coefs_r_trans(dim, nodes_per_corner);
   Tensor              F_r(dim,dim-2);
   Tensor              invF_r(dim-2,dim);
-  MatrixXd             dxphi_r(n_dofs_u_per_corner/dim, dim);
+  MatrixXd            dxphi_r(n_dofs_u_per_corner/dim, dim);
   Tensor              dxU_r(dim,dim);   // grad u
   Vector              Xqp(dim);
   Vector              Uqp(dim);
   //VectorXd          FUloc(n_dofs_u_per_corner);
   //MatrixXd         Aloc_r(n_dofs_u_per_corner, n_dofs_u_per_corner);
-  VectorXi          corner_nodes(nodes_per_corner);
+  VectorXi            corner_nodes(nodes_per_corner);
   Vector              normal(dim);
   Vector              line_normal(dim);
   Vector              solid_point(dim); // ponto na superfície do sólido .. ele é único
