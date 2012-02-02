@@ -415,9 +415,10 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec x,Mat *Jac, Mat* /*prejac*
       {
         F_f   = x_coefs_f_trans * dLqsi_f[qp];
 
+        tmp.resize(dim-1,dim-1);
         tmp = F_f.transpose()*F_f;
-        Jx = sqrt(determinant(tmp, tmp.rows()));
-        invert(tmp, tmp.rows());
+        Jx = sqrt(tmp.determinant());
+        tmp = tmp.inverse();
         invF_f = tmp*F_f.transpose();
 
 

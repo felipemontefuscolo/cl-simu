@@ -1,16 +1,17 @@
--dim 2   				      # cell dimension (= space dimension)
--dt 1e-2              # time step
+-dim 2  				      # cell dimension (= space dimension)
+-dt 1e-2             # time step
 -renumber_dofs 0      # dofs renumbering
--maxts 3           # maximum number of time steps
--print_step 3       # print step
+-maxts 1           # maximum number of time steps
+-print_step 1       # print step
 -has_convec 1         # convective term: true or false
 -unsteady   1         # steady or unsteady problem
--boundary_smoothing 1  
+-boundary_smoothing 0
+-print_ca 1
 -beta1 0              # Vmesh = bet1 * Ufluid  +  bet2 * Uelastic
 -beta2 1  
 -plot_es 1            # plot exact solution: true or false
 -family_files 1       # plot output as 001, 002, 003, ...
--sst 1.e-6            # steady state tol (Unew-Uold)/(Unew)
+-sst 1.e-7            # steady state tol (Unew-Uold)/(Unew)
 -theta 1.0            # time discretization theta method
 -quadr_c 4            # quadrature degree (cell)
 -quadr_f 3            # quadrature degree (facet)
@@ -116,9 +117,9 @@ fout results/sloshing/2d/mesh/slosh.vtk
 fin  results/anything3d/cavity.msh
 fout results/anything3d/cavity.vtk
 -fin  results/ramp/2d/mesh/ramp.msh
--fout results/ramp/2d/mesh/ramp125a.vtk
+-fout results/ramp/2d/mesh/ramp.vtk
 fin  results/ramp/3d/ramp.msh
-fout results/ramp/3d/ramp.vtk
+fout results/ramp/3d/simple.vtk
 fin  results/russab/2d/mesh/russa.msh
 fout results/russab/2d/mesh/cretino.vtk
 fin  results/angle/2d/mesh/angle.msh

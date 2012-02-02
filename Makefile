@@ -1,8 +1,10 @@
 EXE			+= main
 SOURCES	+= main.cpp residue.cpp jacobian.cpp
 OBJECTS	+= main.o conditions.o residue.o jacobian.o
-#PETSC_ARCH=linux-gnu-c++-debug
-PETSC_ARCH=linux-gnu-c++
+PETSC_ARCH=linux-gnu-c++-debug
+#PETSC_ARCH=linux-gnu-c++
+PETSC_DIR=/home/felipe/libs/petsc-3.2-p2
+#PETSC_DIR=/home/felipe/libs/petsc-dev
 
 CFLAGS   = -Wall -Wextra
 FFLAGS   = 

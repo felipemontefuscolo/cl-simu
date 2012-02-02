@@ -52,12 +52,12 @@ double cos_theta0()
 
 double zeta(double u_norm, double angle)
 {
-  return 0*5.e-1;
+  return 5.e-1;
 }
 
 double beta_diss()
 {
-  return 0*1.e-4;
+  return 1.e-4;
 }
 
 double gama(Vector const& X, double t, int tag)
@@ -733,27 +733,27 @@ Vector solid_normal(Vector const& X, double t, int tag)
 #if (PROBLEM_TYPE==RAMP2D3D)
 double pho(Vector const& X, int tag)
 {
-  return 0.0;
+  return 0.1;
 }
 
 double cos_theta0()
 {
-  return -0.70;
+  return -sqrt(2)/2;
 }
 
 double zeta(double u_norm, double angle)
 {
-  return 0*1.e-4;
+  return 0*1.e-2;
 }
 
 double beta_diss()
 {
-  return 0*1.e-4;
+  return 0*1.e-2;
 }
 
 double gama(Vector const& X, double t, int tag)
 {
-  return 1;
+  return 1.;
 }
 double niu(double t, int tag)
 {
@@ -766,7 +766,7 @@ Vector force(Vector const& X, double t, int tag)
   Vector f(Vector::Zero(X.size()));
   //f(1)=-1;
   //f(0)=1;
-  //f /= sqrt(2);
+  //f /= 4*sqrt(2);
   
   
   return f;

@@ -1,3 +1,4 @@
+#define EIGEN_NO_AUTOMATIC_RESIZING
 #include <Fepic/Mesh>
 #include <Fepic/Quadrature>
 #include <Fepic/DofHandler>
@@ -422,17 +423,19 @@ public:
   PetscBool   unsteady;
   PetscBool   renumber_dofs;
   PetscBool   boundary_smoothing;
+  PetscBool   print_to_matlab;
+  PetscBool   force_dirichlet;
+  PetscBool   full_diriclet;
+  PetscBool   ale;
+  PetscBool   plot_exact_sol;
+  PetscBool   family_files;
+  PetscBool   print_ca; // print contact angle
   double      dt;
   double      steady_tol;
   double      theta;
   int         maxts;
   bool        force_pressure;
-  PetscBool   print_to_matlab;
-  PetscBool   force_dirichlet;
-  PetscBool   full_diriclet;
-  PetscBool   ale;
   bool        solve_the_sys;
-  PetscBool   plot_exact_sol;
   int         quadr_degree_cell;
   int         quadr_degree_facet;
   int         quadr_degree_corner;
@@ -441,7 +444,6 @@ public:
   float       grow_factor;
   string      filename;
   string      filename_out;
-  PetscBool  family_files;
 
   std::vector<int> dirichlet_tags;   // vetor com os tags que indicam contorno dirichlet
   std::vector<int> neumann_tags;     // vetor com os tags que indicam contorno neumann

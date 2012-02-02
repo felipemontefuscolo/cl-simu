@@ -1,16 +1,22 @@
 //static char help[] = "Navier-Stokes.\n\n";
 
-/*
- * ALE
- *
- *  pho*( (Ut + (U-Umsh) · nabla)U ) + grad p = niu* div grad U + force
- *
- *  LIMITAÇÕES:
- *  * triangulo e tetrahedro apenas.
- *  * no maximo 1 grau de liberdade associado a uma aresta
- *  * condição de dirichlet na normal só pode valer 0 .. procure por UNORMAL_AQUI
- *  * elementos isoparamétricos e subparamétricos
- */
+// 
+// ALE
+// 
+// pho*( (Ut + (U-Umsh) · nabla)U ) + grad p = niu* div grad U + force
+//
+// LIMITAÇÕES:
+// * triangulo e tetrahedro apenas.
+// * no maximo 1 grau de liberdade associado a uma aresta
+// * condição de dirichlet na normal só pode valer 0 .. procure por UNORMAL_AQUI
+// * elementos isoparamétricos
+// 
+// OBS:
+// * a normal no ponto de contato é igual ao limite da normal pela superfície livre
+//
+//
+//
+
 
 #include "common.hpp"
 
@@ -146,7 +152,8 @@ void AppCtx::setUpDefaultOptions()
   print_step             = 1;
   family_files           = PETSC_TRUE;
   has_convec             = PETSC_TRUE;
-  renumber_dofs          = PETSC_TRUE;
+  renumber_dofs          = PETSC_FALSE;
+  print_ca               = PETSC_FALSE;
 
   filename = (dim==2 ? "malha/cavity2d-1o.msh" : "malha/cavity3d-1o.msh");
 }
@@ -186,6 +193,7 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
   PetscOptionsBool("-unsteady", "unsteady problem", "main.cpp", unsteady, &unsteady, PETSC_NULL);
   PetscOptionsBool("-boundary_smoothing", "boundary_smoothing", "main.cpp", boundary_smoothing, &boundary_smoothing, PETSC_NULL);
   PetscOptionsBool("-renumber_dofs", "renumber dofs", "main.cpp", renumber_dofs, &renumber_dofs, PETSC_NULL);
+  PetscOptionsBool("-print_ca", "print contact angle", "main.cpp", print_ca, &print_ca, PETSC_NULL);
   PetscOptionsInt("-quadr_e", "quadrature degree (for calculating the error)", "main.cpp", quadr_degree_err, &quadr_degree_err, PETSC_NULL);
   PetscOptionsInt("-quadr_c", "quadrature degree", "main.cpp", quadr_degree_cell, &quadr_degree_cell, PETSC_NULL);
   PetscOptionsInt("-quadr_f", "quadrature degree (facet)", "main.cpp", quadr_degree_facet, &quadr_degree_facet, PETSC_NULL);
@@ -1222,6 +1230,8 @@ void AppCtx::setInitialConditions()
 }
 
 
+
+
 PetscErrorCode AppCtx::solveTimeProblem()
 {
   PetscErrorCode      ierr(0);
@@ -1366,6 +1376,10 @@ PetscErrorCode AppCtx::solveTimeProblem()
 
   if (solve_the_sys)
     MatrixInfo(Jac);
+
+  cout << "AFFFFFFFFFFFFFFF " << dLphi_nf.size() << endl;
+  cout << "AFFFFFFFFFFFFFFF " << nodes_per_facet << endl;
+  
 
   int lits;
   SNESGetLinearSolveIterations(snes,&lits);
@@ -1540,7 +1554,7 @@ void AppCtx::updateNormals(Vec *x_mesh)
   Tensor            F(dim,dim-1);
   VectorXi          map(n_dofs_u_per_facet);
   //bool               is_surface, is_solid;
-  int               tag;
+  int               tag, tag_other;
   bool              virtual_mesh;
 
   if (x_mesh==NULL)
@@ -1578,9 +1592,9 @@ void AppCtx::updateNormals(Vec *x_mesh)
     // find the normal
     for (int k = 0; k < nodes_per_facet; ++k)
     {
-      tag = mesh->getNode(facet_nodes(k))->getTag();
+      tag_other = mesh->getNode(facet_nodes(k))->getTag();
 
-      if (is_in(tag, solid_tags))
+      if (is_in(tag_other, solid_tags))
         continue;
 
       F   = x_coefs_trans * dLphi_nf[k];
@@ -2164,6 +2178,11 @@ double AppCtx::getMeshVolume()
   return volume;
 }
 
+// TODO Only for 2D !!!!!!!!!!!!!!!!!!
+void printContactAngle(bool _print)
+{
+  
+}
 
 void AppCtx::freePetscObjs()
 {
