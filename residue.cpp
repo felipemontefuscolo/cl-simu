@@ -649,9 +649,9 @@ void AppCtx::formCellFunction(cell_iterator &cell,
   {
     //iBbb = iBbb.inverse().eval();
     invert(iBbb,dim);
-
-    FUloc -= Bnb*iBbb*FUb;
-    FPloc -= Gbp.transpose()*iBbb*FUb;
+    
+    FUloc = FUloc - Bnb*iBbb*FUb;
+    FPloc = FPloc - Gbp.transpose()*iBbb*FUb;
   }
 
   if(behaviors & BH_bble_condens_CR)
@@ -756,7 +756,7 @@ void AppCtx::formFacetFunction(facet_iterator &facet,
         for (int c = 0; c < dim; ++c)
         {
           FUloc(i*dim + c) += Jx*weight *gama(Xqp,current_time,tag)*
-                                          (dxphi_f(i,c) + (unsteady*dt) *dxU_f.row(c).dot(dxphi_f.row(i)));
+                                          (dxphi_f(i,c) + 0*(unsteady*dt) *dxU_f.row(c).dot(dxphi_f.row(i)));
         }
       }
 

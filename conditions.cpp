@@ -341,7 +341,7 @@ double p_initial(Vector const& X, int tag)
 #if (PROBLEM_TYPE==STATIC_BB)
 double pho(Vector const& X, int tag)
 {
-  return 0.0;
+  return 0;
 }
 double cos_theta0()
 {
@@ -360,7 +360,7 @@ double beta_diss()
 
 double gama(Vector const& X, double t, int tag)
 {
-  return 1;
+  return 1e+5;
 }
 double niu(double t, int tag)
 {
@@ -733,31 +733,31 @@ Vector solid_normal(Vector const& X, double t, int tag)
 #if (PROBLEM_TYPE==RAMP2D3D)
 double pho(Vector const& X, int tag)
 {
-  return 0.1;
+  return 0.0001;
 }
 
 double cos_theta0()
 {
-  return -sqrt(2)/2;
+  return 0;//sqrt(2)/2.;
 }
 
 double zeta(double u_norm, double angle)
 {
-  return 0*1.e-2;
+  return 0*1.e-4;
 }
 
 double beta_diss()
 {
-  return 0*1.e-2;
+  return 0*1.e-0;
 }
 
 double gama(Vector const& X, double t, int tag)
 {
-  return 1.;
+  return 7;//75.*1e-3;
 }
 double niu(double t, int tag)
 {
-  return 1;
+  return 1;//1e-5;
 }
 Vector force(Vector const& X, double t, int tag)
 {
@@ -784,6 +784,9 @@ Vector traction(Vector const& X, double t, int tag)
   double x = X(0);
   double y = X(1);
   Vector T(Vector::Zero(X.size()));
+  
+  T = -X;
+  
   return T;
 }
 double pressure_exact(Vector const& X, double t, int tag)

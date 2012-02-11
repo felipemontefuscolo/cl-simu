@@ -358,12 +358,13 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec x,Mat *Jac, Mat* /*prejac*
   } // end parallel
 
   // LOOP NAS FACETS
-  if (interface_tags.size() != 0)
   //#pragma omp parallel default(none)  shared(JJ,x,cout)
   {
 
     int                tag;
-    PetscBool          is_surface;
+    bool               is_surface;
+    bool               is_solid;
+    bool               is_neumann;
     VectorXi           facet_nodes(nodes_per_facet);
     double             Jx;
     double             weight;
@@ -389,10 +390,13 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec x,Mat *Jac, Mat* /*prejac*
     {
       tag = facet->getTag();
 
-      //is_neumann = (neumann_tags.end() != std::find(neumann_tags.begin(), neumann_tags.end(), tag));
-      is_surface = (PetscBool)is_in(tag, interface_tags);
+      is_neumann = (neumann_tags.end() != std::find(neumann_tags.begin(), neumann_tags.end(), tag));
+      is_surface = (interface_tags.end() != std::find(interface_tags.begin(), interface_tags.end(), tag));
+      is_solid = (solid_tags.end() != std::find(solid_tags.begin(), solid_tags.end(), tag));
 
-      if ( (!is_surface) ) continue;
+      if ((!is_neumann) && (!is_surface) && (!is_solid))
+        //PetscFunctionReturn(0);
+        continue;
 
       dof_handler_vars.getVariable(0).getFacetDofs(mapU_f.data(), &*facet);
       dof_handler_vars.getVariable(1).getFacetDofs(mapP_f.data(), &*facet);
@@ -426,17 +430,25 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec x,Mat *Jac, Mat* /*prejac*
         Xqp  = x_coefs_f_trans * qsi_f[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
         dxphi_f = dLphi_f[qp] * invF_f;
 
-
-        for (int i = 0; i < n_dofs_u_per_facet/dim; ++i)
+        if (false)
+        if (is_surface) // semi-implicit term
         {
-          for (int j = 0; j < n_dofs_u_per_facet/dim; ++j)
-          {
-            for (int c = 0; c < dim; ++c)
-            {
-              Aloc_f(i*dim + c, j*dim + c) += Jx*weight* (unsteady*dt) *gama(Xqp,current_time,tag)*dxphi_f.row(i).dot(dxphi_f.row(j));
-            }
-          }
+          for (int i = 0; i < n_dofs_u_per_facet/dim; ++i)
+            for (int j = 0; j < n_dofs_u_per_facet/dim; ++j)
+              for (int c = 0; c < dim; ++c)
+                Aloc_f(i*dim + c, j*dim + c) += Jx*weight* (unsteady*dt) *gama(Xqp,current_time,tag)*dxphi_f.row(i).dot(dxphi_f.row(j));
         }
+        
+        if (is_solid) // dissipation
+        {
+          for (int i = 0; i < n_dofs_u_per_facet/dim; ++i)
+            for (int j = 0; j < n_dofs_u_per_facet/dim; ++j)
+              for (int c = 0; c < dim; ++c)
+                Aloc_f(i*dim + c, j*dim + c) += Jx*weight *beta_diss()*phi_f[qp][j]*phi_f[qp][i];
+        }
+        
+        
+        
       } // end quadratura
 
       rotate_RARt(R, Aloc_f, tmp);
@@ -450,6 +462,7 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec x,Mat *Jac, Mat* /*prejac*
 
   //// LOOP CORNERS
   //#pragma omp parallel shared(x,JJ,cout) default(none)
+  //if (false)
   {
     Real const eps = std::numeric_limits<Real>::epsilon();
     Real const eps_root = pow(eps,1./3.);

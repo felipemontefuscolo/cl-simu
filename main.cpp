@@ -515,7 +515,7 @@ PetscErrorCode AppCtx::allocPetscObjs()
   //ierr = PCSetType(pc,PCLU);                                                     CHKERRQ(ierr);
   //ierr = PCFactorSetMatOrderingType(pc, MATORDERINGNATURAL);                         CHKERRQ(ierr);
   //ierr = KSPSetTolerances(ksp,1.e-7,PETSC_DEFAULT,PETSC_DEFAULT,PETSC_DEFAULT);  CHKERRQ(ierr);
-
+  //ierr = SNESSetApplicationContext(snes,this);                 
 
   //ierr = SNESMonitorSet(snes, SNESMonitorDefault, 0, 0); CHKERRQ(ierr);
   //ierr = SNESMonitorSet(snes,Monitor,0,0);CHKERRQ(ierr);
@@ -1231,7 +1231,6 @@ void AppCtx::setInitialConditions()
 
 
 
-
 PetscErrorCode AppCtx::solveTimeProblem()
 {
   PetscErrorCode      ierr(0);
@@ -1248,8 +1247,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   setInitialConditions();
   
-  // suaviza a malha inicial
-  
+    
   printf("initial volume: %.15lf \n", getMeshVolume());
   current_time = 0;
   time_step = 0;
@@ -1298,6 +1296,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
       cout << "current time: " << current_time << endl;
       cout << "time step: "    << time_step  << endl;
       cout << "steady error: " << steady_error << endl;
+      
     }
 
     if (solve_the_sys)
@@ -1315,6 +1314,8 @@ PetscErrorCode AppCtx::solveTimeProblem()
     Qmax = VecNorm(q, NORM_1);
     VecAXPY(q0,-1.0,q);
     steady_error = VecNorm(q0, NORM_1)/(Qmax==0.?1.:Qmax);
+    
+    printContactAngle(print_ca);
   }
   while (time_step < maxts && steady_error > steady_tol);
   cout << endl;
@@ -2176,9 +2177,56 @@ double AppCtx::getMeshVolume()
 }
 
 // TODO Only for 2D !!!!!!!!!!!!!!!!!!
-void printContactAngle(bool _print)
+void AppCtx::printContactAngle(bool _print)
 {
+  if (!_print)
+    return;
   
+  //at file:
+  // current_time theta_max theta_min
+  
+  int tag;
+  double theta_max=0;
+  double theta_min=pi;
+  double tet;
+  Vector X(dim);
+  Vector normal_solid(dim);
+  Vector normal_surf(dim);
+  VectorXi vtx_dofs_mesh(dim);
+  
+  point_iterator point = mesh->pointBegin();
+  point_iterator point_end = mesh->pointEnd();
+  for (; point != point_end; ++point)
+  {
+    tag = point->getTag();
+    
+    if (!is_in(tag,triple_tags))
+      continue;
+    
+    point->getCoord(X.data());
+    normal_solid = solid_normal(X, current_time, tag);
+    dof_handler_mesh.getVariable(0).getVertexDofs(vtx_dofs_mesh.data(), &*point);
+    VecGetValues(nml_mesh, dim, vtx_dofs_mesh.data(), normal_surf.data());   
+    
+    tet = asin(sqrt(1. - pow(normal_solid.dot(normal_surf),2)  ));
+    
+    if (tet < theta_min)
+      theta_min = tet;
+    if (tet > theta_max)
+      theta_max = tet;
+  }
+  
+  theta_min = theta_min*180./pi;
+  theta_max = theta_max*180./pi;
+  
+  cout << "theta min: " << theta_min << "\ntheta max: " << theta_max << endl;
+  
+  ofstream File("ContactHistory", ios::app);
+  
+  File.precision(12);
+  File << current_time << " " << theta_min << " " << theta_max << endl;
+  
+  File.close();
 }
 
 void AppCtx::freePetscObjs()
@@ -2379,10 +2427,6 @@ PetscErrorCode FormFunction(SNES snes, Vec x, Vec f, void *ptr)
   user->formFunction(snes,x,f);
   PetscFunctionReturn(0);
 }
-
-
-
-
 
 
 
