@@ -309,7 +309,23 @@ u_{b}^{(k)}=-A_{bb}^{-1}\widetilde{\mathcal{F}}_{b}
 
 \end_inset
 
+No caso discretização temporal com o método 
+\begin_inset Formula $\theta$
+\end_inset
 
+, é preciso fazer
+\begin_inset Formula 
+\[
+u_{b}^{(k),n+\theta}=\theta u_{b}^{(k)}+(1-\theta)u_{b}^{old}
+\]
+
+\end_inset
+
+Pode-se adotar 
+\begin_inset Formula $u_{b}^{old}=0$
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Subsection
@@ -371,6 +387,61 @@ B|_{ij} & = & \tau_{K}\mathrm{Re}^{2}\int_{\Omega_{K}}\left(\mathcal{\mathcal{N}
 C|_{ij} & = & \tau_{K}\mathrm{Re}\int_{\Omega_{K}}\boldsymbol{u}\cdot\boldsymbol{\nabla}\mathcal{\mathcal{N}}^{i}\partial_{c}\mathcal{\mathcal{N}}^{j}\\
 H|_{ij} & = & -\tau_{K}\mathrm{Re}\int_{\Omega_{K}}\left(\mathcal{\mathcal{N}}^{j}\partial_{c}\boldsymbol{u}\cdot\boldsymbol{\nabla}\mathcal{\mathcal{N}}^{i}+\boldsymbol{u}\cdot\boldsymbol{\nabla}\mathcal{\mathcal{N}}^{j}\partial_{c}\mathcal{\mathcal{N}}^{i}\right)\\
 E|_{ij} & = & -\tau_{K}\int_{\Omega_{K}}\boldsymbol{\nabla}\mathcal{\mathcal{N}}^{i}\cdot\boldsymbol{\nabla}\mathcal{\mathcal{N}}^{j}
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+hrulefill
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+B_{ij}\,\,:\,\,\dfrac{\partial}{\partial\mathbf{u}^{j}}\left(\rho\mathbf{c}^{n+\theta}\cdot\nabla N^{i}\right)\left(\rho\delta_{t}\mathbf{u}+\rho\nabla\mathbf{u}^{n+\theta}\cdot\mathbf{c}^{n+\theta}+\nabla p^{n+1}-\rho\bm{g}^{n+\theta}\right) & =\\
+\theta\rho N^{j}\mathbf{R}\otimes\nabla N^{i}+\rho\mathbf{c}^{n+\theta}\cdot\nabla N^{i}\dfrac{\partial\mathbf{R}}{\partial\mathbf{u}}
+\end{eqnarray*}
+
+\end_inset
+
+onde
+\begin_inset Formula 
+\begin{eqnarray*}
+\mathbf{R} & = & \rho\delta_{t}\mathbf{u}+\rho\nabla\mathbf{u}^{n+\theta}\cdot\mathbf{c}^{n+\theta}+\nabla p^{n+1}-\rho\bm{g}^{n+\theta},\\
+\dfrac{\partial\mathbf{R}}{\partial\mathbf{u}} & = & \mathbb{I}\dfrac{\rho}{\Delta t}N^{j}+\rho\theta\left(N^{j}\nabla\mathbf{u}^{n+\theta}+\mathbb{I}\mathbf{c}^{n+\theta}\cdot\nabla N^{j}\right).
+\end{eqnarray*}
+
+\end_inset
+
+também,
+\begin_inset Formula 
+\begin{eqnarray*}
+H_{ij}\,\,:\,\,\dfrac{\partial}{\partial\mathbf{u}^{j}}\nabla M^{i}\cdot\left(\rho\delta_{t}\mathbf{u}+\rho\nabla\mathbf{u}^{n+\theta}\cdot\mathbf{c}^{n+\theta}+\nabla p^{n+1}-\rho\bm{g}^{n+\theta}\right) & =\\
+\nabla M^{i}\cdot\dfrac{\partial\mathbf{R}}{\partial\mathbf{u}}
+\end{eqnarray*}
+
+\end_inset
+
+também
+\begin_inset Formula 
+\begin{eqnarray*}
+C_{ij}\,\,:\,\,\dfrac{\partial}{\partial p^{j}}\left(\rho\mathbf{c}^{n+\theta}\cdot\nabla N^{i}\right)\left(\rho\delta_{t}\mathbf{u}+\rho\nabla\mathbf{u}^{n+\theta}\cdot\mathbf{c}^{n+\theta}+\nabla p^{n+1}-\rho\bm{g}^{n+\theta}\right) & =\\
+\rho\mathbf{c}^{n+\theta}\cdot\nabla N^{i}\nabla M^{j}
 \end{eqnarray*}
 
 \end_inset
@@ -633,7 +704,7 @@ O sistema fica:
 \begin_inset Formula 
 \[
 \left[\begin{array}{ccc}
-Ã_{nn} & G_{nc} & G_{nx}-A_{nb}A_{bb}^{-1}G_{bx}\\
+A_{nn}-A_{nb}A_{bb}^{-1}A_{bn} & G_{nc} & G_{nx}-A_{nb}A_{bb}^{-1}G_{bx}\\
 D_{cn} & 0 & 0\\
 D_{xn}-D_{xb}A_{bb}^{-1}A_{bn} & 0 & -D_{xb}A_{bb}^{-1}G_{bx}
 \end{array}\right]\left[\begin{array}{c}
@@ -734,6 +805,106 @@ R=F_{n}+\dfrac{1}{\alpha}\left(\dfrac{1}{\alpha}G_{nx}A_{bb}F_{x}-A_{nb}F_{x}-G_
 \end_layout
 
 \begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+hrulefill
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+\mathcal{F}_{n}=A_{nn}u_{n}+A_{nb}u_{b}+G_{nc}p_{c}+G_{nx}p_{x}-f_{n} & = & 0\\
+\mathcal{F}_{b}=A_{bn}u_{n}+A_{bb}u_{b}+G_{bc}p_{c}+G_{bx}p_{x}-f_{b} & = & 0\\
+\mathcal{F}_{c}=D_{cn}u_{n}+D_{cb}u_{b}\qquad\qquad\qquad\qquad\quad & = & 0\\
+\mathcal{F}_{x}=D_{xn}u_{n}+D_{xb}u_{b}\qquad\qquad\qquad\qquad\quad & = & 0
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+\mathcal{F}_{n}=\left(A_{nn}+\frac{1}{\alpha^{2}}G_{nx}A_{bb}D_{xn}-\frac{1}{\alpha}A_{nb}D_{xn}-\frac{1}{\alpha}G_{nx}A_{bn}\right)u_{n}+G_{nc}p_{c}+G_{nx}\frac{1}{\alpha}f_{b}-f_{n} & = & 0\\
+\mathcal{F}_{c}=D_{cn}u_{n}\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\quad & = & 0
+\end{eqnarray*}
+
+\end_inset
+
+forma compacta:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+\mathcal{F}_{n}=F_{n}+\frac{1}{\alpha}\left(\frac{1}{\alpha}G_{nx}A_{bb}F_{x}-A_{nb}F_{x}-G_{nx}F_{b}\right) & = & 0\\
+\mathcal{F}_{c}=D_{cn}u_{n}\qquad\qquad\qquad\qquad\qquad\qquad\quad & = & 0
+\end{eqnarray*}
+
+\end_inset
+
+onde
+\begin_inset Formula 
+\[
+F_{x}=D_{xn}u_{n};\qquad F_{n}=A_{nn}u_{n}+G_{nc}p_{c}-f_{n};\qquad;F_{b}=A_{bn}u_{n}-f_{b}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+lembrando
+\begin_inset Formula 
+\begin{eqnarray*}
+\partial_{u_{n}}\left(A{}_{nn}u_{n}\right)|_{ij} & = & \mathrm{Re}\int_{\Omega}\left(\mathcal{N}^{j}\partial_{d}\tilde{u}_{c}+\delta_{cd}\tilde{\boldsymbol{u}}\cdot\boldsymbol{\nabla}\mathcal{N}^{j}\right)\mathcal{N}^{i}+\mbox{rigidez}\\
+\partial_{u_{n}}\left(A{}_{nb}u_{b}\right)|_{ij} & = & \mathrm{Re}\int_{\Omega}\mathcal{N}^{j}\partial_{d}u_{c}^{bub}\mathcal{N}^{i}+\mbox{rigidez}\\
+\partial_{u_{n}}\left(A{}_{bn}u_{n}\right)|_{ij} & = & \mathrm{Re}\int_{\Omega}\left(\mathcal{N}^{j}\partial_{d}\tilde{u}_{c}+\delta_{cd}\tilde{\boldsymbol{u}}\cdot\boldsymbol{\nabla}\mathcal{N}^{j}\right)\mathcal{B}+\mbox{rigidez}\\
+\partial_{u_{n}}\left(A{}_{bb}u_{b}\right)|_{ij} & = & \mathrm{Re}\int_{\Omega}\mathcal{N}^{j}\partial_{d}u_{c}^{bub}\mathcal{B}+\mbox{rigidez}
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+então
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\dfrac{\partial}{\partial u_{n}}\mathcal{F}_{n}=\partial_{u}F_{n}+\frac{1}{\alpha}\left(\frac{1}{\alpha}G_{nx}A_{bb}D_{xn}-A_{nb}D_{xn}-G_{nx}\partial_{u}F_{b}\right)-\frac{1}{\alpha}G_{nx}\partial_{u}(A{}_{bb}u_{b})+\partial_{u}(A{}_{nb}u_{b})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+e então:
+\begin_inset Formula 
+\[
+\dfrac{\partial}{\partial u_{n}}\mathcal{F}_{n}=S_{nn}+\frac{1}{\alpha}\left(\frac{1}{\alpha}G_{nx}A_{bb}D_{xn}-A_{nb}D_{xn}-G_{nx}S_{bn}\right)
+\]
+
+\end_inset
+
 
 \end_layout
 

@@ -384,15 +384,19 @@ void AppCtx::formCellFunction(cell_iterator &cell,
   /* local data */
   int                 tag;
   //MatrixXd            u_coefs_c(n_dofs_u_per_cell/dim, dim);
-  MatrixXd            u_coefs_c_trans(dim, n_dofs_u_per_cell/dim);       // n+theta
-  MatrixXd             u_coefs_c_old(n_dofs_u_per_cell/dim, dim);         // n
-  MatrixXd            u_coefs_c_old_trans(dim, n_dofs_u_per_cell/dim);   //
-  MatrixXd             v_coefs_c_old(nodes_per_cell, dim);                // mesh velocity; n
-  MatrixXd            v_coefs_c_old_trans(dim, nodes_per_cell);          //
-  //MatrixXd             u_coefs_c_new(n_dofs_u_per_cell/dim, dim);         // n+1
-  MatrixXd            u_coefs_c_new_trans(dim, n_dofs_u_per_cell/dim);   //
-  //VectorXd             p_coefs_c(n_dofs_p_per_cell);
-  MatrixXd             x_coefs_c(nodes_per_cell, dim);
+  MatrixXd            u_coefs_c_trans(dim, n_dofs_u_per_cell/dim);      // n+theta
+  MatrixXd            u_coefs_c_old(n_dofs_u_per_cell/dim, dim);        // n
+  MatrixXd            u_coefs_c_old_trans(dim,n_dofs_u_per_cell/dim);   // n
+  //MatrixXd           u_coefs_c_new(n_dofs_u_per_cell/dim, dim);        // n+1
+  MatrixXd            u_coefs_c_new_trans(dim,n_dofs_u_per_cell/dim);   // n+1
+
+  MatrixXd            v_coefs_c_trans(dim, nodes_per_cell);      // mesh velocity; n+theta
+  MatrixXd            v_coefs_c_old(nodes_per_cell, dim);        // mesh velocity; n
+  MatrixXd            v_coefs_c_old_trans(dim,nodes_per_cell);   // mesh velocity; n
+  MatrixXd            v_coefs_c_new(nodes_per_cell, dim);        // mesh velocity; n+1
+  MatrixXd            v_coefs_c_new_trans(dim,nodes_per_cell);   // mesh velocity; n+1
+  //VectorXd           p_coefs_c(n_dofs_p_per_cell);
+  MatrixXd            x_coefs_c(nodes_per_cell, dim);
   MatrixXd            x_coefs_c_trans(dim, nodes_per_cell);
   Tensor              F_c(dim,dim);
   Tensor              invF_c(dim,dim);
@@ -411,26 +415,34 @@ void AppCtx::formCellFunction(cell_iterator &cell,
   Vector              Ubqp(dim); // bble
   Vector              Uqp_old(dim);  // n
   Vector              Uqp_new(dim);  // n+1
-  Vector              Uconv_old(dim);
+  Vector              Vqp_old(dim);
+  Vector              Uconv_qp(dim);
   Vector              dUdt(dim);
   double              Pqp=0;
   double              bble_integ=0;
   //VectorXd          FUloc(n_dofs_u_per_cell); // subvetor da função f (parte de U)
   //VectorXd          FPloc(n_dofs_p_per_cell);     // subvetor da função f (parte de P)
   Tensor              iBbb(dim, dim);                               // BC, i : inverse ..it is not the inverse to CR element
-  MatrixXd         Bnb(n_dofs_u_per_cell, dim);
-  MatrixXd         Gbp(dim, n_dofs_p_per_cell);
-  MatrixXd         Gnx(n_dofs_u_per_cell, dim);                  // CR ;; suffix x means p gradient
+  MatrixXd            Bnb(n_dofs_u_per_cell, dim);
+  MatrixXd            Gbp(dim, n_dofs_p_per_cell);
+  MatrixXd            Gnx(n_dofs_u_per_cell, dim);                  // CR ;; suffix x means p gradient
   Vector              FUb(dim);
   Vector              FPx(dim); // pressure gradient
-  VectorXi          cell_nodes(nodes_per_cell);
+  VectorXi            cell_nodes(nodes_per_cell);
   double              Jx=0;
   double              weight=0;
   double              visc=-1; // viscosity
   double              cell_volume=0;
   double              hk2=0;
-  double              tau=0;
+  double              tauk=0;
+  double              delk=0;
   double              delta_cd=0;
+  double              rho;
+
+  Vector              Res(dim);                                     // residue
+  Tensor const        I(Tensor::Identity(dim,dim));
+  Vector              vec(dim);     // temp
+  Tensor              Ten(dim,dim); // temp  
 
   VectorXi            mapM_c(dim*nodes_per_cell); // mesh velocity
 
@@ -468,7 +480,7 @@ void AppCtx::formCellFunction(cell_iterator &cell,
   u_coefs_c_trans = theta*u_coefs_c_new_trans + (1.-theta)*u_coefs_c_old_trans;
 
   visc = niu(current_time, tag);
-
+  rho  = pho(Xqp,tag);
   FUloc.setZero();
   FPloc.setZero();
   if (behaviors & BH_bble_condens_PnPn)
@@ -489,7 +501,14 @@ void AppCtx::formCellFunction(cell_iterator &cell,
     }
 
     hk2 = cell_volume / pi; // element size
-    tau = hk2/(4.*visc);
+    double const uconv = (u_coefs_c_old - v_coefs_c_old).lpNorm<Infinity>();
+    
+    tauk = 4.*visc/hk2 + 2.*rho*uconv/sqrt(hk2);
+    tauk = 1./tauk;
+    if (dim==3)
+      tauk *= 0.1;
+    
+    delk = 4.*visc + 2.*rho*uconv*sqrt(hk2);
 
   }
   if (behaviors & BH_bble_condens_CR)
@@ -512,6 +531,7 @@ void AppCtx::formCellFunction(cell_iterator &cell,
     }
     Xc /= cell_volume;
   }
+  
 
   // Quadrature
   for (int qp = 0; qp < n_qpts_cell; ++qp)
@@ -529,11 +549,12 @@ void AppCtx::formCellFunction(cell_iterator &cell,
     dxU_new = u_coefs_c_new_trans* dxphi_c; // n+1
 
     Xqp  = x_coefs_c_trans * qsi_c[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
-    Uqp  = u_coefs_c_trans * phi_c[qp];
-    Pqp            = p_coefs_c.dot(psi_c[qp]);
+    Uqp  = u_coefs_c_trans * phi_c[qp]; //n+theta
+    Pqp  = p_coefs_c.dot(psi_c[qp]);
     Uqp_old = u_coefs_c_old_trans * phi_c[qp]; // n
-    Uconv_old = Uqp_old - v_coefs_c_old_trans * qsi_c[qp];
-    //Uconv_old = Uqp_old;
+    Vqp_old  = v_coefs_c_old_trans * qsi_c[qp];
+    Uconv_qp = Uqp - Vqp_old;
+    //Uconv_qp = Uqp_old;
     Uqp_new = u_coefs_c_new_trans * phi_c[qp]; // n+1
     dUdt    = (Uqp_new-Uqp_old)/dt;
 
@@ -561,7 +582,7 @@ void AppCtx::formCellFunction(cell_iterator &cell,
       for (int c = 0; c < dim; ++c)
       {
         FUloc(i*dim + c) += Jx*weight*
-                ( pho(Xqp,tag)*(dUdt(c) + has_convec*Uconv_old.dot(dxU.row(c)))*phi_c[qp][i] + // aceleração
+                ( pho(Xqp,tag)*(dUdt(c) + has_convec*Uconv_qp.dot(dxU.row(c)))*phi_c[qp][i] + // aceleração
                   visc*dxphi_c.row(i).dot(dxU.row(c) + dxU.col(c).transpose()) - //rigidez
                   Pqp*dxphi_c(i,c) - // pressão
                   force(Xqp,current_time,tag)(c)*phi_c[qp][i]   ); // força
@@ -586,8 +607,9 @@ void AppCtx::formCellFunction(cell_iterator &cell,
           {
             delta_cd = c==d;
             Bnb(j*dim + d, c) += Jx*weight*
-                                  (  delta_cd * phi_c[qp][j] *pho(Xqp,tag)*(bble[qp]/dt + has_convec*theta*Uconv_old.dot(dxbble))  // advecção
-                                  + theta*visc*(delta_cd * dxphi_c.row(j).dot(dxbble) + dxphi_c(j,c)*dxbble(d)) );    // rigidez
+                                 ( has_convec*phi_c[qp][j]*theta *pho(Xqp,tag)*(  delta_cd*Uconv_qp.dot(dxbble)  )   // convective
+                                 + delta_cd*pho(Xqp,tag)*phi_c[qp][j]*bble[qp]/dt     // time derivative
+                                 + theta*visc*(delta_cd * dxphi_c.row(j).dot(dxbble) + dxphi_c(j,c)*dxbble(d)) );    // rigidez
 
           }
         }
@@ -602,12 +624,13 @@ void AppCtx::formCellFunction(cell_iterator &cell,
         {
           delta_cd = c==d;
           iBbb(c, d) += Jx*weight*
-                      ( bble[qp]* delta_cd *pho(Xqp,tag)*(bble[qp]/dt+ has_convec*theta*Uconv_old.dot(dxbble) ) // advecção
-                        +theta*visc*(delta_cd* dxbble.dot(dxbble)  + dxbble(d)*dxbble(c)) ); // rigidez
+                        ( has_convec*bble[qp]*theta *rho*( delta_cd*Uconv_qp.dot(dxbble) )   // convective
+                        + delta_cd*pho(Xqp,tag)*bble[qp]*bble[qp]/dt     // time derivative
+                        + theta*visc*(delta_cd* dxbble.dot(dxbble)  + dxbble(d)*dxbble(c)) ); // rigidez
         }
 
         FUb(c) += Jx*weight*
-                  ( bble[qp]*pho(Xqp,tag)*(dUdt(c) + has_convec*Uconv_old.dot(dxU.row(c))) + // parte convectiva
+                  ( bble[qp]*rho*(dUdt(c) + has_convec*Uconv_qp.dot(dxU.row(c))) + // time derivative + convective
                     visc*dxbble.dot(dxU.row(c) + dxU.col(c).transpose()) - //rigidez
                     Pqp*dxbble(c) -                     // pressão
                     force(Xqp,current_time,tag)(c)*bble[qp]   ); // força
@@ -616,16 +639,18 @@ void AppCtx::formCellFunction(cell_iterator &cell,
     else
     if(behaviors & BH_GLS)
     {
+      Res = rho*( dUdt +  has_convec*dxU*Uconv_qp) + dxP - force(Xqp,current_time,tag);
+      
       for (int i = 0; i < n_dofs_u_per_cell/dim; i++)
       {
+        vec = Jx*weight*(  has_convec*tauk*  rho* Uconv_qp.dot(dxphi_c.row(i)) * Res    +   delk*dxU.trace()*dxphi_c.row(i).transpose() );
+        
         for (int c = 0; c < dim; c++)
-        {
-          FUloc(i*dim + c) += Jx*weight* has_convec*tau*pho(Xqp,tag)*Uconv_old.dot(dxphi_c.row(i))* ( pho(Xqp,tag)*(dUdt(c) + has_convec*Uconv_old.dot(dxU.row(c))) + dxP(c) - force(Xqp,current_time,tag)(c));
-
-        }
+          FUloc(i*dim + c) += vec(c);
+          
       }
       for (int i = 0; i < n_dofs_p_per_cell; ++i)
-        FPloc(i) += Jx*weight *tau*dxpsi_c.row(i).dot( pho(Xqp,tag)*(-dUdt - has_convec*dxU*Uconv_old) - dxP  + force(Xqp,current_time,tag));
+        FPloc(i) -= Jx*weight *tauk* dxpsi_c.row(i).dot(Res);
     }
 
     if (behaviors & BH_bble_condens_CR)
@@ -656,7 +681,10 @@ void AppCtx::formCellFunction(cell_iterator &cell,
 
   if(behaviors & BH_bble_condens_CR)
   {
-    FUloc += ( (Gnx*iBbb/bble_integ - bble_integ*Bnb)*FPx - Gnx*FUb )/bble_integ;
+    double const a = 1./(bble_integ*bble_integ);
+    double const b = 1./bble_integ;
+    
+    FUloc +=  a*Gnx*iBbb*FPx - b*Bnb*FPx - b*Gnx*FUb;
   }
 
   rotate_RA(R,FUloc,tmp);

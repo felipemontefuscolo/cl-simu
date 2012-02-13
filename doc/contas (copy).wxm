@@ -1,0 +1,24 @@
+/* [wxMaxima batch file version 1] [ DO NOT EDIT BY HAND! ]*/
+/* [ Created with wxMaxima version 0.8.5 ] */
+
+/* [wxMaxima: input   start ] */
+load ("vect");
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+C1 : [x11,x21,x31]$
+C2 : [x12,x22,x32]$
+C3 : express(C1~C2)$
+Det: mat_norm(matrix(C3), frobenius)$
+N : C3/'Det$
+
+Fc : mat_unblocker(transpose(matrix(C1,C2,N)));
+F  : mat_unblocker(transpose(matrix(C1,C2)));
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+kill(all);
+/* [wxMaxima: input   end   ] */
+
+/* Maxima can't load/batch files which end with a comment! */
+"Created with wxMaxima"$

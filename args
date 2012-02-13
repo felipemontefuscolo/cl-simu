@@ -1,8 +1,8 @@
 -dim 2  				      # cell dimension (= space dimension)
--dt 1e-6             # time step
+-dt 1e-3             # time step
 -renumber_dofs 0      # dofs renumbering
--maxts 3           # maximum number of time steps
--print_step 1      # print step
+-maxts 100           # maximum number of time steps
+-print_step 10      # print step
 -has_convec 1         # convective term: true or false
 -unsteady   1         # steady or unsteady problem
 -boundary_smoothing 1
@@ -12,7 +12,7 @@
 -plot_es 1            # plot exact solution: true or false
 -family_files 1       # plot output as 001, 002, 003, ...
 -sst -1.e-7            # steady state tol (Unew-Uold)/(Unew)
--theta 1.0            # time discretization theta method
+-theta 0.5            # time discretization theta method
 -quadr_c 4            # quadrature degree (cell)
 -quadr_f 3            # quadrature degree (facet)
 -quadr_r 2            # quadrature degree (corner)
@@ -50,15 +50,15 @@ nthreads 1
 -fp_trap 1           # stop on floating-point exceptions
 -on_error_abort 1
 log_trace stdout
--malloc_debug 1
+malloc_debug 1
 snes_fd 0
 -snes_ls basic      # line search: basic, cubic, quadratic
--snes_type test ksponly   # Nonlinear solver method (one of) ls tr test picard ksponly vi ngmres sorqn
+snes_type test ksponly   # Nonlinear solver method (one of) ls tr test picard ksponly vi ngmres sorqn
 snes_test_display 1 # compare f.e. jacobian with f.d. jacobian
-snes_monitor_cancel 1 # cancela monitoramento
+snes_monitor_cancel 0 # cancela monitoramento
 -snes_monitor stdout
 ksp_monitor stdout
--snes_max_it 5
+snes_max_it 5
 mat_no_inode 1
 
 
@@ -87,9 +87,9 @@ options: dir_tags, neum_tags, interf_tags, solid_tags, triple_tags
 function_space 1 # P1P1 (or Q1Q1) GLS stabilization
 function_space 2 # P1+P1 with bubble condensation
 function_space 3 # P2+Pm1 with bubble condensation and pressure gradient elimination
--function_space 4 # P2P1 (or Q2Q1)
+function_space 4 # P2P1 (or Q2Q1)
 function_space 5 # P1+P1
-function_space 6 # P2P0 
+-function_space 6 # P2P0 
 function_space 7 # P2+Pm1 full
 
 mesh_type 8      # TRIANGLE3        = 0x8,
