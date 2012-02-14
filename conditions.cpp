@@ -733,7 +733,7 @@ Vector solid_normal(Vector const& X, double t, int tag)
 #if (PROBLEM_TYPE==RAMP2D3D)
 double pho(Vector const& X, int tag)
 {
-  return 1;
+  return 0;
 }
 
 double cos_theta0()
@@ -753,11 +753,11 @@ double beta_diss()
 
 double gama(Vector const& X, double t, int tag)
 {
-  return 1;//75.*1e-3;
+  return 75.*1e-3;
 }
 double niu(double t, int tag)
 {
-  return 2;//1e-5;
+  return 1e-5;
 }
 Vector force(Vector const& X, double t, int tag)
 {

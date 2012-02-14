@@ -228,7 +228,7 @@ public:
   void onUpdateMesh();
   void setInitialConditions();
   PetscErrorCode solveTimeProblem();
-  PetscErrorCode formJacobian(SNES /*snes*/,Vec x,Mat *Jac, Mat* /*prejac*/, MatStructure * /*flag*/);
+  PetscErrorCode formJacobian(SNES /*snes*/,Vec x,Mat *Mat_Jac, Mat* /*prejac*/, MatStructure * /*flag*/);
   PetscErrorCode formFunction(SNES /*snes*/, Vec x, Vec f);
   // form the residue of the cell
   void formCellFunction(cell_iterator &cell,
@@ -405,12 +405,12 @@ public:
   void printContactAngle(bool _print);
   
   
-  void computeError(Vec &qq, double tt);
-  void updateNormals(Vec *x_mesh);
-  void smoothsMesh(Vec &x_mesh);
-  // @param[in] q unknows vector with fluid velocity
+  void computeError(Vec &Vec_up_1, double tt);
+  void updateNormals(Vec *Vec_xmsh);
+  void smoothsMesh(Vec &Vec_xmsh);
+  // @param[in] Vec_up_1 unknows vector with fluid velocity
   // @param[out] u_mesh
-  PetscErrorCode calcMeshVelocity(Vec const& q);
+  PetscErrorCode calcMeshVelocity(Vec const& Vec_up_1);
   PetscErrorCode moveMesh();
   void freePetscObjs();
   
@@ -434,7 +434,7 @@ public:
   PetscBool   print_ca; // print contact angle
   double      dt;
   double      steady_tol;
-  double      theta;
+  double      utheta;
   int         maxts;
   bool        force_pressure;
   bool        solve_the_sys;
@@ -564,8 +564,8 @@ public:
   Timer         timer;
 
   // petsc vectors
-  Vec                 q0, q, res, u_mesh, x_mesh, nml_mesh/**/;
-  Mat                 Jac;
+  Vec                 Vec_up_0, Vec_up_1, Vec_res, Vec_umsh_0, Vec_xmsh_0, Vec_nmsh/**/;
+  Mat                 Mat_Jac;
   SNES                snes;         /* nonlinear solver context */
   KSP    			        ksp;
   PC	   			        pc;

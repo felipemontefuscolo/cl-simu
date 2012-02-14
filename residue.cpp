@@ -3,14 +3,14 @@
 // ******************************************************************************
 //                            FORM FUNCTION
 // ******************************************************************************
-PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec x, Vec f)
+PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 {
 
   //PetscErrorCode      ierr;
 
   // LOOP NAS CÉLULAS
-  VecZeroEntries(f);
-  //#pragma omp parallel default(none) shared(x,f,cout)
+  VecZeroEntries(Vec_fun);
+  //#pragma omp parallel default(none) shared(Vec_up_k,Vec_fun,cout)
   {
     VectorXd          FUloc(n_dofs_u_per_cell);
     VectorXd          FPloc(n_dofs_p_per_cell);
@@ -44,15 +44,15 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec x, Vec f)
         dof_handler_vars.getVariable(1).getCellDofs(mapP_c.data(), &*cell);
 
         /*  Pega os valores das variáveis nos graus de liberdade */
-        VecGetValues(x , mapU_c.size(), mapU_c.data(), u_coefs_c_new.data());
-        VecGetValues(x , mapP_c.size(), mapP_c.data(), p_coefs_c.data());
+        VecGetValues(Vec_up_k , mapU_c.size(), mapU_c.data(), u_coefs_c_new.data());
+        VecGetValues(Vec_up_k , mapP_c.size(), mapP_c.data(), p_coefs_c.data());
 
 
         formCellFunction(cell, mapU_c, mapP_c, u_coefs_c_new, p_coefs_c, FUloc, FPloc);
 
 
-        VecSetValues(f, mapU_c.size(), mapU_c.data(), FUloc.data(), ADD_VALUES);
-        VecSetValues(f, mapP_c.size(), mapP_c.data(), FPloc.data(), ADD_VALUES);
+        VecSetValues(Vec_fun, mapU_c.size(), mapU_c.data(), FUloc.data(), ADD_VALUES);
+        VecSetValues(Vec_fun, mapP_c.size(), mapP_c.data(), FPloc.data(), ADD_VALUES);
 
       }
 
@@ -63,7 +63,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec x, Vec f)
   }
 
   // LOOP NAS FACES DO CONTORNO
-  //#pragma omp parallel default(none) shared(x,f,cout)
+  //#pragma omp parallel default(none) shared(Vec_up_k,Vec_fun,cout)
   {
     VectorXd          FUloc(n_dofs_u_per_facet);
     //VectorXd          FPloc(n_dofs_p_per_facet); // don't need it
@@ -111,11 +111,11 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec x, Vec f)
         dof_handler_vars.getVariable(0).getFacetDofs(mapU_f.data(), &*facet);
         dof_handler_vars.getVariable(1).getFacetDofs(mapP_f.data(), &*facet);
 
-        VecGetValues(x , mapU_f.size(), mapU_f.data(), u_coefs_f.data());
+        VecGetValues(Vec_up_k , mapU_f.size(), mapU_f.data(), u_coefs_f.data());
 
         formFacetFunction(facet, mapU_f, mapP_f, u_coefs_f, p_coefs_f,FUloc);
 
-        VecSetValues(f, mapU_f.size(), mapU_f.data(), FUloc.data(), ADD_VALUES);
+        VecSetValues(Vec_fun, mapU_f.size(), mapU_f.data(), FUloc.data(), ADD_VALUES);
 
       }
 
@@ -126,7 +126,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec x, Vec f)
 
 
   // LINHA DE CONTATO
-  //#pragma omp parallel shared(x,f,cout) default(none)
+  //#pragma omp parallel shared(Vec_up_k,Vec_fun,cout) default(none)
   {
     int                 tag;
     bool                is_triple;
@@ -158,11 +158,11 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec x, Vec f)
       dof_handler_vars.getVariable(0).getCornerDofs(mapU_r.data(), &*corner);
       dof_handler_vars.getVariable(1).getCornerDofs(mapP_r.data(), &*corner);
 
-      VecGetValues(x , mapU_r.size(), mapU_r.data(), u_coefs_r.data());
+      VecGetValues(Vec_up_k , mapU_r.size(), mapU_r.data(), u_coefs_r.data());
 
       formCornerFunction(corner,mapU_r,mapP_r,u_coefs_r,FUloc);
 
-      VecSetValues(f, mapU_r.size(), mapU_r.data(), FUloc.data(), ADD_VALUES);
+      VecSetValues(Vec_fun, mapU_r.size(), mapU_r.data(), FUloc.data(), ADD_VALUES);
       //cout << FUloc.transpose() << endl;
 
     }
@@ -172,14 +172,14 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec x, Vec f)
   }
 
 
-  Assembly(f);
+  Assembly(Vec_fun);
 
   // Dirichlet Conditions
   int const n_dofs_u_assoc2_vtx = dim;//shape_phi_c->numDofsAssociatedToVertice();
   int const n_dofs_u_assoc2_corner = dim*shape_phi_c->numDofsAssociatedToCorner();
   int const n_dofs_u_assoc2_facet = dim*shape_phi_c->numDofsAssociatedToFacet();
 
-  //#pragma omp parallel default(none) shared(x,f,cout)
+  //#pragma omp parallel default(none) shared(Vec_up_k,Vec_fun,cout)
   {
 
     int tag;
@@ -208,8 +208,8 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec x, Vec f)
       for (int d = 0; d < dim; d++)
       {
         idx =  u_vtx_dofs[d];
-        VecGetValues(x, 1, &idx, &value);
-        VecSetValue(f, idx, (value - temp[d]), INSERT_VALUES);
+        VecGetValues(Vec_up_k, 1, &idx, &value);
+        VecSetValue(Vec_fun, idx, (value - temp[d]), INSERT_VALUES);
       }
     }
     bool const mesh_has_edge_nodes = mesh->numNodesPerCell()-mesh->numVerticesPerCell() > 0;
@@ -238,8 +238,8 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec x, Vec f)
       for (int d = 0; d < dim; d++)
       {
         idx =  u_facet_dofs[d];
-        VecGetValues(x, 1, &idx, &value);
-        VecSetValue(f, idx, (value - temp[d]), INSERT_VALUES);
+        VecGetValues(Vec_up_k, 1, &idx, &value);
+        VecSetValue(Vec_fun, idx, (value - temp[d]), INSERT_VALUES);
       }
     }
 
@@ -266,8 +266,8 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec x, Vec f)
       for (int d = 0; d < dim; d++)
       {
         idx =  u_corner_dofs[d];
-        VecGetValues(x, 1, &idx, &value);
-        VecSetValue(f, idx, (value - temp[d]), INSERT_VALUES);
+        VecGetValues(Vec_up_k, 1, &idx, &value);
+        VecSetValue(Vec_fun, idx, (value - temp[d]), INSERT_VALUES);
       }
     }
 
@@ -283,8 +283,8 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec x, Vec f)
       //temp = u_boundary(X, current_time, tag);
       dof_handler_vars.getVariable(0).getVertexAssociatedDofs(u_vtx_dofs, point);
       idx =  u_vtx_dofs[0];
-      VecGetValues(x, 1, &idx, &value);
-      VecSetValue(f, idx, (value - 0), INSERT_VALUES);
+      VecGetValues(Vec_up_k, 1, &idx, &value);
+      VecSetValue(Vec_fun, idx, (value - 0), INSERT_VALUES);
     }
     //bool const mesh_has_edge_nodes = mesh->numNodesPerCell()-mesh->numVerticesPerCell() > 0;
 
@@ -312,8 +312,8 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec x, Vec f)
       //temp = u_boundary(X, current_time, tag);
       dof_handler_vars.getVariable(0).getFacetAssociatedDofs(u_facet_dofs, &*facet);
       idx =  u_facet_dofs[0];
-      VecGetValues(x, 1, &idx, &value);
-      VecSetValue(f, idx, (value - 0), INSERT_VALUES);
+      VecGetValues(Vec_up_k, 1, &idx, &value);
+      VecSetValue(Vec_fun, idx, (value - 0), INSERT_VALUES);
     }
 
 
@@ -338,8 +338,8 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec x, Vec f)
       //temp = u_boundary(X, current_time, tag);
       dof_handler_vars.getVariable(0).getCornerAssociatedDofs(u_corner_dofs, corner);
       idx =  u_corner_dofs[0];
-      VecGetValues(x, 1, &idx, &value);
-      VecSetValue(f, idx, (value - 0), INSERT_VALUES);
+      VecGetValues(Vec_up_k, 1, &idx, &value);
+      VecSetValue(Vec_fun, idx, (value - 0), INSERT_VALUES);
     }
 
 
@@ -352,19 +352,19 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec x, Vec f)
   {
     double const pressure_value = 1; // 666.;
     idx = dir_entries.back();
-    VecGetValues(x, 1, &idx, &value);
-    VecSetValue(f, idx, value - pressure_value, INSERT_VALUES);
-    Assembly(f);
+    VecGetValues(Vec_up_k, 1, &idx, &value);
+    VecSetValue(Vec_fun, idx, value - pressure_value, INSERT_VALUES);
+    Assembly(Vec_fun);
   }
 
   if(print_to_matlab)
   {
     static bool ja_foi=false;
-    if (!ja_foi) View(f, "rhs.m","res");
+    if (!ja_foi) View(Vec_fun, "rhs.m","res");
     ja_foi = true;
   }
 
-  Assembly(f);
+  Assembly(Vec_fun);
 
   PetscFunctionReturn(0);
 
@@ -376,21 +376,21 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec x, Vec f)
 // ***********
 // form the residue of the cell
 void AppCtx::formCellFunction(cell_iterator &cell,
-                                VectorXi &mapU_c,  VectorXi &/*mapP_c*/, // mappers
-                                MatrixXd &u_coefs_c_new,  VectorXd &p_coefs_c, // coefficients
-                                VectorXd &FUloc, VectorXd &FPloc) // output: local residue
+                              VectorXi &mapU_c,  VectorXi &/*mapP_c*/, // mappers
+                              MatrixXd &u_coefs_c_new,  VectorXd &p_coefs_c, // coefficients
+                              VectorXd &FUloc, VectorXd &FPloc) // output: local residue
 {
 
   /* local data */
   int                 tag;
   //MatrixXd            u_coefs_c(n_dofs_u_per_cell/dim, dim);
-  MatrixXd            u_coefs_c_trans(dim, n_dofs_u_per_cell/dim);      // n+theta
+  MatrixXd            u_coefs_c_trans(dim, n_dofs_u_per_cell/dim);      // n+utheta
   MatrixXd            u_coefs_c_old(n_dofs_u_per_cell/dim, dim);        // n
   MatrixXd            u_coefs_c_old_trans(dim,n_dofs_u_per_cell/dim);   // n
   //MatrixXd           u_coefs_c_new(n_dofs_u_per_cell/dim, dim);        // n+1
   MatrixXd            u_coefs_c_new_trans(dim,n_dofs_u_per_cell/dim);   // n+1
 
-  MatrixXd            v_coefs_c_trans(dim, nodes_per_cell);      // mesh velocity; n+theta
+  MatrixXd            v_coefs_c_trans(dim, nodes_per_cell);      // mesh velocity; n+utheta
   MatrixXd            v_coefs_c_old(nodes_per_cell, dim);        // mesh velocity; n
   MatrixXd            v_coefs_c_old_trans(dim,nodes_per_cell);   // mesh velocity; n
   MatrixXd            v_coefs_c_new(nodes_per_cell, dim);        // mesh velocity; n+1
@@ -458,8 +458,8 @@ void AppCtx::formCellFunction(cell_iterator &cell,
   // get coeficients of the mesh velocity and the old velocity (time step n)
   dof_handler_mesh.getVariable(0).getCellDofs(mapM_c.data(), &*cell);
 
-  VecGetValues(u_mesh, mapM_c.size(), mapM_c.data(), v_coefs_c_old.data());
-  VecGetValues(q0,     mapU_c.size(), mapU_c.data(), u_coefs_c_old.data());
+  VecGetValues(Vec_umsh_0, mapM_c.size(), mapM_c.data(), v_coefs_c_old.data());
+  VecGetValues(Vec_up_0,     mapU_c.size(), mapU_c.data(), u_coefs_c_old.data());
 
   // get nodal coordinates of the cell
   mesh->getCellNodesId(&*cell, cell_nodes.data());
@@ -477,7 +477,8 @@ void AppCtx::formCellFunction(cell_iterator &cell,
   v_coefs_c_old_trans = v_coefs_c_old.transpose();
   u_coefs_c_old_trans = u_coefs_c_old.transpose();
   u_coefs_c_new_trans = u_coefs_c_new.transpose();
-  u_coefs_c_trans = theta*u_coefs_c_new_trans + (1.-theta)*u_coefs_c_old_trans;
+  u_coefs_c_trans = utheta*u_coefs_c_new_trans + (1.-utheta)*u_coefs_c_old_trans;
+
 
   visc = niu(current_time, tag);
   rho  = pho(Xqp,tag);
@@ -545,11 +546,11 @@ void AppCtx::formCellFunction(cell_iterator &cell,
     dxqsi_c = dLqsi_c[qp] * invF_c;
 
     dxP  = dxpsi_c.transpose() * p_coefs_c;
-    dxU  = u_coefs_c_trans * dxphi_c;       // n+theta
+    dxU  = u_coefs_c_trans * dxphi_c;       // n+utheta
     dxU_new = u_coefs_c_new_trans* dxphi_c; // n+1
 
     Xqp  = x_coefs_c_trans * qsi_c[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
-    Uqp  = u_coefs_c_trans * phi_c[qp]; //n+theta
+    Uqp  = u_coefs_c_trans * phi_c[qp]; //n+utheta
     Pqp  = p_coefs_c.dot(psi_c[qp]);
     Uqp_old = u_coefs_c_old_trans * phi_c[qp]; // n
     Vqp_old  = v_coefs_c_old_trans * qsi_c[qp];
@@ -607,9 +608,9 @@ void AppCtx::formCellFunction(cell_iterator &cell,
           {
             delta_cd = c==d;
             Bnb(j*dim + d, c) += Jx*weight*
-                                 ( has_convec*phi_c[qp][j]*theta *pho(Xqp,tag)*(  delta_cd*Uconv_qp.dot(dxbble)  )   // convective
+                                 ( has_convec*phi_c[qp][j]*utheta *pho(Xqp,tag)*(  delta_cd*Uconv_qp.dot(dxbble)  )   // convective
                                  + delta_cd*pho(Xqp,tag)*phi_c[qp][j]*bble[qp]/dt     // time derivative
-                                 + theta*visc*(delta_cd * dxphi_c.row(j).dot(dxbble) + dxphi_c(j,c)*dxbble(d)) );    // rigidez
+                                 + utheta*visc*(delta_cd * dxphi_c.row(j).dot(dxbble) + dxphi_c(j,c)*dxbble(d)) );    // rigidez
 
           }
         }
@@ -624,9 +625,9 @@ void AppCtx::formCellFunction(cell_iterator &cell,
         {
           delta_cd = c==d;
           iBbb(c, d) += Jx*weight*
-                        ( has_convec*bble[qp]*theta *rho*( delta_cd*Uconv_qp.dot(dxbble) )   // convective
+                        ( has_convec*bble[qp]*utheta *rho*( delta_cd*Uconv_qp.dot(dxbble) )   // convective
                         + delta_cd*pho(Xqp,tag)*bble[qp]*bble[qp]/dt     // time derivative
-                        + theta*visc*(delta_cd* dxbble.dot(dxbble)  + dxbble(d)*dxbble(c)) ); // rigidez
+                        + utheta*visc*(delta_cd* dxbble.dot(dxbble)  + dxbble(d)*dxbble(c)) ); // rigidez
         }
 
         FUb(c) += Jx*weight*
@@ -766,7 +767,7 @@ void AppCtx::formFacetFunction(facet_iterator &facet,
     weight  = quadr_facet->weight(qp);
     Xqp     = x_coefs_f_trans * qsi_f[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
     dxphi_f = dLphi_f[qp] * invF_f;
-    dxU_f   = u_coefs_f_trans * dxphi_f; // n+theta
+    dxU_f   = u_coefs_f_trans * dxphi_f; // n+utheta
     Uqp  = u_coefs_f_trans * phi_f[qp];
 
     if (is_neumann)
@@ -987,7 +988,7 @@ void AppCtx::formCornerFunction(corner_iterator &corner,
     weight  = quadr_corner->weight(qp);
     Xqp = x_coefs_r_trans * qsi_r[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
     //dxphi_r = dLphi_r[qp] * invF_r;
-    //dxU_r   = u_coefs_r_trans * dxphi_r; // n+theta
+    //dxU_r   = u_coefs_r_trans * dxphi_r; // n+utheta
     Uqp  = u_coefs_r_trans * phi_r[qp];
 
     if (dim==3)
