@@ -412,9 +412,9 @@ void AppCtx::formCellFunction(cell_iterator &cell,
   Tensor              F_c(dim,dim);
   Tensor              invF_c(dim,dim);
   Tensor              invFT_c(dim,dim);
-  MatrixXd             dxphi_c(n_dofs_u_per_cell/dim, dim);
+  MatrixXd            dxphi_c(n_dofs_u_per_cell/dim, dim);
   MatrixXd            dxpsi_c(n_dofs_p_per_cell, dim);       // EXCEÇÃO
-  MatrixXd             dxqsi_c(nodes_per_cell, dim);
+  MatrixXd            dxqsi_c(nodes_per_cell, dim);
   Vector              dxbble(dim);
   Tensor              dxU(dim,dim);   // grad u
   Tensor              dxUb(dim,dim);  // grad u bble
@@ -458,8 +458,9 @@ void AppCtx::formCellFunction(cell_iterator &cell,
 
   VectorXi            mapM_c(dim*nodes_per_cell); // mesh velocity
 
-  MatrixXd         R(n_dofs_u_per_cell,n_dofs_u_per_cell);
-  MatrixXd         tmp;
+  MatrixXd            R(n_dofs_u_per_cell,n_dofs_u_per_cell);
+  MatrixXd            Rv(nodes_per_cell*dim,nodes_per_cell*dim);
+  MatrixXd            tmp(n_dofs_u_per_cell,n_dofs_u_per_cell);
 
 
 
@@ -479,12 +480,25 @@ void AppCtx::formCellFunction(cell_iterator &cell,
   x_coefs_c_trans = x_coefs_c.transpose();
 
   // get the rotation matrix
-  getRotationMatrix(R, cell_nodes, cell_nodes.size());
+  getRotationMatrix(R, cell_nodes, cell_nodes.size()); // bolhas nunca são rotacionadas
+  Rv = R.topLeftCorner(dim*nodes_per_cell,dim*nodes_per_cell);
 
   // transformando para coordenada verdadeira
-  rotate_RtA(R,u_coefs_c_new,tmp);
-  rotate_RtA(R,u_coefs_c_old,tmp);
-  rotate_RtA(R,v_coefs_c_med,tmp);
+  //rotate_RtA(R,u_coefs_c_new,tmp);
+  //rotate_RtA(R,u_coefs_c_old,tmp);
+  //rotate_RtA(R,v_coefs_c_med,tmp);
+  
+  { // Rotate:
+    Map<VectorXd> m(u_coefs_c_new.data(), u_coefs_c_new.size());
+    m = R.transpose()*m;
+    
+    new (&m) Map<VectorXd>(u_coefs_c_old.data(), u_coefs_c_old.size());
+    m = R.transpose()*m;
+  
+    new (&m) Map<VectorXd>(v_coefs_c_med.data(), v_coefs_c_med.size());
+    m = Rv.transpose()*m;
+  }
+
 
   v_coefs_c_med_trans = v_coefs_c_med.transpose();
   u_coefs_c_old_trans = u_coefs_c_old.transpose();
@@ -719,20 +733,20 @@ void AppCtx::formFacetFunction(facet_iterator &facet,
   bool                is_neumann;
   bool                is_surface;
   bool                is_solid;
-  //MatrixXd             u_coefs_f(n_dofs_u_per_facet/dim, dim);
-  //VectorXd             p_coefs_f(n_dofs_p_per_facet);
+  //MatrixXd           u_coefs_f(n_dofs_u_per_facet/dim, dim);
+  //VectorXd           p_coefs_f(n_dofs_p_per_facet);
   MatrixXd            u_coefs_f_trans(dim, n_dofs_u_per_facet/dim);
   MatrixXd             x_coefs_f(nodes_per_facet, dim);
   MatrixXd            x_coefs_f_trans(dim, nodes_per_facet);
   Tensor              F_f(dim,dim-1);
   Tensor              invF_f(dim-1,dim);
-  MatrixXd             dxphi_f(n_dofs_u_per_facet/dim, dim);
+  MatrixXd            dxphi_f(n_dofs_u_per_facet/dim, dim);
   Tensor              dxU_f(dim,dim);   // grad u
   Vector              Xqp(dim);
   Vector              Uqp(dim);
   //VectorXd          FUloc(n_dofs_u_per_facet);
-  MatrixXd         Aloc_f(n_dofs_u_per_facet, n_dofs_u_per_facet);
-  VectorXi          facet_nodes(nodes_per_facet);
+  MatrixXd            Aloc_f(n_dofs_u_per_facet, n_dofs_u_per_facet);
+  VectorXi            facet_nodes(nodes_per_facet);
   Vector              normal(dim);
   double              Jx=0;
   double              weight=0;
@@ -762,9 +776,14 @@ void AppCtx::formFacetFunction(facet_iterator &facet,
 
   getRotationMatrix(R,facet_nodes,facet_nodes.size());
 
-  rotate_RtA(R,u_coefs_f,tmp);
+  //rotate_RtA(R,u_coefs_f,tmp);
+  
+  { // Rotate:
+    Map<VectorXd> m(u_coefs_f.data(), u_coefs_f.size());
+    m = R.transpose()*m;
+  }
+   
   u_coefs_f_trans = u_coefs_f.transpose();
-
 
 
   for (int qp = 0; qp < n_qpts_facet; ++qp)
@@ -986,7 +1005,12 @@ void AppCtx::formCornerFunction(corner_iterator &corner,
 
   getRotationMatrix(R,corner_nodes,corner_nodes.size());
 
-  rotate_RtA(R,u_coefs_r,tmp);
+//  rotate_RtA(R,u_coefs_r,tmp);
+  
+  { // Rotate:
+    Map<VectorXd> m(u_coefs_r.data(), u_coefs_r.size());
+    m = R.transpose()*m;
+  }  
   u_coefs_r_trans = u_coefs_r.transpose();
 
 

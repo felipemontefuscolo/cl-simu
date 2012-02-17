@@ -100,6 +100,7 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
     VectorXi            mapM_r(dim*nodes_per_corner);
 
     MatrixXd            R(n_dofs_u_per_cell,n_dofs_u_per_cell);
+    MatrixXd            Rv(dim*nodes_per_cell,dim*nodes_per_cell);
     MatrixXd            tmp(n_dofs_u_per_cell,n_dofs_u_per_cell);
 
     //const int tid = omp_get_thread_num();
@@ -125,7 +126,8 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
         x_coefs_c_trans = x_coefs_c.transpose();
 
         getRotationMatrix(R,cell_nodes,cell_nodes.size());
-
+        Rv = R.topLeftCorner(dim*nodes_per_cell,dim*nodes_per_cell);
+    
         // mapeamento do local para o global:
         //
         dof_handler_vars.getVariable(0).getCellDofs(mapU_c.data(), &*cell);
@@ -138,10 +140,22 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
         VecGetValues(Vec_vmsh_med,    mapM_c.size(), mapM_c.data(), v_coefs_c_med.data());
         VecGetValues(Vec_up_k ,       mapP_c.size(), mapP_c.data(), p_coefs_c.data());
 
-        // transformando para coordenada verdadeira
-        rotate_RtA(R,u_coefs_c_new,tmp);
-        rotate_RtA(R,u_coefs_c_old,tmp);
-        rotate_RtA(R,v_coefs_c_med,tmp);
+        //// transformando para coordenada verdadeira
+        //rotate_RtA(R,u_coefs_c_new,tmp);
+        //rotate_RtA(R,u_coefs_c_old,tmp);
+        //rotate_RtA(R,v_coefs_c_med,tmp);
+
+        { // Rotate:
+          Map<VectorXd> m(u_coefs_c_new.data(), u_coefs_c_new.size());
+          m = R.transpose()*m;
+          
+          new (&m) Map<VectorXd>(u_coefs_c_old.data(), u_coefs_c_old.size());
+          m = R.transpose()*m;
+        
+          new (&m) Map<VectorXd>(v_coefs_c_med.data(), v_coefs_c_med.size());
+          m = Rv.transpose()*m;
+        }
+
 
         v_coefs_c_med_trans = v_coefs_c_med.transpose();
         u_coefs_c_old_trans = u_coefs_c_old.transpose();

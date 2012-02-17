@@ -1,7 +1,7 @@
 -dim 2  				        # cell dimension (= space dimension)
 -dt 0.0625                # time step
 -renumber_dofs 0        # dofs renumbering
--maxts 320              # maximum number of time steps
+-maxts 3              # maximum number of time steps
 -print_step 20          # print step
 -has_convec 1           # convective term: true or false
 -unsteady   1           # steady or unsteady problem
@@ -13,7 +13,7 @@
 -plot_es 1              # plot exact solution: true or false
 -family_files 1         # plot output as 001, 002, 003, ...
 -sst -1.e-7             # steady state tol (Unew-Uold)/(Unew)
--utheta 0.5               # time discretization theta method (momentum)
+-utheta 1.0               # time discretization theta method (momentum)
 -vtheta 1.0             # time discretization theta method (mesh velocity)
 -quadr_c 4              # quadrature degree (cell)
 -quadr_f 3              # quadrature degree (facet)
