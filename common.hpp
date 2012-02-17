@@ -57,15 +57,16 @@ enum Behaviors {
 };
 
 class AppCtx;
+class Statistics;
 
 double pho(Vector const& X, int tag);
 double gama(Vector const& X, double t, int tag);
 double cos_theta0();
 double zeta(double u_norm, double angle);
 double beta_diss();
-double niu(double t, int tag);
+double muu(double t, int tag);
 Vector force(Vector const& X, double t, int tag);
-Vector u_boundary(Vector const& X, double t, int tag);
+Vector u_exact(Vector const& X, double t, int tag);
 Vector traction(Vector const& X, double t, int tag);
 double pressure_exact(Vector const& X, double t, int tag);
 Vector grad_p_exact(Vector const& X, double t, int tag);
@@ -73,6 +74,7 @@ Tensor grad_u_exact(Vector const& X, double t, int tag);
 Vector u_initial(Vector const& X, int tag);
 double p_initial(Vector const& X, int tag);
 Vector solid_normal(Vector const& X, double t, int tag);
+Vector v_exact(Vector const& X, double t, int tag);
 
 
 inline double sqr(double v) {return v*v;}
@@ -200,6 +202,88 @@ void cross(AnyVector & a, AnyVector const& b)
 }
 
 
+
+
+class Statistics
+{
+public:
+  Statistics()
+  {
+    this->reset();
+  }
+  
+  void reset()
+  {
+    p_L2_norm=0;
+    u_L2_norm=0;
+    grad_u_L2_norm=0;
+    grad_p_L2_norm=0;
+
+    Np=0;
+    Nu=0;
+    Ngp=0;
+    Ngu=0;    
+  }
+  
+  void add_p_L2(double x)
+  {
+    p_L2_norm += x;
+    //Np++;
+  }
+  void add_u_L2(double x)
+  {
+    u_L2_norm += x;
+    //Nu ++;
+  }
+  void add_grad_u_L2(double x)
+  {
+    grad_u_L2_norm +=x;
+    //Ngu++;
+  }
+  void add_grad_p_L2(double x)
+  {
+    grad_p_L2_norm += x;
+    //Ngp++;
+  }
+  
+  double mean_p_L2_norm()
+  {
+    return p_L2_norm;
+  }
+  
+  double mean_u_L2_norm()
+  {
+    return u_L2_norm;
+  }
+  
+  double mean_grad_u_L2_norm()
+  {
+    return grad_u_L2_norm;
+  }
+  
+  double mean_grad_p_L2_norm()
+  {
+    return grad_p_L2_norm;
+  }  
+  
+  double p_L2_norm;
+  double u_L2_norm;
+  double grad_u_L2_norm;
+  double grad_p_L2_norm;
+  
+  
+  int Np, Nu, Ngp, Ngu;
+  
+};
+
+
+
+
+
+
+
+
+
 //
 // User Class
 //
@@ -227,6 +311,7 @@ public:
   void computeDirichletEntries();
   void onUpdateMesh();
   void setInitialConditions();
+  PetscErrorCode checkSnesConvergence(SNES snes, PetscInt it,PetscReal xnorm, PetscReal pnorm, PetscReal fnorm, SNESConvergedReason *reason);
   PetscErrorCode solveTimeProblem();
   PetscErrorCode formJacobian(SNES /*snes*/,Vec x,Mat *Mat_Jac, Mat* /*prejac*/, MatStructure * /*flag*/);
   PetscErrorCode formFunction(SNES /*snes*/, Vec x, Vec f);
@@ -408,10 +493,11 @@ public:
   void computeError(Vec &Vec_up_1, double tt);
   void updateNormals(Vec *Vec_xmsh);
   void smoothsMesh(Vec &Vec_xmsh);
+  void copyMesh2Vec(Vec &Vec_xmsh);
   // @param[in] Vec_up_1 unknows vector with fluid velocity
   // @param[out] u_mesh
-  PetscErrorCode calcMeshVelocity(Vec const& Vec_up_1);
-  PetscErrorCode moveMesh();
+  PetscErrorCode calcMeshVelocity(Vec const& Vec_up, Vec const& Vec_xmsh, Vec & Vec_vmsh, double const current_time);
+  PetscErrorCode moveMesh(Vec const& Vec_xmsh_0, Vec const& Vec_vmsh_0, Vec const& Vec_vmsh_med, double const vtheta);
   void freePetscObjs();
   
   
@@ -428,13 +514,16 @@ public:
   PetscBool   print_to_matlab;
   PetscBool   force_dirichlet;
   PetscBool   full_diriclet;
+  PetscBool   force_bound_mesh_vel;
   PetscBool   ale;
   PetscBool   plot_exact_sol;
   PetscBool   family_files;
-  PetscBool   print_ca; // print contact angle
+  PetscBool   fprint_ca; // print contact angle
+  int         converged_times;
   double      dt;
   double      steady_tol;
   double      utheta;
+  double      vtheta;
   int         maxts;
   bool        force_pressure;
   bool        solve_the_sys;
@@ -562,19 +651,16 @@ public:
   double        beta1, beta2;
 
   Timer         timer;
+  Statistics    Stats;
 
   // petsc vectors
-  Vec                 Vec_up_0, Vec_up_1, Vec_res, Vec_umsh_0, Vec_xmsh_0, Vec_nmsh/**/;
+  Vec                 Vec_res, Vec_up_0, Vec_up_1, Vec_vmsh_0, Vec_vmsh_med, Vec_xmsh_0, Vec_tmp, Vec_nmsh/**/;
   Mat                 Mat_Jac;
   SNES                snes;         /* nonlinear solver context */
   KSP    			        ksp;
   PC	   			        pc;
 
 };
-
-
-
-
 
 
 

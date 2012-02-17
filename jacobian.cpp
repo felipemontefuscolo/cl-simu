@@ -29,8 +29,8 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
     MatrixXd            u_coefs_c_new_trans(dim,n_dofs_u_per_cell/dim);   // n+1
 
     MatrixXd            v_coefs_c_trans(dim, nodes_per_cell);      // mesh velocity; n+utheta
-    MatrixXd            v_coefs_c_old(nodes_per_cell, dim);        // mesh velocity; n
-    MatrixXd            v_coefs_c_old_trans(dim,nodes_per_cell);   // mesh velocity; n
+    MatrixXd            v_coefs_c_med(nodes_per_cell, dim);        // mesh velocity; n
+    MatrixXd            v_coefs_c_med_trans(dim,nodes_per_cell);   // mesh velocity; n
     MatrixXd            v_coefs_c_new(nodes_per_cell, dim);        // mesh velocity; n+1
     MatrixXd            v_coefs_c_new_trans(dim,nodes_per_cell);   // mesh velocity; n+1
 
@@ -79,6 +79,7 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
     MatrixXd            Gnx(n_dofs_u_per_cell, dim);                  // CR ;; suffix x means p gradient
     Vector              FUb(dim);                                     // BC
 
+    Vector              force_at_theta(dim);
     Vector              Res(dim);                                     // residue
     Tensor              dResdu(dim,dim);                                // residue derivative
     Tensor const        I(Tensor::Identity(dim,dim));
@@ -132,17 +133,17 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
         dof_handler_mesh.getVariable(0).getCellDofs(mapM_c.data(), &*cell);
 
         /*  Pega os valores das variáveis nos graus de liberdade */
-        VecGetValues(Vec_up_k ,     mapU_c.size(), mapU_c.data(), u_coefs_c_new.data());
-        VecGetValues(Vec_up_0,     mapU_c.size(), mapU_c.data(), u_coefs_c_old.data());
-        VecGetValues(Vec_umsh_0, mapM_c.size(), mapM_c.data(), v_coefs_c_old.data());
-        VecGetValues(Vec_up_k ,     mapP_c.size(), mapP_c.data(), p_coefs_c.data());
+        VecGetValues(Vec_up_k ,       mapU_c.size(), mapU_c.data(), u_coefs_c_new.data());
+        VecGetValues(Vec_up_0,        mapU_c.size(), mapU_c.data(), u_coefs_c_old.data());
+        VecGetValues(Vec_vmsh_med,    mapM_c.size(), mapM_c.data(), v_coefs_c_med.data());
+        VecGetValues(Vec_up_k ,       mapP_c.size(), mapP_c.data(), p_coefs_c.data());
 
         // transformando para coordenada verdadeira
         rotate_RtA(R,u_coefs_c_new,tmp);
         rotate_RtA(R,u_coefs_c_old,tmp);
-        rotate_RtA(R,v_coefs_c_old,tmp);
+        rotate_RtA(R,v_coefs_c_med,tmp);
 
-        v_coefs_c_old_trans = v_coefs_c_old.transpose();
+        v_coefs_c_med_trans = v_coefs_c_med.transpose();
         u_coefs_c_old_trans = u_coefs_c_old.transpose();
         u_coefs_c_new_trans = u_coefs_c_new.transpose();
 
@@ -150,7 +151,7 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
         u_coefs_c_trans = utheta*u_coefs_c_new_trans + (1.-utheta)*u_coefs_c_old_trans;
 
         //  SetUp 
-        visc = niu(current_time, tag);
+        visc = muu(current_time, tag);
         rho  = pho(Xqp,tag);
         Aloc.setZero();
         Gloc.setZero();
@@ -175,7 +176,7 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
 
           hk2 = cell_volume / pi; // element size
           
-          double const uconv = (u_coefs_c_old - v_coefs_c_old).lpNorm<Infinity>();
+          double const uconv = (u_coefs_c_old - v_coefs_c_med).lpNorm<Infinity>();
           
           tauk = 4.*visc/hk2 + 2.*rho*uconv/sqrt(hk2);
           tauk = 1./tauk;
@@ -224,10 +225,12 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
           Uqp_new  = u_coefs_c_new_trans * phi_c[qp]; //n+1
           Uqp      = u_coefs_c_trans * phi_c[qp];     //n+utheta
           Uqp_old  = u_coefs_c_old_trans * phi_c[qp];
-          Vqp_old  = v_coefs_c_old_trans * qsi_c[qp];
+          Vqp_old  = v_coefs_c_med_trans * qsi_c[qp];
           Uconv_qp = Uqp - Vqp_old;
           dUdt     = (Uqp_new-Uqp_old)/dt;
           Pqp  = p_coefs_c.dot(psi_c[qp]);
+
+          force_at_theta = utheta*force(Xqp,current_time+dt,tag) + (1.-utheta)*force(Xqp,current_time,tag);
 
           weight = quadr_cell->weight(qp);
           if (Jx < 1.e-10)
@@ -310,7 +313,7 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
                         ( bble[qp]*rho*(dUdt(c) + has_convec*Uconv_qp.dot(dxU.row(c))) + // time derivative + convective
                           visc*dxbble.dot(dxU.row(c) + dxU.col(c).transpose()) - //rigidez
                           Pqp*dxbble(c) -                     // pressão
-                          force(Xqp,current_time,tag)(c)*bble[qp]   ); // força
+                          force_at_theta(c)*bble[qp]   ); // força
 
             }
 
@@ -318,7 +321,7 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
           else
           if(behaviors & BH_GLS)
           {
-            Res = rho*( dUdt +  has_convec*dxU*Uconv_qp) + dxP - force(Xqp,current_time,tag);
+            Res = rho*( dUdt +  has_convec*dxU*Uconv_qp) + dxP - force_at_theta;
             
             for (int j = 0; j < n_dofs_u_per_cell/dim; ++j)
             {

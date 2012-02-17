@@ -3,7 +3,7 @@
 // 
 // ALE
 // 
-// pho*( (Ut + (U-Umsh) · nabla)U ) + grad p = niu* div grad U + force
+// pho*( (Ut + (U-Umsh) · nabla)U ) + grad p = muu* div grad U + force
 //
 // LIMITAÇÕES:
 // * triangulo e tetrahedro apenas.
@@ -23,8 +23,10 @@
 
 PetscErrorCode FormJacobian(SNES snes,Vec Vec_up_1,Mat *Mat_Jac, Mat *prejac, MatStructure *flag, void *ptr);
 PetscErrorCode FormFunction(SNES snes, Vec Vec_up_1, Vec Vec_fun, void *ptr);
+PetscErrorCode CheckSnesConvergence(SNES snes, PetscInt it,PetscReal xnorm, PetscReal pnorm, PetscReal fnorm, SNESConvergedReason *reason, void *ctx);
 
 class AppCtx;
+class Statistics;
 
 template<int Coord>
 class GetDataVelocity : public DefaultGetDataVtk
@@ -131,17 +133,19 @@ void AppCtx::setUpDefaultOptions()
   mesh_cell_type         = TRIANGLE3;
   function_space         = 1; // P1P1
   behaviors              = BH_GLS;
-  //Re                     = 0.0;
+  //Re                   = 0.0;
   dt                     = 0.1;
   unsteady               = PETSC_TRUE;
   boundary_smoothing     = PETSC_TRUE;
   steady_tol             = 1.e-6;
-  utheta                  = 1;      // time step, utheta method
+  utheta                 = 1;      // time step, theta method (momentum)
+  vtheta                 = 1;      // time step, theta method (mesh velocity)
   maxts                  = 1500;   // max num of time steps
   force_pressure         = false;  // elim null space (auto)
   print_to_matlab        = PETSC_FALSE;  // imprime o jacobiano e a função no formato do matlab
   force_dirichlet        = PETSC_TRUE;   // impõe cc ? (para debug)
   full_diriclet          = PETSC_TRUE;
+  force_bound_mesh_vel   = PETSC_FALSE;
   solve_the_sys          = true;   // for debug
   plot_exact_sol         = PETSC_FALSE;
   quadr_degree_cell      = (dim==2) ? 3 : 3;   // ordem de quadratura
@@ -153,7 +157,7 @@ void AppCtx::setUpDefaultOptions()
   family_files           = PETSC_TRUE;
   has_convec             = PETSC_TRUE;
   renumber_dofs          = PETSC_FALSE;
-  print_ca               = PETSC_FALSE;
+  fprint_ca              = PETSC_FALSE;
 
   filename = (dim==2 ? "malha/cavity2d-1o.msh" : "malha/cavity3d-1o.msh");
 }
@@ -184,6 +188,7 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
   //PetscOptionsScalar("-Re", "Reynolds number", "main.cpp", Re, &Re, PETSC_NULL);
   PetscOptionsScalar("-dt", "time step", "main.cpp", dt, &dt, PETSC_NULL);
   PetscOptionsScalar("-utheta", "utheta value", "main.cpp", utheta, &utheta, PETSC_NULL);
+  PetscOptionsScalar("-vtheta", "vtheta value", "main.cpp", vtheta, &vtheta, PETSC_NULL);
   PetscOptionsScalar("-sst", "steady state tolerance", "main.cpp", steady_tol, &steady_tol, PETSC_NULL);
   PetscOptionsBool("-print_to_matlab", "print jacobian to matlab", "main.cpp", print_to_matlab, &print_to_matlab, PETSC_NULL);
   PetscOptionsBool("-force_dirichlet", "force dirichlet bound cond", "main.cpp", force_dirichlet, &force_dirichlet, PETSC_NULL);
@@ -192,8 +197,9 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
   PetscOptionsBool("-has_convec", "convective term", "main.cpp", has_convec, &has_convec, PETSC_NULL);
   PetscOptionsBool("-unsteady", "unsteady problem", "main.cpp", unsteady, &unsteady, PETSC_NULL);
   PetscOptionsBool("-boundary_smoothing", "boundary_smoothing", "main.cpp", boundary_smoothing, &boundary_smoothing, PETSC_NULL);
+  PetscOptionsBool("-force_bound_mesh_vel", "force_bound_mesh_vel", "main.cpp", force_bound_mesh_vel, &force_bound_mesh_vel, PETSC_NULL);
   PetscOptionsBool("-renumber_dofs", "renumber dofs", "main.cpp", renumber_dofs, &renumber_dofs, PETSC_NULL);
-  PetscOptionsBool("-print_ca", "print contact angle", "main.cpp", print_ca, &print_ca, PETSC_NULL);
+  PetscOptionsBool("-fprint_ca", "print contact angle", "main.cpp", fprint_ca, &fprint_ca, PETSC_NULL);
   PetscOptionsInt("-quadr_e", "quadrature degree (for calculating the error)", "main.cpp", quadr_degree_err, &quadr_degree_err, PETSC_NULL);
   PetscOptionsInt("-quadr_c", "quadrature degree", "main.cpp", quadr_degree_cell, &quadr_degree_cell, PETSC_NULL);
   PetscOptionsInt("-quadr_f", "quadrature degree (facet)", "main.cpp", quadr_degree_facet, &quadr_degree_facet, PETSC_NULL);
@@ -455,15 +461,25 @@ PetscErrorCode AppCtx::allocPetscObjs()
   ierr = VecSetSizes(Vec_res, PETSC_DECIDE, n_unknowns);            CHKERRQ(ierr);
   ierr = VecSetFromOptions(Vec_res);                                CHKERRQ(ierr);
 
-  //Vec Vec_umsh_0
-  ierr = VecCreate(PETSC_COMM_WORLD, &Vec_umsh_0);                  CHKERRQ(ierr);
-  ierr = VecSetSizes(Vec_umsh_0, PETSC_DECIDE, n_dofs_u_mesh);      CHKERRQ(ierr);
-  ierr = VecSetFromOptions(Vec_umsh_0);                             CHKERRQ(ierr);
+  //Vec Vec_vmsh_0
+  ierr = VecCreate(PETSC_COMM_WORLD, &Vec_vmsh_0);                  CHKERRQ(ierr);
+  ierr = VecSetSizes(Vec_vmsh_0, PETSC_DECIDE, n_dofs_u_mesh);      CHKERRQ(ierr);
+  ierr = VecSetFromOptions(Vec_vmsh_0);                             CHKERRQ(ierr);
+
+  //Vec Vec_vmsh_med
+  ierr = VecCreate(PETSC_COMM_WORLD, &Vec_vmsh_med);                  CHKERRQ(ierr);
+  ierr = VecSetSizes(Vec_vmsh_med, PETSC_DECIDE, n_dofs_u_mesh);      CHKERRQ(ierr);
+  ierr = VecSetFromOptions(Vec_vmsh_med);                             CHKERRQ(ierr);
 
   //Vec Vec_xmsh_0;
   ierr = VecCreate(PETSC_COMM_WORLD, &Vec_xmsh_0);                  CHKERRQ(ierr);
   ierr = VecSetSizes(Vec_xmsh_0, PETSC_DECIDE, n_dofs_u_mesh);      CHKERRQ(ierr);
   ierr = VecSetFromOptions(Vec_xmsh_0);                             CHKERRQ(ierr);
+
+  //Vec Vec_tmp;
+  ierr = VecCreate(PETSC_COMM_WORLD, &Vec_tmp);                  CHKERRQ(ierr);
+  ierr = VecSetSizes(Vec_tmp, PETSC_DECIDE, n_dofs_u_mesh);      CHKERRQ(ierr);
+  ierr = VecSetFromOptions(Vec_tmp);                             CHKERRQ(ierr);
 
   //Vec Vec_nmsh;
   ierr = VecCreate(PETSC_COMM_WORLD, &Vec_nmsh);                  CHKERRQ(ierr);
@@ -506,6 +522,8 @@ PetscErrorCode AppCtx::allocPetscObjs()
   ierr = SNESSetFunction(snes, Vec_res, FormFunction, this);      CHKERRQ(ierr);
   ierr = SNESSetJacobian(snes, Mat_Jac, Mat_Jac, FormJacobian, this); CHKERRQ(ierr);
   //ierr = SNESSetJacobian(snes,Mat_Jac,Mat_Jac,SNESDefaultComputeJacobian,&user);  CHKERRQ(ierr);
+
+  ierr = SNESSetConvergenceTest(snes,CheckSnesConvergence,this,PETSC_NULL); CHKERRQ(ierr);
 
   ierr = SNESGetKSP(snes,&ksp);                                                  CHKERRQ(ierr);
   ierr = KSPGetPC(ksp,&pc);                                                      CHKERRQ(ierr);
@@ -1224,12 +1242,123 @@ void AppCtx::onUpdateMesh()
 
 void AppCtx::setInitialConditions()
 {
+  Vector    Uf(dim);
+  Vector    X(dim);
+  Tensor    R(dim,dim);
+  VectorXi  dofs(dim);
+  int nodeid;
+  int tag;
+  
   VecSet(Vec_up_0,0.);
   VecSet(Vec_up_1,0.);
-  VecSet(Vec_umsh_0,0.);
+  VecSet(Vec_vmsh_0,0.);
+  VecSet(Vec_vmsh_med,0.);
+  //VecSet(Vec_tmp,0.);
+  
+  //VecCopy(Vec_up_1,Vec_up_0); // Vec_up_0 <- Vec_up_1
+  copyMesh2Vec(Vec_xmsh_0);
+  
+  updateNormals(&Vec_xmsh_0);
+  
+  /* calculando a velocidade da malha*/
+  point_iterator point = mesh->pointBegin();
+  point_iterator point_end = mesh->pointEnd();
+  for (; point != point_end; ++point)
+  {
+    nodeid = mesh->getPointId(&*point);
+    tag = point->getTag();
+
+    point->getCoord(X.data());
+
+    Uf = u_initial(X, tag);
+
+    getRotationMatrix(R,&nodeid,1);
+
+    if (mesh->isVertex(&*point))
+      dof_handler_vars.getVariable(0).getVertexDofs(dofs.data(), &*point);
+    else
+    {
+      // pega os graus de liberdade
+      const int m = point->getPosition() - mesh->numVerticesPerCell();
+      Cell const* icell = mesh->getCell(point->getIncidCell());
+      if (dim==3)
+      {
+        Corner *edge = mesh->getCorner(icell->getCornerId(m));
+        dof_handler_vars.getVariable(0).getCornerAssociatedDofs(dofs.data(), &*edge);
+      }
+      else // dim=2
+      {
+        Facet *edge = mesh->getFacet(icell->getFacetId(m));
+        dof_handler_vars.getVariable(0).getFacetAssociatedDofs(dofs.data(), &*edge);
+      }
+
+    }
+    
+    VecSetValues(Vec_up_0, dim, dofs.data(), Uf.data(), INSERT_VALUES);
+
+  } // end point loop 
+  Assembly(Vec_up_0);
+  VecCopy(Vec_up_0,Vec_up_1);
 }
 
-
+PetscErrorCode AppCtx::checkSnesConvergence(SNES snes, PetscInt it,PetscReal xnorm, PetscReal pnorm, PetscReal fnorm, SNESConvergedReason *reason)
+{
+  PetscErrorCode ierr;
+  
+  ierr = SNESDefaultConverged(snes,it,xnorm,pnorm,fnorm,reason,NULL); CHKERRQ(ierr);
+  
+  // se não convergiu, não terminou ou não é um método ale, retorna
+  if (*reason<=0 || !ale)
+  {
+    return ierr;
+  }
+  else
+  {
+    // se não é a primeira vez que converge
+    if (converged_times)
+    {
+      return ierr;
+    }
+    else
+    {
+      
+      //Vec *Vec_up_k = &Vec_up_1;
+      ////SNESGetSolution(snes,Vec_up_k);
+      //
+      //copyMesh2Vec(Vec_tmp);
+      //calcMeshVelocity(*Vec_up_k, Vec_tmp, Vec_vmsh_med, current_time+dt);
+      //moveMesh(Vec_xmsh_0, Vec_vmsh_0, Vec_vmsh_med, 0.5);
+      //
+      //// mean mesh velocity
+      //VecAXPY(Vec_vmsh_med,1,Vec_vmsh_0);
+      //VecScale(Vec_vmsh_med, 0.5);
+      //
+      //*reason = SNES_CONVERGED_ITERATING;
+      //++converged_times;
+      
+      return ierr;
+    }
+  }
+  
+  
+/*  
+  converged 
+  SNES_CONVERGED_FNORM_ABS         =  2,  ||F|| < atol 
+  SNES_CONVERGED_FNORM_RELATIVE    =  3,  ||F|| < rtol*||F_initial|| 
+  SNES_CONVERGED_PNORM_RELATIVE    =  4,  Newton computed step size small; || delta x || < stol 
+  SNES_CONVERGED_ITS               =  5,  maximum iterations reached 
+  SNES_CONVERGED_TR_DELTA          =  7,
+   diverged 
+  SNES_DIVERGED_FUNCTION_DOMAIN    = -1,  the new x location passed the function is not in the domain of F 
+  SNES_DIVERGED_FUNCTION_COUNT     = -2,
+  SNES_DIVERGED_LINEAR_SOLVE       = -3,  the linear solve failed 
+  SNES_DIVERGED_FNORM_NAN          = -4,
+  SNES_DIVERGED_MAX_IT             = -5,
+  SNES_DIVERGED_LINE_SEARCH        = -6,  the line search failed 
+  SNES_DIVERGED_LOCAL_MIN          = -8,  || J^T b || is small, implies converged to local minimum of F() 
+  SNES_CONVERGED_ITERATING         =  0 
+*/ 
+}
 
 PetscErrorCode AppCtx::solveTimeProblem()
 {
@@ -1246,21 +1375,15 @@ PetscErrorCode AppCtx::solveTimeProblem()
   // Solve nonlinear system
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   setInitialConditions();
-  
+  int its;
     
   printf("initial volume: %.15lf \n", getMeshVolume());
   current_time = 0;
   time_step = 0;
   double Qmax=0;
   double steady_error=1;
-  do
+  for(;;)
   {
-    VecCopy(Vec_up_1,Vec_up_0); // Vec_up_0 <- q
-    if (ale) {
-      calcMeshVelocity(Vec_up_1);
-    }
-
-
     if ((time_step%print_step) == 0)
     {
       if (family_files)
@@ -1286,9 +1409,12 @@ PetscErrorCode AppCtx::solveTimeProblem()
           vtk_printer.addNodeScalarVtk("pressure", GetDataPressure(q_array, *this));
 
 
-        vtk_printer.printPointTagVtk("point_tag");
-        VecRestoreArray(Vec_up_1, &q_array);
-        VecRestoreArray(Vec_nmsh, &nml_array);
+        //vtk_printer.printPointTagVtk("point_tag");
+        //VecRestoreArray(Vec_up_1, &q_array);
+        //VecRestoreArray(Vec_nmsh, &nml_array);
+        
+        ierr = SNESGetIterationNumber(snes,&its);     CHKERRQ(ierr);
+        cout << "num snes iterations: " << its << endl;
       }
 
 
@@ -1299,25 +1425,57 @@ PetscErrorCode AppCtx::solveTimeProblem()
       
     }
 
+    if (ale)
+    {
+      //calcMeshVelocity(Vec_up_0, Vec_xmsh_0, Vec_vmsh_0, current_time);
+      //VecCopy(Vec_vmsh_0, Vec_vmsh_med);
+      //moveMesh(Vec_xmsh_0, Vec_vmsh_0, Vec_vmsh_med, 0.0);
+      calcMeshVelocity(Vec_up_0, Vec_xmsh_0, Vec_vmsh_med, current_time);
+      //calcMeshVelocity(Vec_up_0, Vec_xmsh_0, Vec_vmsh_0, current_time);
+      //VecCopy(Vec_vmsh_0, Vec_vmsh_med);
+      moveMesh(Vec_xmsh_0, Vec_vmsh_0, Vec_vmsh_med, 1.0);
+    }
+
     if (solve_the_sys)
       ierr = SNESSolve(snes,PETSC_NULL,Vec_up_1);        CHKERRQ(ierr);
 
-    if (ale)
-      moveMesh();
-
-    //formFunction(snes, Vec_up_1, Vec_res);
-
+    if (plot_exact_sol)
+      computeError(Vec_up_1,current_time);
 
     current_time += dt;
     time_step += 1;
 
+    // compute steady error
     Qmax = VecNorm(Vec_up_1, NORM_1);
     VecAXPY(Vec_up_0,-1.0,Vec_up_1);
     steady_error = VecNorm(Vec_up_0, NORM_1)/(Qmax==0.?1.:Qmax);
     
-    printContactAngle(print_ca);
+    //VecScale(Vec_up_0,0);
+    // update
+    VecCopy(Vec_up_1,Vec_up_0); // Vec_up_0 <- Vec_up_1
+    
+    if (ale)
+    {
+      copyMesh2Vec(Vec_xmsh_0);
+      VecCopy(Vec_vmsh_med,Vec_vmsh_0); // Vec_up_0 <- Vec_up_1
+    }
+    
+    printContactAngle(fprint_ca);
+    
+    
+    if(time_step >= maxts) {
+      cout << "\n==========================================\n";
+      cout << "stop reason:\n";
+      cout << "maximum number of iterations reached. \n";
+      break;
+    }
+    if (steady_error <= steady_tol) {
+      cout << "\n==========================================\n";
+      cout << "stop reason:\n";
+      cout << "steady state reached. \n";
+      break;
+    }
   }
-  while (time_step < maxts && steady_error > steady_tol);
   cout << endl;
 
   if (family_files)
@@ -1352,7 +1510,6 @@ PetscErrorCode AppCtx::solveTimeProblem()
 
 
   SNESConvergedReason reason;
-  int its;
   ierr = SNESGetIterationNumber(snes,&its);     CHKERRQ(ierr);
   ierr = SNESGetConvergedReason(snes,&reason);  CHKERRQ(ierr);
   cout << "num snes iterations: " << its << endl;
@@ -1383,7 +1540,14 @@ PetscErrorCode AppCtx::solveTimeProblem()
   SNESGetLinearSolveIterations(snes,&lits);
 
   if (plot_exact_sol)
-    computeError(Vec_up_1,-1);
+    computeError(Vec_up_1,current_time);
+  
+  if (unsteady)
+  {
+    cout << "\nmean errors: \n";
+    cout << "# hmean            u_L2_norm         p_L2_norm         grad_u_L2_norm    grad_p_L2_norm" << endl;
+    printf( "<hmean>            %.15lf %.15lf %.15lf %.15lf\n", Stats.mean_u_L2_norm(), Stats.mean_p_L2_norm(), Stats.mean_grad_u_L2_norm(), Stats.mean_grad_p_L2_norm());
+  }
 
   PetscFunctionReturn(0);
 }
@@ -1407,7 +1571,7 @@ void AppCtx::computeError(Vec &qq, double tt)
   Vector              Uqp(dim);
 
   double              Pqp;
-  VectorXi          cell_nodes(nodes_per_cell);
+  VectorXi            cell_nodes(nodes_per_cell);
   double              Jx;
   double              weight;
   int                 tag;
@@ -1417,12 +1581,12 @@ void AppCtx::computeError(Vec &qq, double tt)
   double              grad_u_L2_norm = 0.;
   double              grad_p_L2_norm = 0.;
 
-  VectorXi               mapU_c(n_dofs_u_per_cell);
-  VectorXi               mapU_r(n_dofs_u_per_corner);
-  VectorXi               mapP_c(n_dofs_p_per_cell);
-  VectorXi               mapP_r(n_dofs_p_per_corner);
-  VectorXi               mapM_c(dim*nodes_per_cell);
-  VectorXi               mapM_r(dim*nodes_per_corner);
+  VectorXi            mapU_c(n_dofs_u_per_cell);
+  VectorXi            mapU_r(n_dofs_u_per_corner);
+  VectorXi            mapP_c(n_dofs_p_per_cell);
+  VectorXi            mapP_r(n_dofs_p_per_corner);
+  VectorXi            mapM_c(dim*nodes_per_cell);
+  VectorXi            mapM_r(dim*nodes_per_corner);
 
 
   cell_iterator cell = mesh->cellBegin();
@@ -1467,7 +1631,7 @@ void AppCtx::computeError(Vec &qq, double tt)
       weight = quadr_err->weight(qp);
 
       //  note: norm(u, H1)^2 = norm(u, L2)^2 + norm(gradLphi_c, L2)^2
-      u_L2_norm        += (u_boundary(Xqp, tt, tag) - Uqp).squaredNorm()*weight*Jx;
+      u_L2_norm        += (u_exact(Xqp, tt, tag) - Uqp).squaredNorm()*weight*Jx;
       p_L2_norm        += sqr(pressure_exact(Xqp, tt, tag) - Pqp)*weight*Jx;
       grad_u_L2_norm   += (grad_u_exact(Xqp, tt, tag) - dxU).squaredNorm()*weight*Jx;
       grad_p_L2_norm   += (grad_p_exact(Xqp, tt, tag) - dxP).squaredNorm()*weight*Jx;
@@ -1535,639 +1699,21 @@ void AppCtx::computeError(Vec &qq, double tt)
   }
   hmean /= n_edges;
 
-  cout << endl;
-  cout << "# hmean            u_L2_norm         p_L2_norm         grad_u_L2_norm    grad_p_L2_norm" << endl;
-  printf("%.15lf %.15lf %.15lf %.15lf %.15lf\n",hmean, u_L2_norm, p_L2_norm, grad_u_L2_norm, grad_p_L2_norm);
-
-}
-
-void AppCtx::updateNormals(Vec *Vec_xmsh_0)
-{
-
-  VectorXi          facet_nodes(nodes_per_facet);
-  MatrixXd          x_coefs(nodes_per_facet, dim);                // coordenadas nodais da célula
-  MatrixXd          x_coefs_trans(dim, nodes_per_facet);
-  Vector            X(dim);
-  Vector            normal(dim);
-  Tensor            F(dim,dim-1);
-  VectorXi          map(n_dofs_u_per_facet);
-  //bool               is_surface, is_solid;
-  int               tag;
-  //int               tag_other;
-  bool              virtual_mesh;
-
-  if (Vec_xmsh_0==NULL)
-    virtual_mesh = false;
-  else
-    virtual_mesh = true;
-
-  VecSet(Vec_nmsh,0);
-
-  // LOOP NAS FACES DO CONTORNO
-  facet_iterator facet = mesh->facetBegin();
-  facet_iterator facet_end = mesh->facetEnd();
-  for (; facet != facet_end; ++facet)
+  if (time_step==maxts)
   {
-    tag = facet->getTag();
-
-
-    if (is_in(tag, solid_tags) || !mesh->inBoundary(&*facet))
-      continue;
-
-
-    //is_surface = is_in(tag, interface_tags);
-    //is_solid   = is_in(tag, solid_tags);
-    //
-    //if ( !is_surface && !is_solid)
-    //  continue;
-
-    dof_handler_mesh.getVariable(0).getFacetDofs(map.data(), &*facet);
-
-    mesh->getFacetNodesId(&*facet, facet_nodes.data());
-    if (virtual_mesh)
-      VecGetValues(*Vec_xmsh_0, map.size(), map.data(), x_coefs.data());
-    else
-      mesh->getNodesCoords(facet_nodes.begin(), facet_nodes.end(), x_coefs.data());
-    x_coefs_trans = x_coefs.transpose();
-
-    // find the normal
-    for (int k = 0; k < nodes_per_facet; ++k)
-    {
-      //tag_other = mesh->getNode(facet_nodes(k))->getTag();
-
-
-      F   = x_coefs_trans * dLphi_nf[k];
-
-      if (dim==2)
-      {
-        normal(0) = +F(1,0);
-        normal(1) = -F(0,0);
-      }
-      else
-      {
-        normal = F.col(0);
-        X = F.col(1);
-        // a = a x b
-        cross(normal, X);
-      }
-
-      VecSetValues(Vec_nmsh, dim, map.data()+k*dim, normal.data(), ADD_VALUES);
-
-
-    } // nodes
-
+    cout << endl;
+    cout << "errors computed at last time step: "<< endl;
+    cout << "# hmean            u_L2_norm         p_L2_norm         grad_u_L2_norm    grad_p_L2_norm" << endl;
+    printf("%.15lf %.15lf %.15lf %.15lf %.15lf\n",hmean, u_L2_norm, p_L2_norm, grad_u_L2_norm, grad_p_L2_norm);
   }
-  Assembly(Vec_nmsh);
-
-  point_iterator point = mesh->pointBegin();
-  point_iterator point_end = mesh->pointEnd();
-  for (; point != point_end; ++point)
-  {
-    tag = point->getTag();
-
-    if (!mesh->inBoundary(&*point))
-      continue;
-
-    if (!mesh->isVertex(&*point))
-    {
-      const int m = point->getPosition() - mesh->numVerticesPerCell();
-      Cell const* cell = mesh->getCell(point->getIncidCell());
-      if (dim==3)
-      {
-        const int edge_id = cell->getCornerId(m);
-        Corner const* corner = mesh->getCorner(edge_id);
-        dof_handler_mesh.getVariable(0).getCornerAssociatedDofs(map.data(), corner);
-      }
-      else
-      {
-        const int edge_id = cell->getFacetId(m);
-        Facet const* facet = mesh->getFacet(edge_id);
-        dof_handler_mesh.getVariable(0).getFacetAssociatedDofs(map.data(), facet);
-      }
-    }
-    else
-      dof_handler_mesh.getVariable(0).getVertexDofs(map.data(), &*point);
-
-    if (!is_in(tag, solid_tags))// && !is_in(tag, triple_tags))
-    {
-      VecGetValues(Vec_nmsh, dim, map.data(),normal.data());
-      normal.normalize();
-      VecSetValues(Vec_nmsh, dim, map.data(),normal.data(), INSERT_VALUES);
-      Assembly(Vec_nmsh);
-    }
-    else
-    {
-      if (virtual_mesh)
-        VecGetValues(*Vec_xmsh_0, dim, map.data(), X.data());
-      else
-        point->getCoord(X.data());
-      normal = -solid_normal(X,current_time,tag);
-
-      VecSetValues(Vec_nmsh, dim, map.data(), normal.data(), INSERT_VALUES);
-    }
-
-  }
-
-
-}
-
-void AppCtx::smoothsMesh(Vec &Vec_xmsh_0)
-{
-  //int        nodeid;
-  //double     *Vec_xmsh_0_array;
-  bool const u_has_edge_assoc_dof = shape_phi_c->numDofsAssociatedToFacet()+shape_phi_c->numDofsAssociatedToCorner() > 0;
-
-  Vector     Xm(dim); // X mean
-  Vector     Xi(dim);
-  Vector     dX(dim);
-  Vector     normal(dim);
-  Vector     tmp(dim), tmp2(dim);
-  Vector     Uf(dim), Ue(dim), Umsh(dim); // Ue := elastic velocity
-  int        tag;
-  int        iVs[128], *iVs_end;
-  VectorXi   vtx_dofs_umesh(dim);  // indices de onde pegar a velocidade
-  VectorXi   vtx_dofs_fluid(dim); // indices de onde pegar a velocidade
-  VectorXi   edge_dofs_umesh(3*dim);
-  VectorXi   edge_dofs_fluid((2+u_has_edge_assoc_dof)*dim);
-  VectorXi   edge_nodes(3);
-  Tensor     R(dim,dim);
-  double     error;
-  bool       in_boundary;
-  //int        id;
   
-  
-  /* suavização laplaciana */
-  for (int smooth_it = 0; smooth_it < 2; ++smooth_it)
-  {
-    error = 0;
-    updateNormals(&Vec_xmsh_0);
-
-    // VERTICES
-    point_iterator point = mesh->pointBegin();
-    point_iterator point_end = mesh->pointEnd();
-    for (; point != point_end; ++point)
-    {
-
-      in_boundary = mesh->inBoundary(&*point);
-
-      // pula o caso em que o ponto está no contoro mas não tem boundary smoothing
-      if (!boundary_smoothing && in_boundary)
-        continue;
-
-      tag = point->getTag();
-
-      if (mesh->isVertex(&*point))
-      {
-        //if (  is_in(tag,interface_tags) || is_in(tag,triple_tags) || is_in(tag,solid_tags) ||
-        //    is_in(tag,dirichlet_tags) || is_in(tag,neumann_tags)  )
-        if (is_in(tag,triple_tags))
-          continue;
-
-        Xm = Vector::Zero(dim);
-        iVs_end = mesh->connectedVtcs(&*point, iVs);
-
-        if (!in_boundary)
-        {
-          for (int *it = iVs; it != iVs_end ; ++it)
-          {
-            dof_handler_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh.data(), mesh->getNode(*it));
-            // debug
-            VecGetValues(Vec_xmsh_0, dim, vtx_dofs_umesh.data(), tmp.data());
-            Xm += tmp;
-          }
-          Xm /= (iVs_end-iVs);
-          dof_handler_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh.data(), &*point);
-          
-          // compute error
-          VecGetValues(Vec_xmsh_0, dim, vtx_dofs_umesh.data(), tmp.data());
-          error += (tmp-Xm).norm();
-          
-          VecSetValues(Vec_xmsh_0, dim, vtx_dofs_umesh.data(), Xm.data(), INSERT_VALUES);
-        }
-        else
-        {
-          int N=0;
-          for (int *it = iVs; it != iVs_end ; ++it)
-          {
-            Point const* viz_pt = mesh->getNode(*it);
-            if (viz_pt->getTag()!=tag && !is_in( viz_pt->getTag(), triple_tags ))
-              continue;
-            dof_handler_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh.data(), mesh->getNode(*it));
-            // debug
-            VecGetValues(Vec_xmsh_0, dim, vtx_dofs_umesh.data(), tmp.data());
-            ++N;
-            Xm += tmp;
-            
-          }
-          
-          dof_handler_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh.data(), &*point);
-          VecGetValues(Vec_xmsh_0, dim, vtx_dofs_umesh.data(), Xi.data());
-          
-          if (dim==3)
-            //Xm = (N*Xi + 2*Xm)/(3*N);
-            Xm = Xm/N;
-          else
-            //Xm = (N*Xi + Xm)/(2*N);
-            Xm = Xm/N;
-          //
-
-          dX = Xm - Xi;
-          VecGetValues(Vec_nmsh, dim, vtx_dofs_umesh.data(), normal.data());
-          dX -= normal.dot(dX)*normal;
-          Xi += dX;
-
-          // compute error
-          VecGetValues(Vec_xmsh_0, dim, vtx_dofs_umesh.data(), tmp.data());
-          error += (tmp-Xi).norm();          
-          
-          VecSetValues(Vec_xmsh_0, dim, vtx_dofs_umesh.data(), Xi.data(), INSERT_VALUES);
-        }
-
-      }
-
-    } // end point
-    
-    
-    // MID NODES
-    point = mesh->pointBegin();
-    point_end = mesh->pointEnd();
-    if (u_has_edge_assoc_dof)
-    for (; point != point_end; ++point)
-    {
-
-      in_boundary = mesh->inBoundary(&*point);
-
-      // pula o caso em que o ponto está no contoro mas não tem boundary smoothing
-      if (!boundary_smoothing && in_boundary)
-        continue;
-
-      tag = point->getTag();
-
-      if (!mesh->isVertex(&*point))
-      {
-        if (!in_boundary)
-          continue;
-
-        const int m = point->getPosition() - mesh->numVerticesPerCell();
-        Cell const* icell = mesh->getCell(point->getIncidCell());
-        if (dim==3)
-        {
-          Corner *edge = mesh->getCorner(icell->getCornerId(m));
-          dof_handler_mesh.getVariable(0).getCornerDofs(edge_dofs_umesh.data(), &*edge);
-          dof_handler_vars.getVariable(0).getCornerDofs(edge_dofs_fluid.data(), &*edge);
-          mesh->getCornerNodesId(&*edge, edge_nodes.data());
-        }
-        else // dim=2
-        {
-          Facet *edge = mesh->getFacet(icell->getFacetId(m));
-          dof_handler_mesh.getVariable(0).getFacetDofs(edge_dofs_umesh.data(), &*edge);
-          dof_handler_vars.getVariable(0).getFacetDofs(edge_dofs_fluid.data(), &*edge);
-          mesh->getFacetNodesId(&*edge, edge_nodes.data());
-        }
-
-        VecGetValues(Vec_xmsh_0, dim, edge_dofs_umesh.data(), Xm.data());    // Umsh0
-        VecGetValues(Vec_xmsh_0, dim, edge_dofs_umesh.data()+dim, tmp.data());    // Umsh0
-        VecGetValues(Vec_xmsh_0, dim, edge_dofs_umesh.data()+2*dim, Xi.data());    // Umsh0
-
-        Xm = (Xm+tmp+2*Xi)/4.;
-        
-        //Xm = (Xm+tmp)/2.;
-
-        dX = Xm - Xi;
-        VecGetValues(Vec_nmsh, dim, edge_dofs_umesh.data()+2*dim, normal.data());
-        dX -= normal.dot(dX)*normal;
-        Xi += dX;
-        
-        // compute error
-        VecGetValues(Vec_xmsh_0, dim, edge_dofs_umesh.data()+2*dim, tmp.data());
-        error += (tmp-Xi).norm();             
-        
-        VecSetValues(Vec_xmsh_0, dim, edge_dofs_umesh.data()+2*dim, Xi.data(), INSERT_VALUES);
-        Assembly(Vec_xmsh_0);
-
-      }
-
-    } // end point
-
-    
-    error /= mesh->numNodes();
-    //if (error < 1.e-10)
-    //{
-    //  cout << "STOP, " << smooth_it << " iterations\n";
-    //  break;
-    //}
-    
-    
-  } // end smooth
-  Assembly(Vec_xmsh_0);
+  Stats.add_u_L2(u_L2_norm/maxts);
+  Stats.add_p_L2(p_L2_norm/maxts);
+  Stats.add_grad_u_L2(grad_u_L2_norm/maxts);
+  Stats.add_grad_p_L2(grad_p_L2_norm/maxts);
   
 }
 
-// @param[in] Vec_up_1 unknows vector with fluid velocity
-// @param[out] u_mesh
-PetscErrorCode AppCtx::calcMeshVelocity(Vec const& Vec_up_1)
-{
-  int        nodeid;
-  //double     *Vec_xmsh_0_array;
-  bool const u_has_edge_assoc_dof = shape_phi_c->numDofsAssociatedToFacet()+shape_phi_c->numDofsAssociatedToCorner() > 0;
-
-  Vector     Xm(dim); // X mean
-  Vector     Xi(dim);
-  Vector     dX(dim);
-  Vector     normal(dim);
-  Vector     tmp(dim), tmp2(dim);
-  Vector     Uf(dim), Ue(dim), Umsh(dim); // Ue := elastic velocity
-  int        tag;
-  //int        iVs[128], *iVs_end;
-  VectorXi   vtx_dofs_umesh(dim);  // indices de onde pegar a velocidade
-  VectorXi   vtx_dofs_fluid(dim); // indices de onde pegar a velocidade
-  VectorXi   edge_dofs_umesh(3*dim);
-  VectorXi   edge_dofs_fluid((2+u_has_edge_assoc_dof)*dim);
-  VectorXi   edge_nodes(3);
-  Tensor     R(dim,dim);
-  bool       in_boundary;
-  int        id;
-
-  //VecGetArray(Vec_xmsh_0, &Vec_xmsh_0_array);
-
-  //
-  // Initial guess for laplacian smoothing.
-  // Note that LS is done at timestep n+1.
-  //
-  point_iterator point = mesh->pointBegin();
-  point_iterator point_end = mesh->pointEnd();
-  for (; point != point_end; ++point)
-  {
-    if (!mesh->isVertex(&*point))
-        continue;
-    dof_handler_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh.data(), &*point);
-    dof_handler_vars.getVariable(0).getVertexDofs(vtx_dofs_fluid.data(), &*point);
-    VecGetValues(Vec_up_1, dim, vtx_dofs_fluid.data(), Uf.data());
-    id = mesh->getPointId(&*point);
-    getRotationMatrix(R,&id,1);
-    point->getCoord(Xi.data());
-    Xi = Xi + dt*R.transpose()*Uf;
-    VecSetValues(Vec_xmsh_0, dim, vtx_dofs_umesh.data(), Xi.data(), INSERT_VALUES);
-  }
-  if (dim==2 && u_has_edge_assoc_dof)
-  {
-    facet_iterator edge = mesh->facetBegin();
-    facet_iterator edge_end = mesh->facetEnd();
-    for (; edge != edge_end; ++edge)
-    {
-      mesh->getFacetNodesId(&*edge, edge_nodes.data());
-      dof_handler_mesh.getVariable(0).getFacetAssociatedDofs(edge_dofs_umesh.data(), &*edge);
-      dof_handler_vars.getVariable(0).getFacetAssociatedDofs(edge_dofs_fluid.data(), &*edge);
-      VecGetValues(Vec_up_1, dim, edge_dofs_fluid.data(), Uf.data());
-      mesh->getNode(edge_nodes(2))->getCoord(Xi.data());
-      getRotationMatrix(R,&edge_nodes(2),1);
-      Xi = Xi + dt*R.transpose()*Uf;
-      VecSetValues(Vec_xmsh_0, dim, edge_dofs_umesh.data(), Xi.data(), INSERT_VALUES);
-    }
-  }
-  else if (dim==3 && u_has_edge_assoc_dof)
-  {
-    corner_iterator edge = mesh->cornerBegin();
-    corner_iterator edge_end = mesh->cornerEnd();
-    for (; edge != edge_end; ++edge)
-    {
-      mesh->getCornerNodesId(&*edge, edge_nodes.data());
-      dof_handler_mesh.getVariable(0).getCornerAssociatedDofs(edge_dofs_umesh.data(), &*edge);
-      dof_handler_vars.getVariable(0).getCornerAssociatedDofs(edge_dofs_fluid.data(), &*edge);
-      VecGetValues(Vec_up_1, dim, edge_dofs_fluid.data(), Uf.data());
-      mesh->getNode(edge_nodes(2))->getCoord(Xi.data());
-      getRotationMatrix(R,&edge_nodes(2),1);
-      Xi = Xi + dt*R.transpose()*Uf;
-      VecSetValues(Vec_xmsh_0, dim, edge_dofs_umesh.data(), Xi.data(), INSERT_VALUES);
-    }
-  }
-
-  Assembly(Vec_xmsh_0);
-
-  smoothsMesh(Vec_xmsh_0);
-
-  /* calculando a velocidade da malha*/
-  point = mesh->pointBegin();
-  point_end = mesh->pointEnd();
-  for (; point != point_end; ++point)
-  {
-    nodeid = mesh->getPointId(&*point);
-    in_boundary = mesh->inBoundary(&*point);
-    tag = point->getTag();
-
-    //
-    //  vertex
-    //
-    if (mesh->isVertex(&*point))
-    {
-      dof_handler_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh.data(), &*point);
-      dof_handler_vars.getVariable(0).getVertexDofs(vtx_dofs_fluid.data(), &*point);
-
-      // pega a velocidade do fluido
-      VecGetValues(Vec_up_1, dim, vtx_dofs_fluid.data(), Uf.data());
-      // pega a coordenada suavizada
-      VecGetValues(Vec_xmsh_0, dim, vtx_dofs_umesh.data(), Xm.data());
-      // pega a coordenada atual
-      point->getCoord(Xi.data());
-
-
-      if ((!boundary_smoothing && in_boundary) || is_in(tag,triple_tags))
-      {
-        // se esta na sup., a vel. da malha é igual a do fluido
-        Umsh = Uf;
-        VecSetValues(Vec_umsh_0, dim, vtx_dofs_umesh.data(), Umsh.data(),INSERT_VALUES);
-        continue;
-      }
-      Ue = (Xm - Xi)/dt;
-
-
-      getRotationMatrix(R,&nodeid,1);
-
-      //mesh.getNode(i)->setCoord(Xi + dt*(bet1*U+bet2*Ue));
-
-      if (in_boundary)
-        Umsh = R*Ue;
-      else
-        Umsh = beta1*Uf + beta2*Ue;
-
-      VecSetValues(Vec_umsh_0, dim, vtx_dofs_umesh.data(), Umsh.data(), INSERT_VALUES);
-    }
-    else
-    //
-    // mid node
-    //
-    {
-      const int m = point->getPosition() - mesh->numVerticesPerCell();
-      Cell const* icell = mesh->getCell(point->getIncidCell());
-      if (dim==3)
-      {
-        Corner *edge = mesh->getCorner(icell->getCornerId(m));
-        dof_handler_mesh.getVariable(0).getCornerDofs(edge_dofs_umesh.data(), &*edge);
-        dof_handler_vars.getVariable(0).getCornerDofs(edge_dofs_fluid.data(), &*edge);
-        mesh->getCornerNodesId(&*edge, edge_nodes.data());
-      }
-      else // dim=2
-      {
-        Facet *edge = mesh->getFacet(icell->getFacetId(m));
-        dof_handler_mesh.getVariable(0).getFacetDofs(edge_dofs_umesh.data(), &*edge);
-        dof_handler_vars.getVariable(0).getFacetDofs(edge_dofs_fluid.data(), &*edge);
-        mesh->getFacetNodesId(&*edge, edge_nodes.data());
-      }
-
-      VecGetValues(Vec_up_1, dim, edge_dofs_fluid.data()+2*dim, Uf.data());
-      // umesh = ufluid
-      if ((!boundary_smoothing && in_boundary) || is_in(tag,triple_tags))
-      {
-        // se esta na sup., a vel. da malha é igual a do fluido
-        Umsh = Uf;
-        VecSetValues(Vec_umsh_0, dim, edge_dofs_fluid.data()+2*dim, Umsh.data(),INSERT_VALUES);
-        continue;
-      }
-
-      // se está na interface
-      if (in_boundary )
-      //if (is_in(tag,triple_tags) )
-      {
-        point->getCoord(Xi.data());
-        VecGetValues(Vec_xmsh_0, dim, edge_dofs_umesh.data()+2*dim, Xm.data());
-        Ue = (Xm - Xi)/dt;
-        getRotationMatrix(R,&nodeid,1);
-        Umsh = R*Ue;
-        VecSetValues(Vec_umsh_0, dim, edge_dofs_umesh.data()+2*dim, Umsh.data(),INSERT_VALUES);
-      }
-      else // se está no interior do domínio, arrasta o nó para o centro da aresta
-      {
-
-        VecGetValues(Vec_xmsh_0, dim, edge_dofs_umesh.data(), Xm.data());    // Umsh0
-        VecGetValues(Vec_xmsh_0, dim, edge_dofs_umesh.data()+dim, Xi.data());    // Umsh0
-
-        Xm = (Xm+Xi)/2.;
-
-        point->getCoord(Xi.data());
-
-        Umsh = (Xm-Xi)/dt;
-
-        getRotationMatrix(R,edge_nodes.data()+2,1);                 // mid node
-        Umsh = R*Umsh;
-
-        VecSetValues(Vec_umsh_0, dim, edge_dofs_umesh.data()+2*dim, Umsh.data(), INSERT_VALUES);
-      }
-    }
-
-
-  } // end point loop
-
-
-  Assembly(Vec_umsh_0);
-  //VecRestoreArray(Vec_xmsh_0, &Vec_xmsh_0_array);
-
-  PetscFunctionReturn(0);
-}
-
-
-//
-// MOVE MESH
-//
-PetscErrorCode AppCtx::moveMesh()
-{
-  Vector      Xi(dim), tmp(dim);
-  Vector      U(dim), Umsh(dim);
-  VectorXi    vtx_dofs_umesh(3); // indices de onde pegar a velocidade
-  //int       vtx_dofs_fluid[3]; // indices de onde pegar a velocidade
-  //int       tag;
-  VectorXi    edge_dofs(dim);
-  VectorXi    edge_nodes(3);
-  Tensor      R(dim,dim);
-  int         nodeid;
-  //int         edge_id;
-  //Cell const* cell;
-
-  point_iterator point = mesh->pointBegin();
-  point_iterator point_end = mesh->pointEnd();
-  for (; point != point_end; ++point)
-  {
-    if (mesh->isVertex(&*point))
-    {
-      dof_handler_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh.data(), &*point);
-
-      VecGetValues(Vec_umsh_0, dim, vtx_dofs_umesh.data(), Umsh.data());
-
-      nodeid = mesh->getPointId(&*point);
-      getRotationMatrix(R, &nodeid, 1);
-
-      point->getCoord(Xi.data());
-      tmp = Xi + dt*R.transpose()*Umsh;
-      point->setCoord(tmp.data() );
-    }
-  }
-
-  // higher order nodes
-  bool const mesh_has_edge_node = mesh->numNodesPerCell()-mesh->numVerticesPerCell() > 0;
-  if (mesh_has_edge_node)
-  {
-    //Point * point;
-
-    if (dim==3) // MESMA COISA, trocando corner <-> corner
-    {
-      corner_iterator edge = mesh->cornerBegin();
-      corner_iterator edge_end = mesh->cornerEnd();
-      for (; edge != edge_end; ++edge)
-      {
-        mesh->getCornerNodesId(&*edge, edge_nodes.data());
-
-        // mid node
-        point = point_iterator(mesh.get(),mesh->getNode(edge_nodes[2]));
-        //dof_handler_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh, point);
-
-        dof_handler_mesh.getVariable(0).getCornerAssociatedDofs(edge_dofs.data(), &*edge);
-
-        VecGetValues(Vec_umsh_0, dim, edge_dofs.data(), Umsh.data());
-
-        nodeid = mesh->getPointId(&*point);
-        getRotationMatrix(R, &nodeid, 1);
-
-        point->getCoord(Xi.data());
-        tmp = Xi + dt*R.transpose()*Umsh;
-        //tmp = Xi + dt*R*Umsh;
-        point->setCoord(tmp.data() );
-
-      } // end loop
-    } // end dim==3
-    else
-    if (dim==2)
-    {
-      facet_iterator edge = mesh->facetBegin();
-      facet_iterator edge_end = mesh->facetEnd();
-      for (; edge != edge_end; ++edge)
-      {
-        mesh->getFacetNodesId(&*edge, edge_nodes.data());
-
-        // mid node
-        point = point_iterator(mesh.get(),mesh->getNode(edge_nodes[2]));
-        //dof_handler_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh, point);
-
-        dof_handler_mesh.getVariable(0).getFacetAssociatedDofs(edge_dofs.data(), &*edge);
-
-        VecGetValues(Vec_umsh_0, dim, edge_dofs.data(), Umsh.data());
-
-        nodeid = mesh->getPointId(&*point);
-        getRotationMatrix(R, &nodeid, 1);
-
-        point->getCoord(Xi.data());
-        tmp = Xi + dt*R.transpose()*Umsh;
-        //tmp = Xi + dt*R*Umsh;
-        point->setCoord(tmp.data() );
-
-      } // end loop
-    } // end dim==2
-
-
-  }
-
-  updateNormals(NULL);
-
-  PetscFunctionReturn(0);
-}
 
 double AppCtx::getMaxVelocity()
 {
@@ -2278,10 +1824,12 @@ void AppCtx::freePetscObjs()
 {
   Destroy(Mat_Jac);
   Destroy(Vec_up_1);
-  Destroy(Vec_res);
   Destroy(Vec_up_0);
-  Destroy(Vec_umsh_0);
+  Destroy(Vec_res);
+  Destroy(Vec_vmsh_0);
+  Destroy(Vec_vmsh_med);
   Destroy(Vec_xmsh_0);
+  Destroy(Vec_tmp);
   Destroy(Vec_nmsh);
   //Destroy(ksp);
   //Destroy(snes);
@@ -2473,8 +2021,14 @@ PetscErrorCode FormFunction(SNES snes, Vec Vec_up_1, Vec Vec_fun, void *ptr)
   PetscFunctionReturn(0);
 }
 
-
-
+#undef __FUNCT__
+#define __FUNCT__ "CheckSnesConvergence"
+PetscErrorCode CheckSnesConvergence(SNES snes, PetscInt it,PetscReal xnorm, PetscReal pnorm, PetscReal fnorm, SNESConvergedReason *reason, void *ctx)
+{
+  AppCtx *user    = static_cast<AppCtx*>(ctx);
+  user->checkSnesConvergence(snes, it, xnorm, pnorm, fnorm, reason);
+  PetscFunctionReturn(0);  
+}
 
 
 
