@@ -26,6 +26,8 @@ double p_initial(Vector const& X, int tag);
 Vector solid_normal(Vector const& X, double t, int tag);
 
 
+inline double sign(double a) {a<0 ? -1 : 1;};
+
 #define CAVITY_2D_3D 1 // navier-stokes
 #define KOVASZNAY_2D 2 // navier-stokes
 #define STOKES_JD_2D 3 // see Jean-Donea
@@ -1160,7 +1162,7 @@ Vector v_exact(Vector const& , double , int ) //(X,t,tag)
 
 #if (PROBLEM_TYPE==COUETTE)
 
-double const w_ = pi;
+double const w_ = 0*pi;
 
 double pho(Vector const& X, int tag)
 {
@@ -1168,7 +1170,7 @@ double pho(Vector const& X, int tag)
 }
 double cos_theta0()
 {
-  return 0.5;
+  return 0.0;
 }
 
 double zeta(double u_norm, double angle)
@@ -1183,11 +1185,11 @@ double beta_diss()
 
 double gama(Vector const& X, double t, int tag)
 {
-  return 1;
+  return 0;
 }
 double muu(double t, int tag)
 {
-  return  1.;
+  return  0.;
 }
 Vector force(Vector const& X, double t, int tag)
 {
@@ -1217,7 +1219,7 @@ double pressure_exact(Vector const& X, double t, int tag)
   //double x = X(0);
   //double y = X(1);
 
-  return  1.;
+  return  0*sin(w_*t);
 }
 Vector grad_p_exact(Vector const& X, double t, int tag)
 {
@@ -1241,14 +1243,12 @@ Tensor grad_u_exact(Vector const& X, double t, int tag)
 }
 Vector traction(Vector const& X, double t, int tag)
 {
-  Vector n(Vector::Zero(X.size()));
-  Tensor I(Tensor::Identity(X.size(),X.size()));
-  Tensor dxU(grad_u_exact(X,t,tag));
+  Vector T(X.size());
   
-  dxU=grad_u_exact(X,t,tag);
-  n(0) = 1;
+  T(0) = -pressure_exact(X,t,tag);
+  T(1) = muu(t,tag)*(cos(w_*t) + sin(w_*t));
   
-  return (-pressure_exact(X,t,tag)*I + muu(t,tag)*(dxU + dxU.transpose()))*n;
+  return T;
 }
 Vector u_initial(Vector const& X, int tag)
 {
@@ -1266,13 +1266,13 @@ Vector solid_normal(Vector const& X, double t, int tag)
   return N;
 }
 
-Vector v_exact(Vector const& X, double t, int ) //(X,t,tag)
+Vector v_exact(Vector const& X, double t, int tag) //(X,t,tag)
 {
-  
+  double const w_ = pi;
   Vector v(X.size());
-  v(0) = 0*sin(pi*t)*(X(0)+0.5)*(X(0)-1.)/2.;
-  v(1) = 0*cos(pi*t)*(X(1)+0.5)*(X(1)-.5)/2.;
-  return v;
+  v(0) = 0.0*(cos(w_/4.*t));//*(X(0)+0.5)*(X(0)-0.5)/2.;
+  v(1) = 0.1*(cos(w_/4.*t));//*(X(1)+0.5)*(X(1)-0.5)/2.;
+  return v * (tag!=1 && tag!=2);
 }
 #endif
 

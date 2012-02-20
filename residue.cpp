@@ -212,7 +212,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       point = mesh->getNode(dir_vertices[i]);
       point->getCoord(X.data());
       tag = point->getTag();
-      temp = u_exact(X, current_time, tag);
+      temp = u_exact(X, current_time+dt, tag);
       if (tag==6)
         cout << temp.transpose() << endl;
       dof_handler_vars.getVariable(0).getVertexAssociatedDofs(u_vtx_dofs, point);
@@ -244,7 +244,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
         X = (X+temp)/2.;
         tag = facet->getTag();
       }
-      temp = u_exact(X, current_time, tag);
+      temp = u_exact(X, current_time+dt, tag);
       dof_handler_vars.getVariable(0).getFacetAssociatedDofs(u_facet_dofs, &*facet);
       for (int d = 0; d < dim; d++)
       {
@@ -272,7 +272,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
         X = (X+temp)/2.;
         tag = corner->getTag();
       }
-      temp = u_exact(X, current_time, tag);
+      temp = u_exact(X, current_time+dt, tag);
       dof_handler_vars.getVariable(0).getCornerAssociatedDofs(u_corner_dofs, corner);
       for (int d = 0; d < dim; d++)
       {
@@ -361,7 +361,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
   if (force_pressure)
   {
-    double const pressure_value = 1; // 666.;
+    double const pressure_value = pressure_exact(Vector::Zero(dim), current_time+dt, 0); // 666.;
     idx = dir_entries.back();
     VecGetValues(Vec_up_k, 1, &idx, &value);
     VecSetValue(Vec_fun, idx, value - pressure_value, INSERT_VALUES);
@@ -805,8 +805,9 @@ void AppCtx::formFacetFunction(facet_iterator &facet,
     Uqp  = u_coefs_f_trans * phi_f[qp];
 
     if (is_neumann)
-    traction_ = utheta*(traction(Xqp,current_time+dt,tag)) + (1.-utheta)*traction(Xqp,current_time,tag);
-    //simpson//traction_ = (traction(Xqp,current_time,tag) +4.*traction(Xqp,current_time+dt/2.,tag) + traction(Xqp,current_time+dt,tag))/6.;
+    //traction_ = utheta*(traction(Xqp,current_time+dt,tag)) + (1.-utheta)*traction(Xqp,current_time,tag);
+    traction_ = traction(Xqp,current_time + dt,tag);
+    //traction_ = (traction(Xqp,current_time,tag) +4.*traction(Xqp,current_time+dt/2.,tag) + traction(Xqp,current_time+dt,tag))/6.;
     
       for (int i = 0; i < n_dofs_u_per_facet/dim; ++i)
       {

@@ -494,6 +494,8 @@ public:
   void updateNormals(Vec *Vec_xmsh);
   void smoothsMesh(Vec &Vec_xmsh);
   void copyMesh2Vec(Vec &Vec_xmsh);
+  void copyVec2Mesh(Vec const& Vec_xmsh);
+  void swapMeshWithVec(Vec & Vec_xmsh);
   // @param[in] Vec_up_1 unknows vector with fluid velocity
   // @param[out] u_mesh
   PetscErrorCode calcMeshVelocity(Vec const& Vec_up, Vec const& Vec_xmsh, Vec & Vec_vmsh, double const current_time);

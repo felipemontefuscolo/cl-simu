@@ -1,8 +1,8 @@
 -dim 2  				        # cell dimension (= space dimension)
 -dt 0.0625                # time step
 -renumber_dofs 0        # dofs renumbering
--maxts 3              # maximum number of time steps
--print_step 20          # print step
+-maxts 320              # maximum number of time steps
+-print_step 10          # print step
 -has_convec 1           # convective term: true or false
 -unsteady   1           # steady or unsteady problem
 -boundary_smoothing 0
@@ -13,26 +13,26 @@
 -plot_es 1              # plot exact solution: true or false
 -family_files 1         # plot output as 001, 002, 003, ...
 -sst -1.e-7             # steady state tol (Unew-Uold)/(Unew)
--utheta 1.0               # time discretization theta method (momentum)
+-utheta 0.5             # time discretization theta method (momentum)
 -vtheta 1.0             # time discretization theta method (mesh velocity)
--quadr_c 4              # quadrature degree (cell)
+-quadr_c 6              # quadrature degree (cell)
 -quadr_f 3              # quadrature degree (facet)
 -quadr_r 2              # quadrature degree (corner)
 -quadr_e 8              # quadrature degree (exact)
 -ale 1                  # 
 
 # Petsc options
--pc_type asm                        # Preconditioner (one of) none jacobi pbjacobi bjacobi sor lu shell mg eisenstat ilu icc cholesky asm ksp composite redundant nn mat fieldsplit galerkin exotic openmp asa cp bfbt lsc redistribute tfs (PCSetType)
+-pc_type asm                      # Preconditioner (one of) none jacobi pbjacobi bjacobi sor lu shell mg eisenstat ilu icc cholesky asm ksp composite redundant nn mat fieldsplit galerkin exotic openmp asa cp bfbt lsc redistribute tfs (PCSetType)
 -sub_pc_type ilu
 pc_factor_levels 2
-sub_pc_factor_levels 1             # <0>  ativar quando o resolutor não estiver convergindo
-pc_composite_type multiplicative    # one of multiplicative, additive, special
+sub_pc_factor_levels 1            # <0>  ativar quando o resolutor não estiver convergindo
+pc_composite_type multiplicative  # one of multiplicative, additive, special
 pc_composite_pcs ilu,ilu
--ksp_type gmres preonly             # (one of) preonly bcgs gmres cg cgne nash stcg gltr richardson chebychev tcqmr ibcgs bcgsl cgs tfqmr cr lsqr qcg bicg fgmres minres symmlq lgmres lcd broyden gcr (KSPSetType)
-ksp_initial_guess_nonzero 1         # não usar com precond asm+lu, alias nao usar nunca (talvez um erro da versão dev????)
+-ksp_type gmres preonly           # (one of) preonly bcgs gmres cg cgne nash stcg gltr richardson chebychev tcqmr ibcgs bcgsl cgs tfqmr cr lsqr qcg bicg fgmres minres symmlq lgmres lcd broyden gcr (KSPSetType)
+ksp_initial_guess_nonzero 1       # não usar com precond asm+lu, alias nao usar nunca (talvez um erro da versão dev????)
 ksp_gmres_restart 300
--pc_factor_shift_type NONZERO
--pc_factor_shift_amount 1.e-10
+pc_factor_shift_type NONZERO
+pc_factor_shift_amount 1.e-10
 pc_factor_mat_ordering_type nd    # natural nd 1wd rcm qmd rowlength flow (PCFactorSetMatOrderingType)
 pc_factor_reuse_ordering 1
 -pc_factor_nonzeros_along_diagonal 1.e-10
@@ -57,7 +57,7 @@ snes_converged_reason 1
 snes_stol 1.e-15  # <1e-08>: Stop if step length less than
 snes_rtol 1.e-12   # <1e-08>: Stop if decrease in function norm less than
 ksp_monitor stdout
--snes_max_it 20
+snes_max_it 50
 mat_no_inode 1
 
 ##### DEBUG
@@ -90,15 +90,15 @@ options: dir_tags, neum_tags, interf_tags, solid_tags, triple_tags
 # ramp:        interf_tags 2 solid_tags 3 triple_tags 20,21
 # satic drop:  interf_tags 2
 # kovasznay    dir_tags 2 neum_tags 1
-# couette      -dir_tags 1,2 neum_tags 1,2
+# couette      -dir_tags 1,2 neum_tags 1
 
 ############################################################################
 
-function_space 1 # P1P1 (or Q1Q1) GLS stabilization
+-function_space 1 # P1P1 (or Q1Q1) GLS stabilization
 function_space 2 # P1+P1 with bubble condensation
 function_space 3 # P2+Pm1 with bubble condensation and pressure gradient elimination
 function_space 4 # P2P1 (or Q2Q1)
--function_space 5 # P1+P1
+function_space 5 # P1+P1
 function_space 6 # P2P0 
 function_space 7 # P2+Pm1 full
 

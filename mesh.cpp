@@ -406,6 +406,126 @@ void AppCtx::copyMesh2Vec(Vec &Vec_xmsh)
   Assembly(Vec_xmsh);  
 }
 
+
+// copy mesh of the data structure to a Petsc Vector
+void AppCtx::copyVec2Mesh(Vec const& Vec_xmsh)
+{
+  bool const u_has_edge_assoc_dof = shape_phi_c->numDofsAssociatedToFacet()+shape_phi_c->numDofsAssociatedToCorner() > 0;
+
+  Vector     Xm(dim); // X mean
+  Vector     Xi(dim);
+  VectorXi   vtx_dofs_umesh(dim);  // indices de onde pegar a velocidade
+  VectorXi   edge_dofs_umesh(3*dim);
+  VectorXi   edge_dofs_fluid((2+u_has_edge_assoc_dof)*dim);
+  VectorXi   edge_nodes(3);
+
+
+  point_iterator point = mesh->pointBegin();
+  point_iterator point_end = mesh->pointEnd();
+  for (; point != point_end; ++point)
+  {
+    if (!mesh->isVertex(&*point))
+        continue;
+    dof_handler_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh.data(), &*point);
+
+    VecGetValues(Vec_xmsh, dim, vtx_dofs_umesh.data(), Xi.data());
+    point->setCoord(Xi.data());
+  }
+  if (dim==2 && u_has_edge_assoc_dof)
+  {
+    facet_iterator edge = mesh->facetBegin();
+    facet_iterator edge_end = mesh->facetEnd();
+    for (; edge != edge_end; ++edge)
+    {
+      mesh->getFacetNodesId(&*edge, edge_nodes.data());
+      dof_handler_mesh.getVariable(0).getFacetAssociatedDofs(edge_dofs_umesh.data(), &*edge);
+
+      VecGetValues(Vec_xmsh, dim, edge_dofs_umesh.data(), Xi.data());
+      mesh->getNode(edge_nodes(2))->setCoord(Xi.data());
+    }
+  }
+  else if (dim==3 && u_has_edge_assoc_dof)
+  {
+    corner_iterator edge = mesh->cornerBegin();
+    corner_iterator edge_end = mesh->cornerEnd();
+    for (; edge != edge_end; ++edge)
+    {
+      mesh->getCornerNodesId(&*edge, edge_nodes.data());
+      dof_handler_mesh.getVariable(0).getCornerAssociatedDofs(edge_dofs_umesh.data(), &*edge);
+
+      VecGetValues(Vec_xmsh, dim, edge_dofs_umesh.data(), Xi.data());
+      mesh->getNode(edge_nodes(2))->setCoord(Xi.data());
+    }
+  }
+
+}
+
+
+// copy mesh of the data structure to a Petsc Vector
+void AppCtx::swapMeshWithVec(Vec & Vec_xmsh)
+{
+  //double     *Vec_xmsh_array;
+  bool const u_has_edge_assoc_dof = shape_phi_c->numDofsAssociatedToFacet()+shape_phi_c->numDofsAssociatedToCorner() > 0;
+
+  Vector     tmp(dim); // X mean
+  Vector     Xi(dim);
+  VectorXi   vtx_dofs_umesh(dim);  // indices de onde pegar a velocidade
+  VectorXi   edge_dofs_umesh(3*dim);
+  VectorXi   edge_dofs_fluid((2+u_has_edge_assoc_dof)*dim);
+  VectorXi   edge_nodes(3);
+
+  point_iterator point = mesh->pointBegin();
+  point_iterator point_end = mesh->pointEnd();
+  for (; point != point_end; ++point)
+  {
+    if (!mesh->isVertex(&*point))
+        continue;
+    dof_handler_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh.data(), &*point);
+    
+    point->getCoord(tmp.data());
+    VecGetValues(Vec_xmsh, dim, vtx_dofs_umesh.data(), Xi.data());
+    
+    point->setCoord(Xi.data());
+    VecSetValues(Vec_xmsh, dim, vtx_dofs_umesh.data(), tmp.data(), INSERT_VALUES);
+  }
+  if (dim==2 && u_has_edge_assoc_dof)
+  {
+    facet_iterator edge = mesh->facetBegin();
+    facet_iterator edge_end = mesh->facetEnd();
+    for (; edge != edge_end; ++edge)
+    {
+      mesh->getFacetNodesId(&*edge, edge_nodes.data());
+      dof_handler_mesh.getVariable(0).getFacetAssociatedDofs(edge_dofs_umesh.data(), &*edge);
+      
+      mesh->getNode(edge_nodes(2))->getCoord(tmp.data());
+      VecGetValues(Vec_xmsh, dim, edge_dofs_umesh.data(), Xi.data());
+      
+      mesh->getNode(edge_nodes(2))->setCoord(Xi.data());
+      VecSetValues(Vec_xmsh, dim, edge_dofs_umesh.data(), tmp.data(), INSERT_VALUES);
+    }
+  }
+  else if (dim==3 && u_has_edge_assoc_dof)
+  {
+    corner_iterator edge = mesh->cornerBegin();
+    corner_iterator edge_end = mesh->cornerEnd();
+    for (; edge != edge_end; ++edge)
+    {
+      mesh->getCornerNodesId(&*edge, edge_nodes.data());
+      dof_handler_mesh.getVariable(0).getCornerAssociatedDofs(edge_dofs_umesh.data(), &*edge);
+      
+      mesh->getNode(edge_nodes(2))->getCoord(tmp.data());
+      VecGetValues(Vec_xmsh, dim, edge_dofs_umesh.data(), Xi.data());
+      
+      mesh->getNode(edge_nodes(2))->setCoord(Xi.data());
+      VecSetValues(Vec_xmsh, dim, edge_dofs_umesh.data(), tmp.data(), INSERT_VALUES);
+    }
+  }
+
+  Assembly(Vec_xmsh);  
+}
+
+
+
 /// @param[in] Vec_up vector with fluid velocity and pressure
 /// @param[in] Vec_xmsh the mesh
 /// @param[out] Vec_vmsh
@@ -465,9 +585,24 @@ PetscErrorCode AppCtx::calcMeshVelocity(Vec const& Vec_up, Vec const& Vec_xmsh, 
       //if (in_boundary && force_bound_mesh_vel)
       if (force_bound_mesh_vel)
       {
-        VecGetValues(Vec_xmsh, dim, vtx_dofs_fluid.data(), Xi.data());
+        VecGetValues(Vec_xmsh, dim, vtx_dofs_umesh.data(), Xi.data());
         
-        Umsh = v_exact(Xi,current_time,tag);
+        
+        point->getCoord(Xm.data());
+        double dtt = this->dt;
+        double k1=current_time;
+        double k2=current_time+dtt/4.;
+        double k3=current_time+dtt/2.;
+        double k4=current_time+3.*dtt/4.;
+        double k5=current_time+dtt;
+        Umsh  =  7.*v_exact(Xm,k1,tag);
+        Umsh += 32.*v_exact(Xm,k2,tag);
+        Umsh += 12.*v_exact(Xm,k3,tag);
+        Umsh += 32.*v_exact(Xm,k4,tag);
+        Umsh +=  7.*v_exact(Xm,k5,tag);
+        Umsh /= 90.;
+
+        //////////////////////Umsh = v_exact(Xi,current_time,tag);
         VecSetValues(Vec_vmsh, dim, vtx_dofs_umesh.data(), Umsh.data(),INSERT_VALUES);
         continue;
       }
@@ -531,10 +666,10 @@ PetscErrorCode AppCtx::calcMeshVelocity(Vec const& Vec_up, Vec const& Vec_xmsh, 
       //if (in_boundary && force_bound_mesh_vel)
       if (force_bound_mesh_vel)
       {
-        VecGetValues(Vec_xmsh, dim, edge_dofs_fluid.data()+2*dim, Xi.data());
+        VecGetValues(Vec_xmsh, dim, edge_dofs_umesh.data()+2*dim, Xi.data());
         
         Umsh = v_exact(Xi,current_time,tag);
-        VecSetValues(Vec_vmsh, dim, edge_dofs_fluid.data()+2*dim, Umsh.data(),INSERT_VALUES);
+        VecSetValues(Vec_vmsh, dim, edge_dofs_umesh.data()+2*dim, Umsh.data(),INSERT_VALUES);
         continue;
       }
       else      
@@ -597,7 +732,7 @@ PetscErrorCode AppCtx::moveMesh(Vec const& Vec_xmsh_0, Vec const& Vec_vmsh_0, Ve
   Vector      Umsh1(dim);
   VectorXi    vtx_dofs_umesh(3); // indices de onde pegar a velocidade
   //int       vtx_dofs_fluid[3]; // indices de onde pegar a velocidade
-  //int       tag;
+  int         tag;
   VectorXi    edge_dofs(dim);
   VectorXi    edge_nodes(3);
   Tensor      R(dim,dim);
@@ -609,6 +744,7 @@ PetscErrorCode AppCtx::moveMesh(Vec const& Vec_xmsh_0, Vec const& Vec_vmsh_0, Ve
   point_iterator point_end = mesh->pointEnd();
   for (; point != point_end; ++point)
   {
+    tag = point->getTag();
     if (mesh->isVertex(&*point))
     {
       dof_handler_mesh.getVariable(0).getVertexDofs(vtx_dofs_umesh.data(), &*point);
@@ -621,7 +757,20 @@ PetscErrorCode AppCtx::moveMesh(Vec const& Vec_xmsh_0, Vec const& Vec_vmsh_0, Ve
       getRotationMatrix(R, &nodeid, 1);
 
       //point->getCoord(Xi.data());
-      tmp = X0 + dt*R.transpose()*(  vtheta*Umsh1 + (1.-vtheta)*Umsh0 );
+      ///////////tmp = X0 + dt*R.transpose()*(  vtheta*Umsh1 + (1.-vtheta)*Umsh0 );
+      double dtt = this->dt;
+      double k1=current_time;
+      double k2=current_time+dtt/4.;
+      double k3=current_time+dtt/2.;
+      double k4=current_time+3.*dtt/4.;
+      double k5=current_time+dtt;
+      tmp  =  7.*v_exact(X0,k1,tag);
+      tmp += 32.*v_exact(X0,k2,tag);
+      tmp += 12.*v_exact(X0,k3,tag);
+      tmp += 32.*v_exact(X0,k4,tag);
+      tmp +=  7.*v_exact(X0,k5,tag);
+      tmp *= dtt/90.;
+      tmp += X0;
       point->setCoord(tmp.data() );
     }
   }

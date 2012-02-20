@@ -1260,7 +1260,7 @@ void AppCtx::setInitialConditions()
   
   updateNormals(&Vec_xmsh_0);
   
-  /* calculando a velocidade da malha*/
+  // velocidade inicial
   point_iterator point = mesh->pointBegin();
   point_iterator point_end = mesh->pointEnd();
   for (; point != point_end; ++point)
@@ -1299,6 +1299,8 @@ void AppCtx::setInitialConditions()
   } // end point loop 
   Assembly(Vec_up_0);
   VecCopy(Vec_up_0,Vec_up_1);
+  
+  calcMeshVelocity(Vec_up_0, Vec_xmsh_0, Vec_vmsh_0, 0);
 }
 
 PetscErrorCode AppCtx::checkSnesConvergence(SNES snes, PetscInt it,PetscReal xnorm, PetscReal pnorm, PetscReal fnorm, SNESConvergedReason *reason)
@@ -1430,17 +1432,32 @@ PetscErrorCode AppCtx::solveTimeProblem()
       //calcMeshVelocity(Vec_up_0, Vec_xmsh_0, Vec_vmsh_0, current_time);
       //VecCopy(Vec_vmsh_0, Vec_vmsh_med);
       //moveMesh(Vec_xmsh_0, Vec_vmsh_0, Vec_vmsh_med, 0.0);
-      calcMeshVelocity(Vec_up_0, Vec_xmsh_0, Vec_vmsh_med, current_time);
+      //////calcMeshVelocity(Vec_up_0, Vec_xmsh_0, Vec_vmsh_med, current_time+dt);
       //calcMeshVelocity(Vec_up_0, Vec_xmsh_0, Vec_vmsh_0, current_time);
       //VecCopy(Vec_vmsh_0, Vec_vmsh_med);
-      moveMesh(Vec_xmsh_0, Vec_vmsh_0, Vec_vmsh_med, 1.0);
+      
+      //VecCopy(Vec_vmsh_med, Vec_vmsh_0);
+      //VecScale(Vec_vmsh_0, 0.5);
+      
+      copyMesh2Vec(Vec_xmsh_0);
+      calcMeshVelocity(Vec_up_0, Vec_xmsh_0, Vec_vmsh_med, current_time);
+      moveMesh(Vec_xmsh_0, Vec_vmsh_0, Vec_vmsh_med, 1);
+      //swapMeshWithVec(Vec_xmsh_0);
+      //calcMeshVelocity(Vec_up_0, Vec_xmsh_0, Vec_vmsh_med, current_time+dt);
     }
-
+    
+    // * SOLVE THE SYSTEM *
     if (solve_the_sys)
       ierr = SNESSolve(snes,PETSC_NULL,Vec_up_1);        CHKERRQ(ierr);
-
+    // * SOLVE THE SYSTEM *
+    
     if (plot_exact_sol)
-      computeError(Vec_up_1,current_time);
+      computeError(Vec_up_1,current_time+dt);
+    
+
+
+    //if (plot_exact_sol)
+      //computeError(Vec_up_1,current_time+dt);
 
     current_time += dt;
     time_step += 1;
