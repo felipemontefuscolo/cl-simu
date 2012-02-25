@@ -24,6 +24,21 @@ using namespace tr1;
 #define MAX_DOFS_P 4  // P1
 #define MAX_NNODES 10 // P2
 
+enum VarNumber {
+  // DH_UNKS
+  VAR_U = 0,
+  VAR_P = 1,
+  VAR_L = 2,
+  
+  // DH_MESH
+  VAR_M = 0
+};
+
+enum DofHandlerNumber {
+  DH_UNKS = 0,
+  DH_MESH = 1
+};
+
 
 const double pi  = 3.141592653589793;
 const double pi2 = pi*pi;
@@ -278,12 +293,6 @@ public:
 
 
 
-
-
-
-
-
-
 //
 // User Class
 //
@@ -331,158 +340,30 @@ public:
                           MatrixXd &u_coefs_r, // coefficients
                           VectorXd &FUloc);
                           
-  //// R size: ndofu x ndofu
-  template<class AnyStaticMAtrix, class AnyStaticVector>
-  void getRotationMatrix(AnyStaticMAtrix & R, AnyStaticVector/*VectorXi*/ const& nodes, int const n_nodes) const
+  
+  // get points dofs even if he lie at an edge
+  /// @param[out] dofs
+  void getNodeDofs(Point const* point, DofHandlerNumber DH_, VarNumber VAR_, int * dofs) const
   {
-    //const int n_nodes = nodes.size();
-    //const bool mesh_has_edge_nodes  = mesh->numNodesPerCell() > mesh->numVerticesPerCell();
-    //bool const u_has_edge_assoc_dof = shape_phi_c->numDofsAssociatedToFacet() +
-    //                                  shape_phi_c->numDofsAssociatedToCorner() > 0;
-    Vector X(dim);
-    Vector normal(dim);
-    Vector tmp(dim);
-    Point const* point;
-    //Cell const* cell;
-    //int m;
-    int tag=0;
-    int nodeid;
-    double aux;
-
-    R.setIdentity();
-
-    // NODES
-    for (int i = 0; i < n_nodes; ++i)
+    if (mesh->isVertex(point))
     {
-      nodeid = nodes[i];
-      point = mesh->getNode(nodeid);
-      tag = point->getTag();
-      //m = point->getPosition() - mesh->numVerticesPerCell();
-      //cell = mesh->getCell(point->getIncidCell());
-
-      if (!is_in(tag,solid_tags) && !is_in(tag,triple_tags))
-        continue;
-
-
-      point->getCoord(X.data());
-
-      normal = solid_normal(X,current_time,tag);
-
-      R.block(i*dim,i*dim,1,dim)  = normal.transpose();
-      tmp.setZero();
-      if (dim==2)
-      {
-        tmp(0) = -normal(1);
-        tmp(1) =  normal(0);
-        tmp.normalize();
-        R.block(i*dim+1,i*dim,1,dim)  = tmp.transpose();
-      }
-      else
+      dof_handler[DH_].getVariable(VAR_).getVertexAssociatedDofs(dofs, point);
+    }
+    else
+    {
+      const int m = point->getPosition() - mesh->numVerticesPerCell();
+      Cell const* cell = mesh->getCell(point->getIncidCell());
       if (dim==3)
       {
-        aux = normal(0)*normal(0) + normal(1)*normal(1);
-        if ( aux < 1.e-10)
-        {
-          aux = sqrt(normal(0)*normal(0) + normal(2)*normal(2));
-
-          tmp(0) = normal(2)/aux;
-          tmp(1) = 0;
-          tmp(2) = -normal(0)/aux;
-
-          R.block(i*dim+1,i*dim,1,dim)  = tmp.transpose();
-
-          tmp(0) =  -normal(1)*normal(0)/aux;
-          tmp(1) =  aux;
-          tmp(2) =  -normal(1)*normal(2)/aux;
-        }
-        else
-        {
-          aux = sqrt(aux);
-
-          tmp(0) = -normal(1)/aux;
-          tmp(1) =  normal(0)/aux;
-          tmp(2) = 0;
-
-          R.block(i*dim+1,i*dim,1,dim)  = tmp.transpose();
-
-          tmp(0) =  -normal(2)*normal(0)/aux;
-          tmp(1) =  -normal(2)*normal(1)/aux;
-          tmp(2) =  aux;
-        }
-
-        R.block(i*dim+2,i*dim,1,dim)  = tmp.transpose();
+        const int edge_id = cell->getCornerId(m);
+        dof_handler[DH_].getVariable(VAR_).getCornerAssociatedDofs(dofs, mesh->getCorner(edge_id));
       }
-
-
-
-
-    } // end nodes
-
-
-  }
-
-  // A <- R^T *A
-  template<class AnyStaticMatrix, class OtherStaticMatrix, class TempStaticMatrix>
-  void rotate_RtA(AnyStaticMatrix const& R, OtherStaticMatrix & M, TempStaticMatrix & tmp)
-  {
-    if (R.cols() != M.rows()) // então M é tratado como vetor
-    {
-      int const n = R.cols();
-      tmp.resize(n,1);
-      Map<VectorXd> v(M.data(),n);
-      tmp = R.transpose()*v;
-      v=tmp;
+      else
+      {
+        const int edge_id = cell->getFacetId(m);
+        dof_handler[DH_].getVariable(VAR_).getFacetAssociatedDofs(dofs, mesh->getFacet(edge_id));
+      }
     }
-    else
-    {
-      int const m = R.rows();
-      int const n = M.cols();
-      tmp.resize(m,n);
-      tmp = R.transpose()*M;
-      M = tmp;
-    }
-  }
-
-  // A <- R *A
-  template<class AnyStaticMatrix, class OtherStaticMatrix, class TempStaticMatrix>
-  void rotate_RA(AnyStaticMatrix const& R, OtherStaticMatrix & M, TempStaticMatrix & tmp)
-  {
-    if (R.cols() != M.rows()) // então M é tratado como vetor
-    {
-      int const n = R.cols();
-      tmp.resize(n,1);
-      Map<VectorXd> v(M.data(),n);
-      tmp = R*v;
-      v=tmp;
-    }
-    else
-    {
-      int const m = R.rows();
-      int const n = M.cols();
-      tmp.resize(m,n);
-      tmp = R*M;
-      M = tmp;
-    }
-  }
-
-  // A <- R *A *R^T
-  template<class AnyStaticMatrix, class OtherStaticMatrix, class TempStaticMatrix>
-  void rotate_RARt(AnyStaticMatrix const& R, OtherStaticMatrix & M, TempStaticMatrix & tmp)
-  {
-    int const m = R.rows();
-    tmp.resize(m,m);
-    tmp = R*M*R.transpose();
-    M = tmp;
-  }
-
-  template<class AnyStaticMatrix, class OtherStaticMatrix, class TempStaticMatrix>
-  void rotate_ARt(AnyStaticMatrix const& R, OtherStaticMatrix & M, TempStaticMatrix & tmp)
-  {
-    int const m = M.rows();
-    int const n = R.cols();
-    tmp.resize(m,n);
-    tmp = M*R.transpose();
-    M = tmp;
   }
 
   double getMeshVolume();
@@ -490,16 +371,16 @@ public:
   void printContactAngle(bool _print);
   
   
-  void computeError(Vec &Vec_up_1, double tt);
-  void updateNormals(Vec *Vec_xmsh);
-  void smoothsMesh(Vec &Vec_xmsh);
+  void computeError(Vec const& Vec_x, Vec &Vec_up_1, double tt);
+  void getVecNormals(Vec const* Vec_x_1, Vec & Vec_normal_);
+  void smoothsMesh(Vec & Vec_normal_, Vec &Vec_x);
   void copyMesh2Vec(Vec &Vec_xmsh);
   void copyVec2Mesh(Vec const& Vec_xmsh);
   void swapMeshWithVec(Vec & Vec_xmsh);
   // @param[in] Vec_up_1 unknows vector with fluid velocity
   // @param[out] u_mesh
-  PetscErrorCode calcMeshVelocity(Vec const& Vec_up, Vec const& Vec_xmsh, Vec & Vec_vmsh, double const current_time);
-  PetscErrorCode moveMesh(Vec const& Vec_xmsh_0, Vec const& Vec_vmsh_0, Vec const& Vec_vmsh_med, double const vtheta);
+  PetscErrorCode calcMeshVelocity(Vec const& Vec_x_0, Vec const& Vec_x_1, Vec &Vec_v_mid);
+  PetscErrorCode moveMesh(Vec const& Vec_x_0, Vec const& Vec_up_0, Vec const& Vec_up_1, double const vtheta, double tt, Vec & Vec_x_new);
   void freePetscObjs();
   
   
@@ -516,7 +397,7 @@ public:
   PetscBool   print_to_matlab;
   PetscBool   force_dirichlet;
   PetscBool   full_diriclet;
-  PetscBool   force_bound_mesh_vel;
+  PetscBool   force_mesh_velocity;
   PetscBool   ale;
   PetscBool   plot_exact_sol;
   PetscBool   family_files;
@@ -544,8 +425,7 @@ public:
   std::vector<int> solid_tags;
   std::vector<int> triple_tags;
 
-  DofHandler                   dof_handler_vars;
-  DofHandler                   dof_handler_mesh;
+  DofHandler                   dof_handler[2];
   MeshIoMsh                    msh_reader;
   MeshIoVtk                    vtk_printer;
   shared_ptr<Mesh>             mesh;
@@ -573,12 +453,7 @@ public:
   int                          n_qpts_corner;
   int                          n_qpts_err;
   std::vector<int>             dir_entries;   // as linhas da matriz onde são forçadas as c.c.
-  std::vector<int>             dir_vertices;  // os vertices dirichlet
-  std::vector<int>             dir_corners;   // os vertices dirichlet
-  std::vector<int>             dir_facets;
-  std::vector<int>             dir_normal_vertices;  // os vertices dirichlet
-  std::vector<int>             dir_normal_corners;   // os vertices dirichlet
-  std::vector<int>             dir_normal_facets;
+
   // velocity
   VecOfVec                     phi_c;         // shape function evaluated at quadrature points
   VecOfVec                     phi_f;         // shape function evaluated at quadrature points (facet)
@@ -656,7 +531,7 @@ public:
   Statistics    Stats;
 
   // petsc vectors
-  Vec                 Vec_res, Vec_up_0, Vec_up_1, Vec_vmsh_0, Vec_vmsh_med, Vec_xmsh_0, Vec_tmp, Vec_nmsh/**/;
+  Vec                 Vec_res, Vec_up_0, Vec_up_1, Vec_v_mid, Vec_x_0, Vec_x_1, Vec_normal/**/;
   Mat                 Mat_Jac;
   SNES                snes;         /* nonlinear solver context */
   KSP    			        ksp;

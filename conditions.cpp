@@ -1189,7 +1189,7 @@ double gama(Vector const& X, double t, int tag)
 }
 double muu(double t, int tag)
 {
-  return  0.;
+  return  1.;
 }
 Vector force(Vector const& X, double t, int tag)
 {
@@ -1268,10 +1268,10 @@ Vector solid_normal(Vector const& X, double t, int tag)
 
 Vector v_exact(Vector const& X, double t, int tag) //(X,t,tag)
 {
-  double const w_ = pi;
+  double const w_ = pi/4.;
   Vector v(X.size());
-  v(0) = 0.0*(cos(w_/4.*t));//*(X(0)+0.5)*(X(0)-0.5)/2.;
-  v(1) = 0.1*(cos(w_/4.*t));//*(X(1)+0.5)*(X(1)-0.5)/2.;
+  v(0) = 0.0*(cos(w_*t));//*(X(0)+0.5)*(X(0)-0.5)/2.;
+  v(1) = 0.1*(cos(w_*t));//*(X(1)+0.5)*(X(1)-0.5)/2.;
   return v * (tag!=1 && tag!=2);
 }
 #endif

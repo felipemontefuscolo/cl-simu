@@ -118,12 +118,12 @@ void AppCtx::loadDofs()
   timer.restart();
   dofsUpdate();
   timer.elapsed("CuthillMcKeeRenumber");
-  n_dofs_u_per_cell   = dof_handler_vars.getVariable(0).numDofsPerCell();
-  n_dofs_u_per_facet  = dof_handler_vars.getVariable(0).numDofsPerFacet();
-  n_dofs_u_per_corner = dof_handler_vars.getVariable(0).numDofsPerCorner();
-  n_dofs_p_per_cell   = dof_handler_vars.getVariable(1).numDofsPerCell();
-  n_dofs_p_per_facet  = dof_handler_vars.getVariable(1).numDofsPerFacet();
-  n_dofs_p_per_corner = dof_handler_vars.getVariable(1).numDofsPerCorner();
+  n_dofs_u_per_cell   = dof_handler[DH_UNKS].getVariable(VAR_U).numDofsPerCell();
+  n_dofs_u_per_facet  = dof_handler[DH_UNKS].getVariable(VAR_U).numDofsPerFacet();
+  n_dofs_u_per_corner = dof_handler[DH_UNKS].getVariable(VAR_U).numDofsPerCorner();
+  n_dofs_p_per_cell   = dof_handler[DH_UNKS].getVariable(VAR_P).numDofsPerCell();
+  n_dofs_p_per_facet  = dof_handler[DH_UNKS].getVariable(VAR_P).numDofsPerFacet();
+  n_dofs_p_per_corner = dof_handler[DH_UNKS].getVariable(VAR_P).numDofsPerCorner();
 }
 
 void AppCtx::setUpDefaultOptions()
@@ -145,7 +145,7 @@ void AppCtx::setUpDefaultOptions()
   print_to_matlab        = PETSC_FALSE;  // imprime o jacobiano e a função no formato do matlab
   force_dirichlet        = PETSC_TRUE;   // impõe cc ? (para debug)
   full_diriclet          = PETSC_TRUE;
-  force_bound_mesh_vel   = PETSC_FALSE;
+  force_mesh_velocity   = PETSC_FALSE;
   solve_the_sys          = true;   // for debug
   plot_exact_sol         = PETSC_FALSE;
   quadr_degree_cell      = (dim==2) ? 3 : 3;   // ordem de quadratura
@@ -197,7 +197,7 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
   PetscOptionsBool("-has_convec", "convective term", "main.cpp", has_convec, &has_convec, PETSC_NULL);
   PetscOptionsBool("-unsteady", "unsteady problem", "main.cpp", unsteady, &unsteady, PETSC_NULL);
   PetscOptionsBool("-boundary_smoothing", "boundary_smoothing", "main.cpp", boundary_smoothing, &boundary_smoothing, PETSC_NULL);
-  PetscOptionsBool("-force_bound_mesh_vel", "force_bound_mesh_vel", "main.cpp", force_bound_mesh_vel, &force_bound_mesh_vel, PETSC_NULL);
+  PetscOptionsBool("-force_mesh_velocity", "force_mesh_velocity", "main.cpp", force_mesh_velocity, &force_mesh_velocity, PETSC_NULL);
   PetscOptionsBool("-renumber_dofs", "renumber dofs", "main.cpp", renumber_dofs, &renumber_dofs, PETSC_NULL);
   PetscOptionsBool("-fprint_ca", "print contact angle", "main.cpp", fprint_ca, &fprint_ca, PETSC_NULL);
   PetscOptionsInt("-quadr_e", "quadrature degree (for calculating the error)", "main.cpp", quadr_degree_err, &quadr_degree_err, PETSC_NULL);
@@ -416,28 +416,28 @@ void AppCtx::meshAliasesUpdate()
 void AppCtx::dofsCreate()
 {
   // dof handler create
-  dof_handler_vars.setMesh(mesh.get());
-  dof_handler_vars.addVariable("velo",  shape_phi_c.get(), dim);
-  dof_handler_vars.addVariable("pres",  shape_psi_c.get(), 1);
+  dof_handler[DH_UNKS].setMesh(mesh.get());
+  dof_handler[DH_UNKS].addVariable("velo",  shape_phi_c.get(), dim);
+  dof_handler[DH_UNKS].addVariable("pres",  shape_psi_c.get(), 1);
   Matrix<bool, Dynamic, Dynamic> blocks(2,2);
   blocks.setOnes();
   blocks(1,1)=pres_pres_block;
-  dof_handler_vars.setVariablesRelationship(blocks.data());
+  dof_handler[DH_UNKS].setVariablesRelationship(blocks.data());
 
   // mesh velocity
-  dof_handler_mesh.setMesh(mesh.get());
-  dof_handler_mesh.addVariable("mesh_veloc",  shape_qsi_c.get(), dim);
-  dof_handler_mesh.setVariablesRelationship(blocks.data());
+  dof_handler[DH_MESH].setMesh(mesh.get());
+  dof_handler[DH_MESH].addVariable("mesh_veloc",  shape_qsi_c.get(), dim);
+  //dof_handler[DH_MESH].setVariablesRelationship(blocks.data());
 }
 
 void AppCtx::dofsUpdate()
 {
-  dof_handler_vars.SetUp();
-  if (renumber_dofs)
-    dof_handler_vars.CuthillMcKeeRenumber();
-  n_unknowns = dof_handler_vars.numDofs();
-  dof_handler_mesh.SetUp();
-  n_dofs_u_mesh = dof_handler_mesh.numDofs();
+  dof_handler[DH_UNKS].SetUp();
+  //if (renumber_dofs)
+  //  dof_handler[DH_UNKS].CuthillMcKeeRenumber();
+  n_unknowns = dof_handler[DH_UNKS].numDofs();
+  dof_handler[DH_MESH].SetUp();
+  n_dofs_u_mesh = dof_handler[DH_MESH].numDofs();
 }
 
 PetscErrorCode AppCtx::allocPetscObjs()
@@ -446,50 +446,45 @@ PetscErrorCode AppCtx::allocPetscObjs()
   PetscErrorCode      ierr;
   ierr = SNESCreate(PETSC_COMM_WORLD, &snes);                   CHKERRQ(ierr);
 
-  //Vec Vec_up_1;
-  ierr = VecCreate(PETSC_COMM_WORLD, &Vec_up_1);                       CHKERRQ(ierr);
-  ierr = VecSetSizes(Vec_up_1, PETSC_DECIDE, n_unknowns);              CHKERRQ(ierr);
-  ierr = VecSetFromOptions(Vec_up_1);                                  CHKERRQ(ierr);
+  //Vec Vec_res;
+  ierr = VecCreate(PETSC_COMM_WORLD, &Vec_res);                     CHKERRQ(ierr);
+  ierr = VecSetSizes(Vec_res, PETSC_DECIDE, n_unknowns);            CHKERRQ(ierr);
+  ierr = VecSetFromOptions(Vec_res);                                CHKERRQ(ierr);
 
   //Vec Vec_up_0;
   ierr = VecCreate(PETSC_COMM_WORLD, &Vec_up_0);                      CHKERRQ(ierr);
   ierr = VecSetSizes(Vec_up_0, PETSC_DECIDE, n_unknowns);             CHKERRQ(ierr);
   ierr = VecSetFromOptions(Vec_up_0);                                 CHKERRQ(ierr);
 
-  //Vec Vec_res;
-  ierr = VecCreate(PETSC_COMM_WORLD, &Vec_res);                     CHKERRQ(ierr);
-  ierr = VecSetSizes(Vec_res, PETSC_DECIDE, n_unknowns);            CHKERRQ(ierr);
-  ierr = VecSetFromOptions(Vec_res);                                CHKERRQ(ierr);
+  //Vec Vec_up_1;
+  ierr = VecCreate(PETSC_COMM_WORLD, &Vec_up_1);                       CHKERRQ(ierr);
+  ierr = VecSetSizes(Vec_up_1, PETSC_DECIDE, n_unknowns);              CHKERRQ(ierr);
+  ierr = VecSetFromOptions(Vec_up_1);                                  CHKERRQ(ierr);
 
-  //Vec Vec_vmsh_0
-  ierr = VecCreate(PETSC_COMM_WORLD, &Vec_vmsh_0);                  CHKERRQ(ierr);
-  ierr = VecSetSizes(Vec_vmsh_0, PETSC_DECIDE, n_dofs_u_mesh);      CHKERRQ(ierr);
-  ierr = VecSetFromOptions(Vec_vmsh_0);                             CHKERRQ(ierr);
+  //Vec Vec_v_mid
+  ierr = VecCreate(PETSC_COMM_WORLD, &Vec_v_mid);                  CHKERRQ(ierr);
+  ierr = VecSetSizes(Vec_v_mid, PETSC_DECIDE, n_dofs_u_mesh);      CHKERRQ(ierr);
+  ierr = VecSetFromOptions(Vec_v_mid);                             CHKERRQ(ierr);
 
-  //Vec Vec_vmsh_med
-  ierr = VecCreate(PETSC_COMM_WORLD, &Vec_vmsh_med);                  CHKERRQ(ierr);
-  ierr = VecSetSizes(Vec_vmsh_med, PETSC_DECIDE, n_dofs_u_mesh);      CHKERRQ(ierr);
-  ierr = VecSetFromOptions(Vec_vmsh_med);                             CHKERRQ(ierr);
+  //Vec Vec_x_0;
+  ierr = VecCreate(PETSC_COMM_WORLD, &Vec_x_0);                  CHKERRQ(ierr);
+  ierr = VecSetSizes(Vec_x_0, PETSC_DECIDE, n_dofs_u_mesh);      CHKERRQ(ierr);
+  ierr = VecSetFromOptions(Vec_x_0);                             CHKERRQ(ierr);
 
-  //Vec Vec_xmsh_0;
-  ierr = VecCreate(PETSC_COMM_WORLD, &Vec_xmsh_0);                  CHKERRQ(ierr);
-  ierr = VecSetSizes(Vec_xmsh_0, PETSC_DECIDE, n_dofs_u_mesh);      CHKERRQ(ierr);
-  ierr = VecSetFromOptions(Vec_xmsh_0);                             CHKERRQ(ierr);
+  //Vec Vec_x_1;
+  ierr = VecCreate(PETSC_COMM_WORLD, &Vec_x_1);                  CHKERRQ(ierr);
+  ierr = VecSetSizes(Vec_x_1, PETSC_DECIDE, n_dofs_u_mesh);      CHKERRQ(ierr);
+  ierr = VecSetFromOptions(Vec_x_1);                             CHKERRQ(ierr);
 
-  //Vec Vec_tmp;
-  ierr = VecCreate(PETSC_COMM_WORLD, &Vec_tmp);                  CHKERRQ(ierr);
-  ierr = VecSetSizes(Vec_tmp, PETSC_DECIDE, n_dofs_u_mesh);      CHKERRQ(ierr);
-  ierr = VecSetFromOptions(Vec_tmp);                             CHKERRQ(ierr);
-
-  //Vec Vec_nmsh;
-  ierr = VecCreate(PETSC_COMM_WORLD, &Vec_nmsh);                  CHKERRQ(ierr);
-  ierr = VecSetSizes(Vec_nmsh, PETSC_DECIDE, n_dofs_u_mesh);      CHKERRQ(ierr);
-  ierr = VecSetFromOptions(Vec_nmsh);                             CHKERRQ(ierr);
+  //Vec Vec_normal;
+  ierr = VecCreate(PETSC_COMM_WORLD, &Vec_normal);                  CHKERRQ(ierr);
+  ierr = VecSetSizes(Vec_normal, PETSC_DECIDE, n_dofs_u_mesh);      CHKERRQ(ierr);
+  ierr = VecSetFromOptions(Vec_normal);                             CHKERRQ(ierr);
 
   VectorXi nnz;
   {
     std::vector<std::set<int> > table;
-    dof_handler_vars.getSparsityTable(table);
+    dof_handler[DH_UNKS].getSparsityTable(table);
 
     nnz.resize(n_unknowns);
 
@@ -500,15 +495,16 @@ PetscErrorCode AppCtx::allocPetscObjs()
     // removendo a diagonal nula
     if (!pres_pres_block)
     {
-      int const n_p_dofs_total = dof_handler_vars.getVariable(1).totalSize();
+      int const n_p_dofs_total = dof_handler[DH_UNKS].getVariable(VAR_P).totalSize();
       //#pragma omp parallel for
       for (int i = 0; i < n_p_dofs_total; ++i)
       {
-        int const dof = dof_handler_vars.getVariable(1).data()[i];
+        int const dof = dof_handler[DH_UNKS].getVariable(VAR_P).data()[i];
         if (dof >= 0)
           ++nnz[dof];
       }
     }
+    
   }
 
   //Mat Mat_Jac;
@@ -568,8 +564,8 @@ void AppCtx::matrixColoring()
   for (; cell != cell_end; ++cell)
   {
     // mapeamento do local para o global:
-    dof_handler_vars.getVariable(0).getCellDofs(mapU_c.data(), &*cell);
-    dof_handler_vars.getVariable(1).getCellDofs(mapP_c.data(), &*cell);
+    dof_handler[DH_UNKS].getVariable(VAR_U).getCellDofs(mapU_c.data(), &*cell);
+    dof_handler[DH_UNKS].getVariable(VAR_P).getCellDofs(mapP_c.data(), &*cell);
 
 
     MatSetValues(Mat_Jac, mapU_c.size(), mapU_c.data(), mapU_c.size(), mapU_c.data(), Aloc.data(), ADD_VALUES);
@@ -587,11 +583,11 @@ void AppCtx::matrixColoring()
 
   if (!pres_pres_block)
   {
-    int const n_p_dofs_total = dof_handler_vars.getVariable(1).totalSize();
+    int const n_p_dofs_total = dof_handler[DH_UNKS].getVariable(VAR_P).totalSize();
     for (int i = 0; i < n_p_dofs_total; ++i)
     {
       const double zero = 0.0;
-      int const dof = dof_handler_vars.getVariable(1).data()[i];
+      int const dof = dof_handler[DH_UNKS].getVariable(VAR_P).data()[i];
       if (dof>=0)
         MatSetValue(Mat_Jac, dof, dof, zero, ADD_VALUES);
     }
@@ -613,8 +609,8 @@ void AppCtx::printMatlabLoader()
   fprintf(fp, "clear zzz;\n"               );
   fprintf(fp, "B=Mat_Jac;\n"                   );
   fprintf(fp, "B(B!=0)=1;\n"               );
-  fprintf(fp, "nU = %d;\n",dof_handler_vars.getVariable(0).numDofs() );
-  fprintf(fp, "nP = %d;\n",dof_handler_vars.getVariable(1).numDofs() );
+  fprintf(fp, "nU = %d;\n",dof_handler[DH_UNKS].getVariable(VAR_U).numDofs() );
+  fprintf(fp, "nP = %d;\n",dof_handler[DH_UNKS].getVariable(VAR_P).numDofs() );
   fprintf(fp, "nT = nU + nP;\n"            );
   fprintf(fp, "K=Mat_Jac(1:nU,1:nU);\n"        );
   fprintf(fp, "G=Mat_Jac(1:nU,nU+1:nT);\n"     );
@@ -897,336 +893,66 @@ void AppCtx::evaluateQuadraturePts()
 
 void AppCtx::computeDirichletEntries()
 {
-  // armazenando as entradas da jacobiana que são dirichlet
+  int num_dir_entries=0;
   int tag;
-  int count_dir_entries=0;
-  int count_dir_vertices=0;
-  int count_dir_corners=0;
-  int count_dir_facets=0;
-  int count_dir_normal_vertices=0;
-  int count_dir_normal_corners=0;
-  int count_dir_normal_facets=0;
 
-  bool const has_vertices_dofs = shape_phi_c->numDofsAssociatedToVertice() > 0;
-  bool const has_corner_dofs   = shape_phi_c->numDofsAssociatedToCorner()  > 0;
-  bool const has_facet_dofs    = shape_phi_c->numDofsAssociatedToFacet()   > 0;
-
-  //#pragma omp parallel private(tag) shared(cout,count_dir_vertices,count_dir_corners,count_dir_facets,count_dir_normal_vertices,count_dir_normal_corners,count_dir_normal_facets) default(none)
+  point_iterator point = mesh->pointBegin();
+  point_iterator point_end = mesh->pointEnd();
+  for (; point != point_end; ++point)
   {
-    int count_dir_vertices_local=0;
-    int count_dir_corners_local=0;
-    int count_dir_facets_local=0;
-    int count_dir_normal_vertices_local=0;
-    int count_dir_normal_corners_local=0;
-    int count_dir_normal_facets_local=0;
-
-    Point const* point;
-    Facet const* facet;
-    Corner const* corner;
-
-    // counting dirichlet vertices
-    if (has_vertices_dofs)
-    {
-      //#pragma omp for nowait
-      for (int i = 0; i < n_nodes_total; i++)
-      {
-        point = mesh->getNode(i);
-        if (point->disabled() || (!mesh->isVertex(point)))
-          continue;
-
-        tag = point->getTag();
-
-        // dir vertices
-        if ( is_in(tag, dirichlet_tags))
-          ++count_dir_vertices_local;
-
-        // normals
-        if ( is_in(tag, solid_tags) || is_in(tag, triple_tags))
-          ++count_dir_normal_vertices_local;
-
-      }
-    }
-
-    // counting dirichlet edges (to compute higher order nodes later)
-    if (has_corner_dofs)
-    {
-      //#pragma omp for nowait
-      for (int i = 0; i < n_corners_total; i++)
-      {
-        corner = mesh->getCorner(i);
-        if (corner->disabled())
-          continue;
-
-        tag = corner->getTag();
-
-        // dir corners
-        if ( is_in(tag, dirichlet_tags) )
-          ++count_dir_corners_local;
-
-        // normal corners
-        if ( is_in(tag, solid_tags) || is_in(tag, triple_tags))
-          ++count_dir_normal_corners_local;
-      }
-    }
-
-    // counting dirichlet faces (to compute higher order nodes later)
-    if (has_facet_dofs)
-    {
-      //#pragma omp for nowait
-      ////#pragma omp single
-      for (int i = 0; i < n_facets_total; i++)
-      {
-        facet = mesh->getFacet(i);
-        if (facet->disabled())
-          continue;
-
-        tag = facet->getTag();
-
-        // dir facets
-        if ( is_in(tag, dirichlet_tags) )
-          ++count_dir_facets_local;
-
-        // normal corners
-        if ( is_in(tag, solid_tags) || is_in(tag, triple_tags))
-          ++count_dir_normal_facets_local;
-      }
-    }
-
-    //#pragma omp critical
-    {
-      count_dir_vertices        += count_dir_vertices_local;
-      count_dir_corners         += count_dir_corners_local;
-      count_dir_facets          += count_dir_facets_local;
-      count_dir_normal_vertices += count_dir_normal_vertices_local;
-      count_dir_normal_corners  += count_dir_normal_corners_local;
-      count_dir_normal_facets   += count_dir_normal_facets_local;
-    }
-
-  } // end parallel
-
-
-  count_dir_entries = dim*(count_dir_vertices + count_dir_corners + count_dir_facets) +
-                      count_dir_normal_vertices + count_dir_normal_corners + count_dir_normal_facets;
-  if (force_pressure)
-    ++count_dir_entries;
-
-  // pure dirichlets
-  if (count_dir_vertices > (int)dir_vertices.size())
-    dir_vertices.reserve(dir_vertices.size()*(1.+grow_factor));
-  dir_vertices.resize(count_dir_vertices);
-
-  if (count_dir_corners > (int)dir_corners.size())
-    dir_corners.reserve(dir_corners.size()*(1.+grow_factor));
-  dir_corners.resize(count_dir_corners);
-
-  if (count_dir_facets > (int)dir_facets.size())
-    dir_facets.reserve(dir_facets.size()*(1.+grow_factor));
-  dir_facets.resize(count_dir_facets);
-
-
-  // normal dirichlet
-  if (count_dir_normal_vertices > (int)dir_normal_vertices.size())
-    dir_normal_vertices.reserve(dir_normal_vertices.size()*(1.+grow_factor));
-  dir_normal_vertices.resize(count_dir_normal_vertices);
-
-  if (count_dir_normal_corners > (int)dir_normal_corners.size())
-    dir_normal_corners.reserve(dir_normal_corners.size()*(1.+grow_factor));
-  dir_normal_corners.resize(count_dir_normal_corners);
-
-  if (count_dir_normal_facets > (int)dir_normal_facets.size())
-    dir_normal_facets.reserve(dir_normal_facets.size()*(1.+grow_factor));
-  dir_normal_facets.resize(count_dir_normal_facets);
-
-
-  // all entries
-  if (count_dir_entries > (int)dir_entries.size())
-    dir_entries.reserve(dir_entries.size()*(1.+grow_factor));
-  dir_entries.resize(count_dir_entries);
-
-
-  cout << "Dirichlet entries " << endl;
-  cout << "dir_vertices.size()        : "<< count_dir_vertices        << endl;
-  cout << "dir_corners.size()         : "<< count_dir_corners         << endl;
-  cout << "dir_facets.size()          : "<< count_dir_facets          << endl;
-  cout << "dir_normal_vertices.size() : "<< count_dir_normal_vertices << endl;
-  cout << "dir_normal_corners.size()  : "<< count_dir_normal_corners  << endl;
-  cout << "dir_normal_facets.size()   : "<< count_dir_normal_facets   << endl;
-  cout << "total (dir_entries)        : "<< dir_entries.size() <<endl;
-
-
-  // é possível paralelizar melhor isso daqui ....
-  // store
-  ////#pragma omp parallel private(tag) shared(cout,count_dir_vertices,count_dir_corners,count_dir_facets,  count_dir_normal_vertices,count_dir_normal_corners,count_dir_normal_facets) default(none)
-  {
-    Point const* point;
-    Facet const* facet;
-    Corner const* corner;
-    int kk, mm;
-
-    //#pragma omp sections nowait
-    {
-      //#pragma omp section
-      // counting dirichlet vertices
-      if (has_vertices_dofs)
-      {
-        kk=0;
-        mm=0;
-        for (int i = 0; i < n_nodes_total; i++)
-        {
-          point = mesh->getNode(i);
-          if (point->disabled() || (!mesh->isVertex(point)))
-            continue;
-          tag = point->getTag();
-
-          if ( is_in(tag, dirichlet_tags))
-            dir_vertices.at(kk++) = i;
-
-          if ( is_in(tag, solid_tags) || is_in(tag, triple_tags))
-            dir_normal_vertices.at(mm++) = i;
-        }
-      }
-
-      //#pragma omp section
-      // counting dirichlet edges (to compute higher order nodes later)
-      if (has_corner_dofs)
-      {
-        kk=0;
-        mm=0;
-        for (int i = 0; i < n_corners_total; i++)
-        {
-          corner = mesh->getCorner(i);
-          if (corner->disabled())
-            continue;
-
-          tag = corner->getTag();
-
-          if ( is_in(tag, dirichlet_tags) )
-            dir_corners.at(kk++) = i;
-
-          if ( is_in(tag, solid_tags) || is_in(tag, triple_tags))
-            dir_normal_corners.at(mm++) = i;
-        }
-      }
-
-      //#pragma omp section
-      // counting dirichlet faces (to compute higher order nodes later)
-      if (has_facet_dofs)
-      {
-        kk=0;
-        mm=0;
-        for (int i = 0; i < n_facets_total; i++)
-        {
-          facet = mesh->getFacet(i);
-          if (facet->disabled())
-            continue;
-
-          tag = facet->getTag();
-
-          if ( is_in(tag, dirichlet_tags) )
-            dir_facets.at(kk++) = i;
-
-          if ( is_in(tag, solid_tags) || is_in(tag, triple_tags))
-            dir_normal_facets.at(mm++) = i;
-
-        }
-      }
-    }
-
-  } // end parallel
-
-
-  int xadj[7];
-  int const xadj_size = 7;
-
-  xadj[0] = 0;
-  xadj[1] = count_dir_vertices;
-  xadj[2] = count_dir_corners         + xadj[1];
-  xadj[3] = count_dir_facets          + xadj[2];
-  xadj[4] = count_dir_normal_vertices + xadj[3];
-  xadj[5] = count_dir_normal_corners  + xadj[4];
-  xadj[6] = count_dir_normal_facets   + xadj[5];
-
-
-  //#pragma omp parallel shared(cout,xadj) default(none)
-  {
-    Point const* point;
-    Facet const* facet;
-    Corner const* corner;
-
-    // store dir entries
-    std::vector<int> vertice_dofs(dim);
-    std::vector<int> corner_dofs(dim);
-    std::vector<int> facet_dofs(dim);
-
-    // pure dirichlet
-    //#pragma omp for nowait
-    for (int i = xadj[0]; i < xadj[1]; i++)
-    {
-      point = mesh->getNode(dir_vertices[i]);
-      dof_handler_vars.getVariable(0).getVertexAssociatedDofs(vertice_dofs.data(), point);
-      for (int c = 0; c < dim; ++c)
-      {
-        dir_entries.at(i*dim + c) = vertice_dofs[c];
-      }
-    }
-
-    //#pragma omp for nowait
-    for (int i = xadj[1]; i < xadj[2]; i++)
-    {
-      corner = mesh->getCorner(dir_corners[i-xadj[1]]);
-      dof_handler_vars.getVariable(0).getCornerAssociatedDofs(corner_dofs.data(), corner);
-      for (int c = 0; c < dim; ++c)
-        dir_entries.at(i*dim + c) = corner_dofs[c];
-    }
-
-    //#pragma omp for nowait
-    for (int i = xadj[2]; i < xadj[3]; i++)
-    {
-      facet = mesh->getFacet(dir_facets[i-xadj[2]]);
-      dof_handler_vars.getVariable(0).getFacetAssociatedDofs(facet_dofs.data(), facet);
-      for (int c = 0; c < dim; ++c)
-        dir_entries.at(i*dim + c) = facet_dofs[c];
-    }
-
-    const int shift = xadj[3]*(dim-1);
-    // normal dirichlet
-    //#pragma omp for nowait
-    for (int i = xadj[3]; i < xadj[4]; i++)
-    {
-      point = mesh->getNode(dir_normal_vertices[i-xadj[3]]);
-      dof_handler_vars.getVariable(0).getVertexAssociatedDofs(vertice_dofs.data(), point);
-      dir_entries.at(shift + i) = vertice_dofs[0];
-    }
-
-    //#pragma omp for nowait
-    for (int i = xadj[4]; i < xadj[5]; i++)
-    {
-      corner = mesh->getCorner(dir_normal_corners[i-xadj[4]]);
-      dof_handler_vars.getVariable(0).getCornerAssociatedDofs(corner_dofs.data(), corner);
-      dir_entries.at(shift + i) = corner_dofs[0];
-    }
-
-    //#pragma omp for nowait
-    for (int i = xadj[5]; i < xadj[6]; i++)
-    {
-      facet = mesh->getFacet(dir_normal_facets[i-xadj[5]]);
-      dof_handler_vars.getVariable(0).getFacetAssociatedDofs(facet_dofs.data(), facet);
-      dir_entries.at(shift + i) = facet_dofs[0];
-    }
-
-
-
+    tag = point->getTag();
+    
+    if (!is_in(tag,dirichlet_tags))
+        continue;
+    
+    num_dir_entries += dim;
+    
   }
-
   if (force_pressure)
+    ++num_dir_entries;
+  
+  dir_entries.resize(num_dir_entries);
+
+  cout << "dir_entries size : "<< dir_entries.size() <<endl;
+
+  // velocity dir entries
+  int k=0;
+  VectorXi dofs(dim);
+  point = mesh->pointBegin();
+  point_end = mesh->pointEnd();
+  for (; point != point_end; ++point)
   {
-    int p_dof=-1;
-    // find first valid dof
-    for (int i = 0; p_dof<0 && i<dof_handler_vars.getVariable(1).totalSize(); ++i)
+    tag = point->getTag();
+    
+    if (!is_in(tag,dirichlet_tags))
+        continue;
+    
+    getNodeDofs(&*point, DH_UNKS, VAR_U, dofs.data());
+    
+    for (int i = 0; i < dim; ++i)
     {
-      p_dof = dof_handler_vars.getVariable(1).data()[i];
+      dir_entries.at(k++) = dofs[i];
     }
-    dir_entries.at(dim*xadj[xadj_size-1]) = p_dof;
+    
+  }
+  
+  if (force_pressure)
+  { 
+    int idx;
+    if (shape_psi_c->discontinuous())
+    {
+      cell_iterator cell = mesh->cellBegin(); 
+      dof_handler[DH_UNKS].getVariable(VAR_P).getCellAssociatedDofs(&idx, &*cell);
+    }
+    else
+    {
+      point = mesh->pointBegin();
+      while (!mesh->isVertex(&*point))
+        ++point;
+        
+      dof_handler[DH_UNKS].getVariable(VAR_P).getVertexAssociatedDofs(&idx, &*point);
+    }
+    dir_entries.at(k++) = idx;
   }
 
 
@@ -1243,64 +969,89 @@ void AppCtx::onUpdateMesh()
 void AppCtx::setInitialConditions()
 {
   Vector    Uf(dim);
+  double    pf;
   Vector    X(dim);
   Tensor    R(dim,dim);
   VectorXi  dofs(dim);
-  int nodeid;
+  int       dof;
   int tag;
   
-  VecSet(Vec_up_0,0.);
-  VecSet(Vec_up_1,0.);
-  VecSet(Vec_vmsh_0,0.);
-  VecSet(Vec_vmsh_med,0.);
-  //VecSet(Vec_tmp,0.);
-  
-  //VecCopy(Vec_up_1,Vec_up_0); // Vec_up_0 <- Vec_up_1
-  copyMesh2Vec(Vec_xmsh_0);
-  
-  updateNormals(&Vec_xmsh_0);
+  copyMesh2Vec(Vec_x_0);
   
   // velocidade inicial
   point_iterator point = mesh->pointBegin();
   point_iterator point_end = mesh->pointEnd();
   for (; point != point_end; ++point)
   {
-    nodeid = mesh->getPointId(&*point);
     tag = point->getTag();
 
     point->getCoord(X.data());
 
     Uf = u_initial(X, tag);
 
-    getRotationMatrix(R,&nodeid,1);
-
-    if (mesh->isVertex(&*point))
-      dof_handler_vars.getVariable(0).getVertexDofs(dofs.data(), &*point);
-    else
-    {
-      // pega os graus de liberdade
-      const int m = point->getPosition() - mesh->numVerticesPerCell();
-      Cell const* icell = mesh->getCell(point->getIncidCell());
-      if (dim==3)
-      {
-        Corner *edge = mesh->getCorner(icell->getCornerId(m));
-        dof_handler_vars.getVariable(0).getCornerAssociatedDofs(dofs.data(), &*edge);
-      }
-      else // dim=2
-      {
-        Facet *edge = mesh->getFacet(icell->getFacetId(m));
-        dof_handler_vars.getVariable(0).getFacetAssociatedDofs(dofs.data(), &*edge);
-      }
-
-    }
+    getNodeDofs(&*point,DH_UNKS,VAR_U,dofs.data());
     
     VecSetValues(Vec_up_0, dim, dofs.data(), Uf.data(), INSERT_VALUES);
-
+    
   } // end point loop 
+
+  // pressão inicial
+  if (shape_psi_c->discontinuous())
+  {
+    cell_iterator cell = mesh->cellBegin();
+    cell_iterator cell_end = mesh->cellEnd();
+    for (; cell != cell_end; ++cell)
+    {
+      tag = cell->getTag();
+      
+      mesh->getCenterCoord(&*cell, X.data());
+      
+      pf = p_initial(X,tag);
+      
+      dof_handler[DH_UNKS].getVariable(VAR_P).getCellAssociatedDofs(&dof,&*cell);
+      
+      VecSetValues(Vec_up_0, 1, &dof, &pf, INSERT_VALUES);
+    }
+  }
+  else
+  {
+    point = mesh->pointBegin();
+    point_end = mesh->pointEnd();
+    for (; point != point_end; ++point)
+    {
+      if (mesh->isVertex(&*point))
+        continue;
+        
+      tag = point->getTag();
+
+      point->getCoord(X.data());
+
+      pf = p_initial(X,tag);
+
+      dof_handler[DH_UNKS].getVariable(VAR_P).getVertexAssociatedDofs(&dof,&*point);
+      
+      VecSetValues(Vec_up_0, 1, &dof, &pf, INSERT_VALUES);
+    } // end point loop     
+  }
+  
   Assembly(Vec_up_0);
   VecCopy(Vec_up_0,Vec_up_1);
   
-  calcMeshVelocity(Vec_up_0, Vec_xmsh_0, Vec_vmsh_0, 0);
+  // remember: Vec_normals follows the Vec_x_1
+  double tt=0;
+  moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, tt, Vec_x_1);
+
+  //point = mesh->pointBegin();
+  //point_end = mesh->pointEnd();
+  //for (; point != point_end; ++point)
+  //{
+    //point->getCoord(X.data());
+    //cout << "HAAAA : " << X.transpose() << endl;
+  //} // end point loop 
+
+  
+  calcMeshVelocity(Vec_x_0, Vec_x_1, Vec_v_mid);
+  
 }
 
 PetscErrorCode AppCtx::checkSnesConvergence(SNES snes, PetscInt it,PetscReal xnorm, PetscReal pnorm, PetscReal fnorm, SNESConvergedReason *reason)
@@ -1327,13 +1078,13 @@ PetscErrorCode AppCtx::checkSnesConvergence(SNES snes, PetscInt it,PetscReal xno
       //Vec *Vec_up_k = &Vec_up_1;
       ////SNESGetSolution(snes,Vec_up_k);
       //
-      //copyMesh2Vec(Vec_tmp);
-      //calcMeshVelocity(*Vec_up_k, Vec_tmp, Vec_vmsh_med, current_time+dt);
-      //moveMesh(Vec_xmsh_0, Vec_vmsh_0, Vec_vmsh_med, 0.5);
+      //copyMesh2Vec(Vec_x_1);
+      //calcMeshVelocity(*Vec_up_k, Vec_x_1, Vec_v_mid, current_time+dt);
+      //moveMesh(Vec_x_1, Vec_vmsh_0, Vec_v_mid, 0.5);
       //
       //// mean mesh velocity
-      //VecAXPY(Vec_vmsh_med,1,Vec_vmsh_0);
-      //VecScale(Vec_vmsh_med, 0.5);
+      //VecAXPY(Vec_v_mid,1,Vec_vmsh_0);
+      //VecScale(Vec_v_mid, 0.5);
       //
       //*reason = SNES_CONVERGED_ITERATING;
       //++converged_times;
@@ -1392,8 +1143,8 @@ PetscErrorCode AppCtx::solveTimeProblem()
       {
         double  *q_array;
         double  *nml_array;
-        VecGetArray(Vec_up_1, &q_array);
-        VecGetArray(Vec_nmsh, &nml_array);
+        VecGetArray(Vec_up_0, &q_array);
+        VecGetArray(Vec_normal, &nml_array);
         vtk_printer.writeVtk();
         vtk_printer.addNodeScalarVtk("ux",  GetDataVelocity<0>(q_array, *this));
         vtk_printer.addNodeScalarVtk("uy",  GetDataVelocity<1>(q_array, *this));
@@ -1412,8 +1163,8 @@ PetscErrorCode AppCtx::solveTimeProblem()
 
 
         //vtk_printer.printPointTagVtk("point_tag");
-        //VecRestoreArray(Vec_up_1, &q_array);
-        //VecRestoreArray(Vec_nmsh, &nml_array);
+        VecRestoreArray(Vec_up_0, &q_array);
+        VecRestoreArray(Vec_normal, &nml_array);
         
         ierr = SNESGetIterationNumber(snes,&its);     CHKERRQ(ierr);
         cout << "num snes iterations: " << its << endl;
@@ -1427,55 +1178,42 @@ PetscErrorCode AppCtx::solveTimeProblem()
       
     }
 
-    if (ale)
-    {
-      //calcMeshVelocity(Vec_up_0, Vec_xmsh_0, Vec_vmsh_0, current_time);
-      //VecCopy(Vec_vmsh_0, Vec_vmsh_med);
-      //moveMesh(Vec_xmsh_0, Vec_vmsh_0, Vec_vmsh_med, 0.0);
-      //////calcMeshVelocity(Vec_up_0, Vec_xmsh_0, Vec_vmsh_med, current_time+dt);
-      //calcMeshVelocity(Vec_up_0, Vec_xmsh_0, Vec_vmsh_0, current_time);
-      //VecCopy(Vec_vmsh_0, Vec_vmsh_med);
-      
-      //VecCopy(Vec_vmsh_med, Vec_vmsh_0);
-      //VecScale(Vec_vmsh_0, 0.5);
-      
-      copyMesh2Vec(Vec_xmsh_0);
-      calcMeshVelocity(Vec_up_0, Vec_xmsh_0, Vec_vmsh_med, current_time);
-      moveMesh(Vec_xmsh_0, Vec_vmsh_0, Vec_vmsh_med, 1);
-      //swapMeshWithVec(Vec_xmsh_0);
-      //calcMeshVelocity(Vec_up_0, Vec_xmsh_0, Vec_vmsh_med, current_time+dt);
-    }
-    
     // * SOLVE THE SYSTEM *
     if (solve_the_sys)
       ierr = SNESSolve(snes,PETSC_NULL,Vec_up_1);        CHKERRQ(ierr);
     // * SOLVE THE SYSTEM *
-    
+  
     if (plot_exact_sol)
-      computeError(Vec_up_1,current_time+dt);
-    
-
-
-    //if (plot_exact_sol)
-      //computeError(Vec_up_1,current_time+dt);
-
+      computeError(Vec_x_1, Vec_up_1,current_time+dt);
     current_time += dt;
     time_step += 1;
 
-    // compute steady error
-    Qmax = VecNorm(Vec_up_1, NORM_1);
-    VecAXPY(Vec_up_0,-1.0,Vec_up_1);
-    steady_error = VecNorm(Vec_up_0, NORM_1)/(Qmax==0.?1.:Qmax);
-    
-    //VecScale(Vec_up_0,0);
     // update
-    VecCopy(Vec_up_1,Vec_up_0); // Vec_up_0 <- Vec_up_1
-    
     if (ale)
     {
-      copyMesh2Vec(Vec_xmsh_0);
-      VecCopy(Vec_vmsh_med,Vec_vmsh_0); // Vec_up_0 <- Vec_up_1
+      copyVec2Mesh(Vec_x_1);
+      VecCopy(Vec_x_1, Vec_x_0);
+      moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, current_time, Vec_x_1); // Adams-Bashforth
+      calcMeshVelocity(Vec_x_0, Vec_x_1, Vec_v_mid);
+      
+      // initial guess for the next time step; u(n+1) = 2*u(n) - u(n-1)
+      VecCopy(Vec_up_1, Vec_res);
+      VecScale(Vec_res,2.);
+      VecAXPY(Vec_res, -1., Vec_up_0);
+      VecCopy(Vec_up_1, Vec_up_0);
+      VecCopy(Vec_res, Vec_up_1); // u(n+1) = 2*u(n) - u(n-1)
+      
     }
+    
+    //if (plot_exact_sol)
+      //computeError(Vec_up_1,current_time+dt);
+
+    // compute steady error
+    Qmax = VecNorm(Vec_up_1, NORM_1);
+    VecCopy(Vec_up_0, Vec_res);
+    VecAXPY(Vec_res,-1.0,Vec_up_1);
+    steady_error = VecNorm(Vec_res, NORM_1)/(Qmax==0.?1.:Qmax);
+    
     
     printContactAngle(fprint_ca);
     
@@ -1494,34 +1232,6 @@ PetscErrorCode AppCtx::solveTimeProblem()
     }
   }
   cout << endl;
-
-  if (family_files)
-  {
-    double  *q_array;
-    double  *nml_array;
-    VecGetArray(Vec_up_1, &q_array);
-    VecGetArray(Vec_nmsh, &nml_array);
-    vtk_printer.writeVtk();
-    vtk_printer.addNodeScalarVtk("ux",  GetDataVelocity<0>(q_array, *this));
-    vtk_printer.addNodeScalarVtk("uy",  GetDataVelocity<1>(q_array, *this));
-    if (dim==3)
-      vtk_printer.addNodeScalarVtk("uz",   GetDataVelocity<2>(q_array, *this));
-      
-    vtk_printer.addNodeScalarVtk("nx",  GetDataNormal<0>(nml_array, *this));
-    vtk_printer.addNodeScalarVtk("ny",  GetDataNormal<1>(nml_array, *this));
-    if (dim==3)
-      vtk_printer.addNodeScalarVtk("nz",   GetDataNormal<2>(nml_array, *this));
-    
-    if (shape_psi_c->discontinuous())
-      vtk_printer.addCellScalarVtk("pressure", GetDataPressCellVersion(q_array, *this));
-    else
-      vtk_printer.addNodeScalarVtk("pressure", GetDataPressure(q_array, *this));
-
-
-    vtk_printer.printPointTagVtk("point_tag");
-    VecRestoreArray(Vec_up_1, &q_array);
-    VecRestoreArray(Vec_nmsh, &nml_array);
-  }
 
   printf("final volume: %.15lf \n", getMeshVolume());
 
@@ -1556,9 +1266,6 @@ PetscErrorCode AppCtx::solveTimeProblem()
   int lits;
   SNESGetLinearSolveIterations(snes,&lits);
 
-  if (plot_exact_sol)
-    computeError(Vec_up_1,current_time);
-  
   if (unsteady)
   {
     cout << "\nmean errors: \n";
@@ -1570,7 +1277,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
 }
 
 
-void AppCtx::computeError(Vec &qq, double tt)
+void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
 {
 
   MatrixXd            u_coefs_c(n_dofs_u_per_cell/dim, dim);
@@ -1614,17 +1321,19 @@ void AppCtx::computeError(Vec &qq, double tt)
 
     // mapeamento do local para o global:
     //
-    dof_handler_vars.getVariable(0).getCellDofs(mapU_c.data(), &*cell);
-    dof_handler_vars.getVariable(1).getCellDofs(mapP_c.data(), &*cell);
+    dof_handler[DH_UNKS].getVariable(VAR_U).getCellDofs(mapU_c.data(), &*cell);
+    dof_handler[DH_UNKS].getVariable(VAR_P).getCellDofs(mapP_c.data(), &*cell);
+    dof_handler[DH_MESH].getVariable(VAR_M).getCellDofs(mapM_c.data(), &*cell);
 
     /*  Pega os valores das variáveis nos graus de liberdade */
-    VecGetValues(qq, mapU_c.size(), mapU_c.data(), u_coefs_c.data());
-    VecGetValues(qq, mapP_c.size(), mapP_c.data(), p_coefs_c.data());
+    VecGetValues(Vec_up, mapU_c.size(), mapU_c.data(), u_coefs_c.data());
+    VecGetValues(Vec_up, mapP_c.size(), mapP_c.data(), p_coefs_c.data());
+    VecGetValues(Vec_x,  mapM_c.size(), mapM_c.data(), x_coefs_c.data());
 
     u_coefs_c_trans = u_coefs_c.transpose();
 
-    mesh->getCellNodesId(&*cell, cell_nodes.data());
-    mesh->getNodesCoords(cell_nodes.begin(), cell_nodes.end(), x_coefs_c.data());
+    //mesh->getCellNodesId(&*cell, cell_nodes.data());
+    //mesh->getNodesCoords(cell_nodes.begin(), cell_nodes.end(), x_coefs_c.data());
     x_coefs_c_trans = x_coefs_c.transpose();
 
     for (int qp = 0; qp < n_qpts_err; ++qp)
@@ -1745,7 +1454,7 @@ double AppCtx::getMaxVelocity()
   {
     if (!mesh->isVertex(&*point))
         continue;
-    dof_handler_vars.getVariable(0).getVertexDofs(vtx_dofs_fluid.data(), &*point);
+    dof_handler[DH_UNKS].getVariable(VAR_U).getVertexDofs(vtx_dofs_fluid.data(), &*point);
     VecGetValues(Vec_up_1, dim, vtx_dofs_fluid.data(), Uf.data());
     Umax = max(Umax,Uf.norm());
   }
@@ -1813,8 +1522,8 @@ void AppCtx::printContactAngle(bool _print)
     
     point->getCoord(X.data());
     normal_solid = solid_normal(X, current_time, tag);
-    dof_handler_mesh.getVariable(0).getVertexDofs(vtx_dofs_mesh.data(), &*point);
-    VecGetValues(Vec_nmsh, dim, vtx_dofs_mesh.data(), normal_surf.data());   
+    dof_handler[DH_MESH].getVariable(VAR_M).getVertexDofs(vtx_dofs_mesh.data(), &*point);
+    VecGetValues(Vec_normal, dim, vtx_dofs_mesh.data(), normal_surf.data());   
     
     tet = asin(sqrt(1. - pow(normal_solid.dot(normal_surf),2)  ));
     
@@ -1840,14 +1549,13 @@ void AppCtx::printContactAngle(bool _print)
 void AppCtx::freePetscObjs()
 {
   Destroy(Mat_Jac);
-  Destroy(Vec_up_1);
-  Destroy(Vec_up_0);
   Destroy(Vec_res);
-  Destroy(Vec_vmsh_0);
-  Destroy(Vec_vmsh_med);
-  Destroy(Vec_xmsh_0);
-  Destroy(Vec_tmp);
-  Destroy(Vec_nmsh);
+  Destroy(Vec_up_0);
+  Destroy(Vec_up_1);
+  Destroy(Vec_v_mid);
+  Destroy(Vec_x_0);
+  Destroy(Vec_x_1);
+  Destroy(Vec_normal);
   //Destroy(ksp);
   //Destroy(snes);
   SNESDestroy(&snes);
@@ -1858,41 +1566,14 @@ template<int Coord>
 double GetDataVelocity<Coord>::get_data_r(int nodeid) const
 {
   Point const* point = user.mesh->getNode(nodeid);
-  Tensor R(user.dim,user.dim);
-  Vector Ur(user.dim);
-  Vector tmp(user.dim);
-  user.getRotationMatrix(R,&nodeid,1);
-  int dofs[user.dim];
-  if (!user.mesh->isVertex(point))
-  {
-    const int m = point->getPosition() - user.mesh->numVerticesPerCell();
-    Cell const* cell = user.mesh->getCell(point->getIncidCell());
-    if (user.dim==3)
-    {
-      const int edge_id = cell->getCornerId(m);
-      user.dof_handler_vars.getVariable(0).getCornerAssociatedDofs(dofs, user.mesh->getCorner(edge_id));
-    }
-    else
-    {
-      const int edge_id = cell->getFacetId(m);
-      user.dof_handler_vars.getVariable(0).getFacetAssociatedDofs(dofs, user.mesh->getFacet(edge_id));
-    }
+  double U;
+  VectorXi dofs(user.dim);
 
-    for (int i = 0; i < user.dim; ++i)
-      Ur(i) = q_array[dofs[i]];
-    //return q_array[dofs[2*user.dim + Coord]];
+  user.getNodeDofs(&*point, DH_UNKS, VAR_U, dofs.data());
 
-  }
-  else
-  {
-    //VectorXi dofs(user.dim);
-    user.dof_handler_vars.getVariable(0).getVertexDofs(dofs, point);
-    for (int i = 0; i < user.dim; ++i)
-      Ur(i) = q_array[dofs[i]];
-  }
+  U = q_array[*(dofs.data()+Coord)];
 
-  tmp = R.transpose()*Ur;
-  return tmp(Coord);
+  return U;
 }
 
 double GetDataPressure::get_data_r(int nodeid) const
@@ -1907,26 +1588,25 @@ double GetDataPressure::get_data_r(int nodeid) const
     if (user.dim==3)
     {
       const int edge_id = cell->getCornerId(m);
-      user.dof_handler_vars.getVariable(1).getCornerDofs(dofs, user.mesh->getCorner(edge_id));
+      user.dof_handler[DH_UNKS].getVariable(VAR_P).getCornerDofs(dofs, user.mesh->getCorner(edge_id));
     }
     else
     {
       const int edge_id = cell->getFacetId(m);
-      user.dof_handler_vars.getVariable(1).getFacetDofs(dofs, user.mesh->getFacet(edge_id));
+      user.dof_handler[DH_UNKS].getVariable(VAR_P).getFacetDofs(dofs, user.mesh->getFacet(edge_id));
     }
     return (q_array[dofs[0]] + q_array[dofs[1]])/2.;
   }
   int dof;
-  user.dof_handler_vars.getVariable(1).getVertexDofs(&dof, point);
+  user.dof_handler[DH_UNKS].getVariable(VAR_P).getVertexDofs(&dof, point);
   return q_array[dof];
-  return 0;
 }
 
 double GetDataPressCellVersion::get_data_r(int cellid) const
 {
   // assume que só há 1 grau de liberdade na célula
-  int dof[user.dof_handler_vars.getVariable(1).numDofsPerCell()];
-  user.dof_handler_vars.getVariable(1).getCellDofs(dof, user.mesh->getCell(cellid));
+  int dof[user.dof_handler[DH_UNKS].getVariable(VAR_P).numDofsPerCell()];
+  user.dof_handler[DH_UNKS].getVariable(VAR_P).getCellDofs(dof, user.mesh->getCell(cellid));
   return q_array[dof[0]];
 }
 
@@ -1934,37 +1614,14 @@ template<int Coord>
 double GetDataNormal<Coord>::get_data_r(int nodeid) const
 {
   Point const* point = user.mesh->getNode(nodeid);
-  Vector Normal(user.dim);
-  int dofs[user.dim];
-  if (!user.mesh->isVertex(point))
-  {
-    const int m = point->getPosition() - user.mesh->numVerticesPerCell();
-    Cell const* cell = user.mesh->getCell(point->getIncidCell());
-    if (user.dim==3)
-    {
-      const int edge_id = cell->getCornerId(m);
-      user.dof_handler_vars.getVariable(0).getCornerAssociatedDofs(dofs, user.mesh->getCorner(edge_id));
-    }
-    else
-    {
-      const int edge_id = cell->getFacetId(m);
-      user.dof_handler_vars.getVariable(0).getFacetAssociatedDofs(dofs, user.mesh->getFacet(edge_id));
-    }
+  double N;
+  VectorXi dofs(user.dim);
 
-    for (int i = 0; i < user.dim; ++i)
-      Normal(i) = q_array[dofs[i]];
-    //return q_array[dofs[2*user.dim + Coord]];
+  user.getNodeDofs(&*point, DH_MESH, VAR_M, dofs.data());
 
-  }
-  else
-  {
-    //VectorXi dofs(user.dim);
-    user.dof_handler_mesh.getVariable(0).getVertexDofs(dofs, point);
-    for (int i = 0; i < user.dim; ++i)
-      Normal(i) = q_array[dofs[i]];
-  }
+  VecGetValues(user.Vec_normal, 1, dofs.data()+Coord, &N);
 
-  return Normal(Coord);
+  return N;
 }
 
 
@@ -2001,8 +1658,8 @@ int main(int argc, char **argv)
   // print info
   cout << "mesh: " << user.filename << endl;
   user.mesh->printInfo();
-  cout << "\n# velocity unknows: " << user.dof_handler_vars.getVariable(0).numDofs();
-  cout << "\n# preassure unknows: " << user.dof_handler_vars.getVariable(1).numDofs() << endl;
+  cout << "\n# velocity unknows: " << user.dof_handler[DH_UNKS].getVariable(VAR_U).numDofs();
+  cout << "\n# preassure unknows: " << user.dof_handler[DH_UNKS].getVariable(VAR_P).numDofs() << endl;
   user.mesh->printStatistics();
   user.mesh->timer.printTimes();
 
@@ -2055,88 +1712,4 @@ PetscErrorCode CheckSnesConvergence(SNES snes, PetscInt it,PetscReal xnorm, Pets
 
 
 
-
-
-/*
-  // ***********
-  // form the residue of the contact line (2D)
-  void formCornerFunction(Point * point,
-                            Vector &Ur,
-                            Vector &FUloc)
-  {
-    bool is_triple;
-    int tag;
-    //Point * point;
-    Point * sol_point; // solid point
-    int iVs[FEPIC_MAX_ICELLS];
-    int *iVs_end;
-    int *iVs_it;
-    Vector line_normal(dim);
-    Vector aux(dim);
-    Vector normal(dim); // solid normal
-    Vector X(dim);
-    VectorXi vtx_dofs_fluid(dim);
-    int nodeid;
-    //Vector FUloc(dim);
-    Vector U(dim);
-    //Vector Ur(dim); // rotated
-    Tensor R(dim,dim);
-    Vector tmp(dim);
-
-    tag = point->getTag();
-
-    is_triple = is_in(tag, triple_tags);
-
-    if (!is_triple)
-      return;
-
-
-    iVs_end = mesh->connectedVtcs(point, iVs);
-
-    // se esse nó está na linha, então existe um vértice vizinho que está no sólido
-    for (iVs_it = iVs; iVs_it != iVs_end ; ++iVs_it)
-    {
-      sol_point = mesh->getNode(*iVs_it);
-      if ( is_in(sol_point->getTag(), solid_tags) )
-        break;
-    }
-    if (iVs_it == iVs_end)
-    {
-      //#pragma omp critical
-      {
-        printf("ERRO: ponto na linha tríplice não tem um vértice vizinho no sólido");
-        throw;
-      }
-    }
-
-    normal = solid_normal(X, current_time, tag);
-
-    point->getCoord(X.data());
-
-    sol_point->getCoord(aux.data());
-
-
-    // choose a line_normal candidate
-    line_normal(0) = -normal(1);
-    line_normal(1) =  normal(0);
-
-    // check orientation
-    if (line_normal.dot(X-aux) < 0)
-      line_normal *= -1;
-
-    dof_handler_vars.getVariable(0).getVertexDofs(vtx_dofs_fluid.data(), &*point);
-
-    nodeid = mesh->getPointId(point);
-    getRotationMatrix(R, &nodeid, 1);
-
-    U = R.transpose()*Ur;
-
-    FUloc(0) = (-gama(X, current_time, tag)*cos_theta0() + zeta(0,0)*line_normal.dot(U))*line_normal(0);
-    FUloc(1) = (-gama(X, current_time, tag)*cos_theta0() + zeta(0,0)*line_normal.dot(U))*line_normal(1);
-
-    nodeid = mesh->getPointId(&*point);
-
-    rotate_RA(R,FUloc,tmp);
-  }
-*/
 

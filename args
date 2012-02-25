@@ -1,12 +1,12 @@
 -dim 2  				        # cell dimension (= space dimension)
--dt 0.0625                # time step
+-dt 0.25                # time step
 -renumber_dofs 0        # dofs renumbering
--maxts 320              # maximum number of time steps
--print_step 10          # print step
+-maxts 80              # maximum number of time steps
+-print_step 1000          # print step
 -has_convec 1           # convective term: true or false
 -unsteady   1           # steady or unsteady problem
 -boundary_smoothing 0
--force_bound_mesh_vel 1 # imposes the mesh velocity of boundary grid
+-force_mesh_velocity 1 # imposes the mesh velocity of boundary grid
 -fprint_ca 0            # print contact angle at file ContactHistory
 -beta1 0.0              # Vmesh = bet1 * Ufluid  +  bet2 * Uelastic
 -beta2 1.0  
@@ -48,7 +48,7 @@ log_trace stdout
 malloc_debug 1
 snes_fd 0
 -snes_ls basic      # line search: basic, cubic, quadratic
-snes_type picard test ksponly   # Nonlinear solver method (one of) ls tr test picard ksponly vi ngmres sorqn
+snes_type test ksponly   # Nonlinear solver method (one of) ls tr test picard ksponly vi ngmres sorqn
 snes_picard_alpha 1.2
 snes_test_display 1 # compare f.e. jacobian with f.d. jacobian
 snes_monitor_cancel 0 # cancela monitoramento
@@ -94,15 +94,15 @@ options: dir_tags, neum_tags, interf_tags, solid_tags, triple_tags
 
 ############################################################################
 
--function_space 1 # P1P1 (or Q1Q1) GLS stabilization
+function_space 1 # P1P1 (or Q1Q1) GLS stabilization
 function_space 2 # P1+P1 with bubble condensation
 function_space 3 # P2+Pm1 with bubble condensation and pressure gradient elimination
 function_space 4 # P2P1 (or Q2Q1)
-function_space 5 # P1+P1
+-function_space 5 # P1+P1
 function_space 6 # P2P0 
 function_space 7 # P2+Pm1 full
 
-mesh_type 8      # TRIANGLE3        = 0x8,
+-mesh_type 8      # TRIANGLE3        = 0x8,
 mesh_type 16     # TRIANGLE6        = 0x10,
 mesh_type 32     # QUADRANGLE4      = 0x20,
 mesh_type 64     # QUADRANGLE8      = 0x40,
@@ -124,8 +124,8 @@ fin  results/static_drop/3d/mesh/drop.msh
 fout results/static_drop/3d/mesh/bla.vtk
 fin  results/osc_drop/mesh/drop.msh
 fout results/osc_drop/mesh/drop.vtk
--fin  results/kovasznay/mesh/kovas.msh
--fout results/kovasznay/mesh/kovas.vtk
+fin  results/kovasznay/mesh/kovas.msh
+fout results/kovasznay/mesh/kovas.vtk
 
 -fin  results/couette/2d/mesh/couette.msh
 -fout results/couette/2d/mesh/couette.vtk

@@ -1,0 +1,18 @@
+assume
+matchdeclare
+tellsimpafter
+
+declare
+	eg.,   declare(a,scalar);
+
+predicados úteis:
+* scalarp
+
+
+substituições:
+
+	load ("lrats");
+	L = [a-b=c, b-d=f];
+	s(x) := lratsubst(L, x);
+	s(a+q+w-2*b+d);
+	

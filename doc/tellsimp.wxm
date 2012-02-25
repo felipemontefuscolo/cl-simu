@@ -1,0 +1,26 @@
+/* [wxMaxima batch file version 1] [ DO NOT EDIT BY HAND! ]*/
+/* [ Created with wxMaxima version 11.04.0 ] */
+
+/* [wxMaxima: input   start ] */
+load ("lrats");
+L : [t0-tm1=dt, t1-t0=dt];
+s(x) := lratsubst(L, x);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+kill(all);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+X(t) := X1*(t-t0)*(t-tm1)/(2*dt^2) - X0*(t-t1)*(t-tm1)/(dt^2) + Xm1*(t-t1)*(t-t0)/(2*(dt^2));
+W(t) := at(diff(X(tt),tt),tt=t);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+W(t0)$ s(%);
+W(tm1)$ s(%);
+W(t1)$ s(%);
+/* [wxMaxima: input   end   ] */
+
+/* Maxima can't load/batch files which end with a comment! */
+"Created with wxMaxima"$
