@@ -413,8 +413,8 @@ hrulefill
 \begin_layout Standard
 \begin_inset Formula 
 \begin{eqnarray*}
-B_{ij}\,\,:\,\,\dfrac{\partial}{\partial\mathbf{u}^{j}}\left(\rho\mathbf{c}^{n+\theta}\cdot\nabla N^{i}\right)\left(\rho\delta_{t}\mathbf{u}+\rho\nabla\mathbf{u}^{n+\theta}\cdot\mathbf{c}^{n+\theta}+\nabla p^{n+1}-\rho\bm{g}^{n+\theta}\right) & =\\
-\theta\rho N^{j}\mathbf{R}\otimes\nabla N^{i}+\rho\mathbf{c}^{n+\theta}\cdot\nabla N^{i}\dfrac{\partial\mathbf{R}}{\partial\mathbf{u}}
+B_{ij}\,\,:\,\,\dfrac{\partial}{\partial\mathbf{u}^{j}}\left(\rho\mathbf{v}^{n+\theta}\cdot\nabla N^{i}\right)\left(\rho\delta_{t}\mathbf{u}+\rho\nabla\mathbf{u}^{n+\theta}\cdot\mathbf{v}^{n+\theta}+\nabla p^{n+1}-\rho\bm{g}^{n+\theta}\right) & =\\
+\theta\rho N^{j}\mathbf{R}\otimes\nabla N^{i}+\rho\mathbf{v}^{n+\theta}\cdot\nabla N^{i}\dfrac{\partial\mathbf{R}}{\partial\mathbf{u}}
 \end{eqnarray*}
 
 \end_inset
@@ -422,8 +422,8 @@ B_{ij}\,\,:\,\,\dfrac{\partial}{\partial\mathbf{u}^{j}}\left(\rho\mathbf{c}^{n+\
 onde
 \begin_inset Formula 
 \begin{eqnarray*}
-\mathbf{R} & = & \rho\delta_{t}\mathbf{u}+\rho\nabla\mathbf{u}^{n+\theta}\cdot\mathbf{c}^{n+\theta}+\nabla p^{n+1}-\rho\bm{g}^{n+\theta},\\
-\dfrac{\partial\mathbf{R}}{\partial\mathbf{u}} & = & \mathbb{I}\dfrac{\rho}{\Delta t}N^{j}+\rho\theta\left(N^{j}\nabla\mathbf{u}^{n+\theta}+\mathbb{I}\mathbf{c}^{n+\theta}\cdot\nabla N^{j}\right).
+\mathbf{R} & = & \rho\delta_{t}\mathbf{u}+\rho\nabla\mathbf{u}^{n+\theta}\cdot\mathbf{v}^{n+\theta}+\nabla p^{n+1}-\rho\bm{g}^{n+\theta},\\
+\dfrac{\partial\mathbf{R}}{\partial\mathbf{u}} & = & \mathbb{I}\dfrac{\rho}{\Delta t}N^{j}+\rho\theta\left(N^{j}\nabla\mathbf{u}^{n+\theta}+\mathbb{I}\mathbf{v}^{n+\theta}\cdot\nabla N^{j}\right).
 \end{eqnarray*}
 
 \end_inset
@@ -431,8 +431,8 @@ onde
 também,
 \begin_inset Formula 
 \begin{eqnarray*}
-H_{ij}\,\,:\,\,-\dfrac{\partial}{\partial\mathbf{u}^{j}}\nabla M^{i}\cdot\left(\rho\delta_{t}\mathbf{u}+\rho\nabla\mathbf{u}^{n+\theta}\cdot\mathbf{c}^{n+\theta}+\nabla p^{n+1}-\rho\bm{g}^{n+\theta}\right) & =\\
--\nabla M^{i}\cdot\dfrac{\partial\mathbf{R}}{\partial\mathbf{u}}
+H_{ij}\,\,:\,\,\dfrac{\partial}{\partial\mathbf{u}^{j}}\nabla M^{i}\cdot\left(\rho\delta_{t}\mathbf{u}+\rho\nabla\mathbf{u}^{n+\theta}\cdot\mathbf{v}^{n+\theta}+\nabla p^{n+1}-\rho\bm{g}^{n+\theta}\right) & =\\
+\nabla M^{i}\cdot\dfrac{\partial\mathbf{R}}{\partial\mathbf{u}}
 \end{eqnarray*}
 
 \end_inset
@@ -440,8 +440,8 @@ H_{ij}\,\,:\,\,-\dfrac{\partial}{\partial\mathbf{u}^{j}}\nabla M^{i}\cdot\left(\
 também
 \begin_inset Formula 
 \begin{eqnarray*}
-C_{ij}\,\,:\,\,\dfrac{\partial}{\partial p^{j}}\left(\rho\mathbf{c}^{n+\theta}\cdot\nabla N^{i}\right)\left(\rho\delta_{t}\mathbf{u}+\rho\nabla\mathbf{u}^{n+\theta}\cdot\mathbf{c}^{n+\theta}+\nabla p^{n+1}-\rho\bm{g}^{n+\theta}\right) & =\\
-\rho\mathbf{c}^{n+\theta}\cdot\nabla N^{i}\nabla M^{j}
+C_{ij}\,\,:\,\,\dfrac{\partial}{\partial p^{j}}\left(\rho\mathbf{v}^{n+\theta}\cdot\nabla N^{i}\right)\left(\rho\delta_{t}\mathbf{u}+\rho\nabla\mathbf{u}^{n+\theta}\cdot\mathbf{v}^{n+\theta}+\nabla p^{n+1}-\rho\bm{g}^{n+\theta}\right) & =\\
+\rho\mathbf{v}^{n+\theta}\cdot\nabla N^{i}\nabla M^{j}
 \end{eqnarray*}
 
 \end_inset
@@ -888,7 +888,7 @@ então
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\dfrac{\partial}{\partial u_{n}}\mathcal{F}_{n}=\partial_{u}F_{n}+\frac{1}{\alpha}\left(\frac{1}{\alpha}G_{nx}A_{bb}D_{xn}-A_{nb}D_{xn}-G_{nx}\partial_{u}F_{b}\right)-\frac{1}{\alpha}G_{nx}\partial_{u}(A{}_{bb}u_{b})+\partial_{u}(A{}_{nb}u_{b})
+\dfrac{\partial}{\partial u_{n}}\mathcal{F}_{n}=\partial_{u}F_{n}+\frac{1}{\alpha}\left(\frac{1}{\alpha}G_{nx}A_{bb}D_{xn}-A_{nb}D_{xn}-G_{nx}\partial_{u}F_{b}\right)-\frac{1}{\alpha}G_{nx}pa
 \]
 
 \end_inset
@@ -897,11 +897,112 @@ então
 \end_layout
 
 \begin_layout Standard
-e então:
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+hrulefill
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+hrulefill
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+DIRICHLET + CR-M
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+\mathcal{F}_{n}=A_{nn}u_{n}+A_{nb}u_{b}+G_{nc}p_{c}+G_{nx}p_{x}+Z_{nz}\sigma-f_{n} & = & 0\\
+\mathcal{F}_{b}=A_{bn}u_{n}+A_{bb}u_{b}+G_{bc}p_{c}+G_{bx}p_{x}+Z_{bz}\sigma-f_{b} & = & 0\\
+\mathcal{F}_{c}=D_{cn}u_{n}+D_{cb}u_{b}\qquad\qquad\qquad\qquad\qquad\qquad\quad & = & 0\\
+\mathcal{F}_{x}=D_{xn}u_{n}+D_{xb}u_{b}\qquad\qquad\qquad\qquad\qquad\qquad\quad & = & 0\\
+\mathcal{F}_{z}=W_{zn}u_{n}+W_{zb}u_{b}+Q_{zc}p_{c}+Q_{zx}p_{x}+M_{zz}\sigma\qquad & = & 0
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+\mathcal{F}_{n}=\left(A_{nn}-A_{nb}\dfrac{1}{\alpha}D_{xn}\right)u_{n}+G_{nc}p_{c}+G_{nx}p_{x}+Z_{nz}\sigma-f_{n} & = & 0\\
+\mathcal{F}_{b}=\left(A_{bn}-A_{bb}\dfrac{1}{\alpha}D_{xn}\right)u_{n}+G_{bx}p_{x}+Z_{bz}\sigma-f_{b}\qquad\qquad & = & 0\\
+\mathcal{F}_{c}=D_{cn}u_{n}\qquad\qquad\qquad\qquad\qquad\qquad\qquad\quad & = & 0\\
+\mathcal{F}_{z}=\left(W_{zn}-W_{zb}\dfrac{1}{\alpha}D_{xn}\right)u_{n}+Q_{zc}p_{c}+Q_{zx}p_{x}+M_{zz}\sigma\qquad & = & 0
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
 \begin_inset Formula 
 \[
-\dfrac{\partial}{\partial u_{n}}\mathcal{F}_{n}=S_{nn}+\frac{1}{\alpha}\left(\frac{1}{\alpha}G_{nx}A_{bb}D_{xn}-A_{nb}D_{xn}-G_{nx}S_{bn}\right)
+u_{b}=-\dfrac{1}{\alpha}D_{xn}u_{n}
 \]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+\mathcal{F}_{n}=\left(A_{nn}-A_{nb}\dfrac{1}{\alpha}D_{xn}\right)u_{n}+G_{nc}p_{c}+G_{nx}\dfrac{1}{\alpha}\left[-\left(A_{bn}-A_{bb}\dfrac{1}{\alpha}D_{xn}\right)u_{n}-Z_{bz}\sigma+f_{b}\right]+Z_{nz}\sigma-f_{n} & = & 0\\
+\mathcal{F}_{c}=D_{cn}u_{n}\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\quad & = & 0\\
+\mathcal{F}_{z}=\left(W_{zn}-W_{zb}\dfrac{1}{\alpha}D_{xn}\right)u_{n}+Q_{zc}p_{c}+Q_{zx}p_{x}+M_{zz}\sigma\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad & = & 0
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+p_{x}=\dfrac{1}{\alpha}\left[-\left(A_{bn}-A_{bb}\dfrac{1}{\alpha}D_{xn}\right)u_{n}-Z_{bz}\sigma+f_{b}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+\mathcal{F}_{n}=\left(A_{nn}+\frac{1}{\alpha^{2}}G_{nx}A_{bb}D_{xn}-\frac{1}{\alpha}A_{nb}D_{xn}-\frac{1}{\alpha}G_{nx}A_{bn}\right)u_{n}+G_{nc}p_{c}+\left(Z_{nz}-\dfrac{1}{\alpha}G_{nx}Z_{bz}\right)\sigma-\left(f_{n}-\dfrac{1}{\alpha}G_{nx}f_{b}\right) & = & 0\\
+\mathcal{F}_{c}=D_{cn}u_{n}\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\quad & = & 0\\
+\mathcal{F}_{z}=\left(W_{zn}-\dfrac{1}{\alpha}W_{zb}D_{xn}\right)u_{n}+Q_{zc}p_{c}+Q_{zx}p_{x}+M_{zz}\sigma\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad & = & 0
+\end{eqnarray*}
 
 \end_inset
 

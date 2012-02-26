@@ -1,12 +1,12 @@
 -dim 2  				        # cell dimension (= space dimension)
 -dt 0.015625                # time step
 -renumber_dofs 0        # dofs renumbering
--maxts 1280              # maximum number of time steps
--print_step 1000          # print step
+-maxts 1280               # maximum number of time steps
+-print_step 1000        # print step
 -has_convec 1           # convective term: true or false
 -unsteady   1           # steady or unsteady problem
 -boundary_smoothing 0
--force_mesh_velocity 1 # imposes the mesh velocity of boundary grid
+-force_mesh_velocity 1  # imposes the mesh velocity of boundary grid
 -fprint_ca 0            # print contact angle at file ContactHistory
 -beta1 0.0              # Vmesh = bet1 * Ufluid  +  bet2 * Uelastic
 -beta2 1.0  

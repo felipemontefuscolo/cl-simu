@@ -390,6 +390,7 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
         } // fim quadratura
 
         Dloc += Gloc.transpose();
+        Gloc /= utheta;
 
         /* estabilização */
         /*

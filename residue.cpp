@@ -304,7 +304,7 @@ void AppCtx::formCellFunction(cell_iterator &cell,
   Vector              Vqp(dim);
   Vector              Uconv_qp(dim);
   Vector              dUdt(dim);
-  double              Pqp=0;
+  double              Pqp=0, Pqp_new;
   double              bble_integ=0;
 
   VectorXi            cell_nodes(nodes_per_cell);
@@ -442,15 +442,16 @@ void AppCtx::formCellFunction(cell_iterator &cell,
     dxP  = dxpsi_c.transpose() * p_coefs_c_mid;
     dxU  = u_coefs_c_mid_trans * dxphi_c;       // n+utheta
 
-    Xqp  = x_coefs_c_mid_trans * qsi_c[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
-    Uqp  = u_coefs_c_mid_trans * phi_c[qp]; //n+utheta
+    Xqp      = x_coefs_c_mid_trans * qsi_c[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
+    Uqp      = u_coefs_c_mid_trans * phi_c[qp]; //n+utheta
     Uqp_new  = u_coefs_c_new_trans * phi_c[qp]; //n+utheta
     Uqp_old  = u_coefs_c_old_trans * phi_c[qp]; //n+utheta
-    Pqp  = p_coefs_c_mid.dot(psi_c[qp]);
-    Vqp  = v_coefs_c_mid_trans * qsi_c[qp];
+    Pqp      = p_coefs_c_mid.dot(psi_c[qp]);
+    Pqp_new  = p_coefs_c_new.dot(psi_c[qp]);
+    Vqp      = v_coefs_c_mid_trans * qsi_c[qp];
     Uconv_qp = Uqp - Vqp;
     //Uconv_qp = Uqp_old;
-    dUdt    = (Uqp_new-Uqp_old)/dt;
+    dUdt     = (Uqp_new-Uqp_old)/dt;
 
     force_at_theta = utheta*force(Xqp,current_time+dt,tag) + (1.-utheta)*force(Xqp,current_time,tag);
 
@@ -481,7 +482,7 @@ void AppCtx::formCellFunction(cell_iterator &cell,
         FUloc(i*dim + c) += Jx_mid*weight*
                 ( rho*(dUdt(c) + has_convec*Uconv_qp.dot(dxU.row(c)))*phi_c[qp][i] + // aceleração
                   visc*dxphi_c.row(i).dot(dxU.row(c) + dxU.col(c).transpose()) - //rigidez
-                  Pqp*dxphi_c(i,c) - // pressão
+                  Pqp_new*dxphi_c(i,c) - // pressão
                   force_at_theta(c)*phi_c[qp][i]   ); // força
 
       }
