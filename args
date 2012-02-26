@@ -1,7 +1,7 @@
 -dim 2  				        # cell dimension (= space dimension)
--dt 0.25                # time step
+-dt 0.015625                # time step
 -renumber_dofs 0        # dofs renumbering
--maxts 80              # maximum number of time steps
+-maxts 1280              # maximum number of time steps
 -print_step 1000          # print step
 -has_convec 1           # convective term: true or false
 -unsteady   1           # steady or unsteady problem
@@ -40,7 +40,7 @@ pc_factor_diagonal_fill
 
 pc_factor_fill 3.22746e-06
 pc_factor_in_place
-ksp_rtol 1e-12 #<1e-8>
+-ksp_rtol 1e-12 #<1e-8>
 
 -fp_trap 1           # stop on floating-point exceptions
 -on_error_abort 1

@@ -1162,7 +1162,7 @@ Vector v_exact(Vector const& , double , int ) //(X,t,tag)
 
 #if (PROBLEM_TYPE==COUETTE)
 
-double const w_ = 0*pi;
+double const w_ = pi;
 
 double pho(Vector const& X, int tag)
 {
