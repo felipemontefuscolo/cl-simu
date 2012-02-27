@@ -79,7 +79,7 @@ double gama(Vector const& X, double t, int tag);
 double cos_theta0();
 double zeta(double u_norm, double angle);
 double beta_diss();
-double muu(double t, int tag);
+double muu(int tag);
 Vector force(Vector const& X, double t, int tag);
 Vector u_exact(Vector const& X, double t, int tag);
 Vector traction(Vector const& X, double t, int tag);

@@ -995,44 +995,6 @@ void AppCtx::setInitialConditions()
     
   } // end point loop 
 
-  // pressão inicial
-  if (shape_psi_c->discontinuous())
-  {
-    cell_iterator cell = mesh->cellBegin();
-    cell_iterator cell_end = mesh->cellEnd();
-    for (; cell != cell_end; ++cell)
-    {
-      tag = cell->getTag();
-      
-      mesh->getCenterCoord(&*cell, X.data());
-      
-      pf = p_initial(X,tag);
-      
-      dof_handler[DH_UNKS].getVariable(VAR_P).getCellAssociatedDofs(&dof,&*cell);
-      
-      VecSetValues(Vec_up_0, 1, &dof, &pf, INSERT_VALUES);
-    }
-  }
-  else
-  {
-    point = mesh->pointBegin();
-    point_end = mesh->pointEnd();
-    for (; point != point_end; ++point)
-    {
-      if (mesh->isVertex(&*point))
-        continue;
-        
-      tag = point->getTag();
-
-      point->getCoord(X.data());
-
-      pf = p_initial(X,tag);
-
-      dof_handler[DH_UNKS].getVariable(VAR_P).getVertexAssociatedDofs(&dof,&*point);
-      
-      VecSetValues(Vec_up_0, 1, &dof, &pf, INSERT_VALUES);
-    } // end point loop     
-  }
   
   Assembly(Vec_up_0);
   VecCopy(Vec_up_0,Vec_up_1);

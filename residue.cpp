@@ -254,20 +254,16 @@ void AppCtx::formCellFunction(cell_iterator &cell,
 
   /* local data */
   int                 tag;
-  //MatrixXd            u_coefs_c(n_dofs_u_per_cell/dim, dim);
   MatrixXd            u_coefs_c_mid_trans(dim, n_dofs_u_per_cell/dim); // n+utheta
   MatrixXd            u_coefs_c_old(n_dofs_u_per_cell/dim, dim);        // n
   MatrixXd            u_coefs_c_old_trans(dim,n_dofs_u_per_cell/dim);   // n
-  //MatrixXd           u_coefs_c_new(n_dofs_u_per_cell/dim, dim);       // n+1
   MatrixXd            u_coefs_c_new_trans(dim,n_dofs_u_per_cell/dim);   // n+1
 
   MatrixXd            v_coefs_c_trans(dim, nodes_per_cell);      // mesh velocity; n+utheta
   MatrixXd            v_coefs_c_mid(nodes_per_cell, dim);       // mesh velocity; n
   MatrixXd            v_coefs_c_mid_trans(dim,nodes_per_cell);  // mesh velocity; n
 
-  //VectorXd           p_coefs_c_new(n_dofs_p_per_cell);  // n+1
-  VectorXd            p_coefs_c_old(n_dofs_p_per_cell);    // n
-  VectorXd            p_coefs_c_mid(n_dofs_p_per_cell);   // n+utheta
+  //VectorXd            p_coefs_c_old(n_dofs_p_per_cell);    // n
   
   //MatrixXd            x_coefs_c_mid(nodes_per_cell, dim);       // n+utheta
   MatrixXd            x_coefs_c_mid_trans(dim, nodes_per_cell); // n+utheta
@@ -279,12 +275,12 @@ void AppCtx::formCellFunction(cell_iterator &cell,
   Tensor              F_c_mid(dim,dim);       // n+utheta
   Tensor              invF_c_mid(dim,dim);    // n+utheta
   Tensor              invFT_c_mid(dim,dim);   // n+utheta
-  Tensor              F_c_new(dim,dim);       // n+1
-  Tensor              invF_c_new(dim,dim);    // n+1
-  Tensor              invFT_c_new(dim,dim);   // n+1
-  Tensor              F_c_old(dim,dim);       // n
-  Tensor              invF_c_old(dim,dim);    // n
-  Tensor              invFT_c_old(dim,dim);   // n
+  //Tensor              F_c_new(dim,dim);       // n+1
+  //Tensor              invF_c_new(dim,dim);    // n+1
+  //Tensor              invFT_c_new(dim,dim);   // n+1
+  //Tensor              F_c_old(dim,dim);       // n
+  //Tensor              invF_c_old(dim,dim);    // n
+  //Tensor              invFT_c_old(dim,dim);   // n
   
   /* All variables are in (n+utheta) by default */
   
@@ -294,7 +290,7 @@ void AppCtx::formCellFunction(cell_iterator &cell,
   Vector              dxbble(dim);
   Tensor              dxU(dim,dim);   // grad u
   Tensor              dxUb(dim,dim);  // grad u bble
-  Vector              dxP(dim);   // grad p
+  Vector              dxP_new(dim);   // grad p
   Vector              Xqp(dim);
   Vector              Xc(dim);  // cell center; to compute CR element
   Vector              Uqp(dim);
@@ -304,11 +300,12 @@ void AppCtx::formCellFunction(cell_iterator &cell,
   Vector              Vqp(dim);
   Vector              Uconv_qp(dim);
   Vector              dUdt(dim);
-  double              Pqp=0, Pqp_new;
+  double              Pqp_new;
   double              bble_integ=0;
 
   VectorXi            cell_nodes(nodes_per_cell);
-  double              Jx_mid, Jx_new, Jx_old;
+  double              J_mid, J_new, J_old;
+  double              JxW_mid;
   double              weight=0;
   double              visc=-1; // viscosity
   double              cell_volume=0;
@@ -327,7 +324,7 @@ void AppCtx::formCellFunction(cell_iterator &cell,
   Vector              FUb(dim);
   Vector              FPx(dim); // pressure gradient
 
-  Vector              force_at_theta(dim);
+  Vector              force_at_mid(dim);
   Vector              Res(dim);                                     // residue
   Tensor const        I(Tensor::Identity(dim,dim));
   Vector              vec(dim);     // temp
@@ -347,12 +344,11 @@ void AppCtx::formCellFunction(cell_iterator &cell,
   VecGetValues(Vec_x_0,     mapM_c.size(), mapM_c.data(), x_coefs_c_old.data());
   VecGetValues(Vec_x_1,     mapM_c.size(), mapM_c.data(), x_coefs_c_new.data());
   VecGetValues(Vec_up_0,    mapU_c.size(), mapU_c.data(), u_coefs_c_old.data());
-  VecGetValues(Vec_up_0,    mapP_c.size(), mapP_c.data(), p_coefs_c_old.data());
   
   // get nodal coordinates of the old and new cell
   mesh->getCellNodesId(&*cell, cell_nodes.data());
   //mesh->getNodesCoords(cell_nodes.begin(), cell_nodes.end(), x_coefs_c.data());
-  //x_coefs_c_trans = x_coefs_c.transpose();
+  //x_coefs_c_trans = x_coefs_c_mid_trans;
   
   v_coefs_c_mid_trans = v_coefs_c_mid.transpose();
   x_coefs_c_old_trans = x_coefs_c_old.transpose();
@@ -362,14 +358,13 @@ void AppCtx::formCellFunction(cell_iterator &cell,
 
   u_coefs_c_mid_trans = utheta*u_coefs_c_new_trans + (1.-utheta)*u_coefs_c_old_trans;
   x_coefs_c_mid_trans = utheta*x_coefs_c_new_trans + (1.-utheta)*x_coefs_c_old_trans;
-  p_coefs_c_mid       = utheta*p_coefs_c_new       + (1.-utheta)*p_coefs_c_old;
 
-  visc = muu(current_time, tag);
+  visc = muu(tag);
   rho  = pho(Xqp,tag);
   FUloc.setZero();
   FPloc.setZero();
   
-  /*
+  
   if (behaviors & BH_bble_condens_PnPn)
   {
     iBbb.setZero();
@@ -382,9 +377,9 @@ void AppCtx::formCellFunction(cell_iterator &cell,
   {
     cell_volume = 0;
     for (int qp = 0; qp < n_qpts_cell; ++qp) {
-      F_c_mid = x_coefs_c.transpose() * dLqsi_c[qp];
-      Jx_mid = determinant(F_c_mid,dim);
-      cell_volume += Jx_mid * quadr_cell->weight(qp);
+      F_c_mid = x_coefs_c_mid_trans * dLqsi_c[qp];
+      J_mid = determinant(F_c_mid,dim);
+      cell_volume += J_mid * quadr_cell->weight(qp);
     }
 
     hk2 = cell_volume / pi; // element size
@@ -410,60 +405,60 @@ void AppCtx::formCellFunction(cell_iterator &cell,
     cell_volume = 0;
     Xc.setZero();
     for (int qp = 0; qp < n_qpts_cell; ++qp) {
-      F_c_mid = x_coefs_c_trans * dLqsi_c[qp];
-      Jx_mid = determinant(F_c_mid,dim);
-      Xqp  = x_coefs_c_trans * qsi_c[qp];
-      cell_volume += Jx_mid * quadr_cell->weight(qp);
-      Xc += Jx_mid * quadr_cell->weight(qp) * Xqp;
+      F_c_mid = x_coefs_c_mid_trans * dLqsi_c[qp];
+      J_mid = determinant(F_c_mid,dim);
+      Xqp  = x_coefs_c_mid_trans * qsi_c[qp];
+      cell_volume += J_mid * quadr_cell->weight(qp);
+      Xc += J_mid * quadr_cell->weight(qp) * Xqp;
     }
     Xc /= cell_volume;
   }
-  */
+  
 
   // Quadrature
   for (int qp = 0; qp < n_qpts_cell; ++qp)
   {
     //F_c_new = x_coefs_c_new_trans * dLqsi_c[qp];
-    //inverseAndDet(F_c_new,dim,invF_c_new,Jx_new);
+    //inverseAndDet(F_c_new,dim,invF_c_new,J_new);
     //invFT_c_new= invF_c_new.transpose();
-    //
+    
     //F_c_old = x_coefs_c_old_trans * dLqsi_c[qp];
-    //inverseAndDet(F_c_old,dim,invF_c_old,Jx_old);
+    //inverseAndDet(F_c_old,dim,invF_c_old,J_old);
     //invFT_c_old= invF_c_old.transpose();
     
     F_c_mid = x_coefs_c_mid_trans * dLqsi_c[qp];
-    inverseAndDet(F_c_mid,dim,invF_c_mid,Jx_mid);
+    inverseAndDet(F_c_mid,dim,invF_c_mid,J_mid);
     invFT_c_mid= invF_c_mid.transpose();
 
     dxphi_c = dLphi_c[qp] * invF_c_mid;
     dxpsi_c = dLpsi_c[qp] * invF_c_mid;
     dxqsi_c = dLqsi_c[qp] * invF_c_mid;
 
-    dxP  = dxpsi_c.transpose() * p_coefs_c_mid;
+    dxP_new  = dxpsi_c.transpose() * p_coefs_c_new;
     dxU  = u_coefs_c_mid_trans * dxphi_c;       // n+utheta
 
     Xqp      = x_coefs_c_mid_trans * qsi_c[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
     Uqp      = u_coefs_c_mid_trans * phi_c[qp]; //n+utheta
     Uqp_new  = u_coefs_c_new_trans * phi_c[qp]; //n+utheta
     Uqp_old  = u_coefs_c_old_trans * phi_c[qp]; //n+utheta
-    Pqp      = p_coefs_c_mid.dot(psi_c[qp]);
     Pqp_new  = p_coefs_c_new.dot(psi_c[qp]);
     Vqp      = v_coefs_c_mid_trans * qsi_c[qp];
     Uconv_qp = Uqp - Vqp;
     //Uconv_qp = Uqp_old;
     dUdt     = (Uqp_new-Uqp_old)/dt;
 
-    force_at_theta = utheta*force(Xqp,current_time+dt,tag) + (1.-utheta)*force(Xqp,current_time,tag);
+    force_at_mid = force(Xqp,current_time+utheta*dt,tag);
 
     weight = quadr_cell->weight(qp);
+    JxW_mid = J_mid*weight;
 
-    if (Jx_mid < 1.e-10)
+    if (J_mid < 1.e-10)
     {
       //#pragma omp critical
       //if (tid==0)
       {
         std::cout << "erro: jacobiana da integral não invertível: ";
-        std::cout << "Jx_mid = " << Jx_mid << endl;
+        std::cout << "J_mid = " << J_mid << endl;
         cout << "trans matrix:\n" << F_c_mid << endl;
         cout << "x coefs mid:" << endl;
         cout << x_coefs_c_mid_trans.transpose() << endl;
@@ -477,23 +472,31 @@ void AppCtx::formCellFunction(cell_iterator &cell,
 
     for (int i = 0; i < n_dofs_u_per_cell/dim; ++i)
     {
-      for (int c = 0; c < dim; ++c)
-      {
-        FUloc(i*dim + c) += Jx_mid*weight*
-                ( rho*(dUdt(c) + has_convec*Uconv_qp.dot(dxU.row(c)))*phi_c[qp][i] + // aceleração
-                  visc*dxphi_c.row(i).dot(dxU.row(c) + dxU.col(c).transpose()) - //rigidez
-                  Pqp_new*dxphi_c(i,c) - // pressão
-                  force_at_theta(c)*phi_c[qp][i]   ); // força
-
-      }
+      //for (int c = 0; c < dim; ++c)
+      //{
+      //  FUloc(i*dim + c) += JxW_mid*
+      //          ( rho*(dUdt(c) + has_convec*Uconv_qp.dot(dxU.row(c)))*phi_c[qp][i] + // aceleração
+      //            visc*dxphi_c.row(i).dot(dxU.row(c) + dxU.col(c).transpose()) - //rigidez
+      //            Pqp_new*dxphi_c(i,c) - // pressão
+      //            force_at_mid(c)*phi_c[qp][i]   ); // força
+      //
+      //}
+      
+      FUloc.segment(i*dim,dim) += JxW_mid*
+                              (   phi_c[qp][i]*rho* (  dUdt + has_convec* dxU*Uconv_qp  ) // aceleração
+                                + visc* ( dxU + dxU.transpose() )*dxphi_c.row(i).transpose()       //rigidez
+                                - Pqp_new*dxphi_c.row(i).transpose() // pressão
+                                - phi_c[qp][i]* force_at_mid   ); // força
+      
     }
     for (int i = 0; i < n_dofs_p_per_cell; ++i)
-      FPloc(i) -= Jx_mid*weight* dxU.trace()*psi_c[qp][i];
+      FPloc(i) -= JxW_mid* dxU.trace()*psi_c[qp][i];
 
-    /* ----------------
-      * stabilization
-      * ---------------- */
-    /*
+    // ----------------
+    //
+    //  STABILIZATION
+    //
+    //  ----------------
     if (behaviors & (BH_bble_condens_PnPn | BH_bble_condens_CR))
     {
       dxbble = invFT_c_mid * dLbble[qp];
@@ -505,16 +508,16 @@ void AppCtx::formCellFunction(cell_iterator &cell,
           for (int d = 0; d < dim; d++)
           {
             delta_cd = c==d;
-            Bnb(j*dim + d, c) += Jx_mid*weight*
-                                 ( has_convec*phi_c[qp][j]*utheta *pho(Xqp,tag)*(  delta_cd*Uconv_qp.dot(dxbble)  )   // convective
-                                 + delta_cd*pho(Xqp,tag)*phi_c[qp][j]*bble[qp]/dt     // time derivative
+            Bnb(j*dim + d, c) += JxW_mid*
+                                 ( has_convec*phi_c[qp][j]*utheta *rho*(  delta_cd*Uconv_qp.dot(dxbble)  )   // convective
+                                 + delta_cd*rho*phi_c[qp][j]*bble[qp]/dt     // time derivative
                                  + utheta*visc*(delta_cd * dxphi_c.row(j).dot(dxbble) + dxphi_c(j,c)*dxbble(d)) );    // rigidez
 
           }
         }
         if (behaviors & BH_bble_condens_PnPn)
           for (int j = 0; j < n_dofs_p_per_cell; ++j)
-            Gbp(c, j) -= Jx_mid*weight*psi_c[qp][j]*dxbble(c);
+            Gbp(c, j) -= JxW_mid*psi_c[qp][j]*dxbble(c);
       }
 
       for (int c = 0; c < dim; c++)
@@ -522,62 +525,63 @@ void AppCtx::formCellFunction(cell_iterator &cell,
         for (int d = 0; d < dim; d++)
         {
           delta_cd = c==d;
-          iBbb(c, d) += Jx_mid*weight*
+          iBbb(c, d) += JxW_mid*
                         ( has_convec*bble[qp]*utheta *rho*( delta_cd*Uconv_qp.dot(dxbble) )   // convective
-                        + delta_cd*pho(Xqp,tag)*bble[qp]*bble[qp]/dt     // time derivative
+                        + delta_cd*rho*bble[qp]*bble[qp]/dt     // time derivative
                         + utheta*visc*(delta_cd* dxbble.dot(dxbble)  + dxbble(d)*dxbble(c)) ); // rigidez
         }
 
-        FUb(c) += Jx_mid*weight*
+        FUb(c) += JxW_mid*
                   ( bble[qp]*rho*(dUdt(c) + has_convec*Uconv_qp.dot(dxU.row(c))) + // time derivative + convective
                     visc*dxbble.dot(dxU.row(c) + dxU.col(c).transpose()) - //rigidez
-                    Pqp*dxbble(c) -                     // pressão
-                    force_at_theta(c)*bble[qp]   ); // força
+                    Pqp_new*dxbble(c) -                     // pressão
+                    force_at_mid(c)*bble[qp]   ); // força
       }
     }
     else
     if(behaviors & BH_GLS)
     {
-      Res = rho*( dUdt +  has_convec*dxU*Uconv_qp) + dxP - force_at_theta;
+      Res = rho*( dUdt +  has_convec*dxU*Uconv_qp) + dxP_new - force_at_mid;
       
       for (int i = 0; i < n_dofs_u_per_cell/dim; i++)
       {
-        vec = Jx_mid*weight*(  has_convec*tauk*  rho* Uconv_qp.dot(dxphi_c.row(i)) * Res    +   delk*dxU.trace()*dxphi_c.row(i).transpose() );
+        vec = JxW_mid*(  has_convec*tauk*  rho* Uconv_qp.dot(dxphi_c.row(i)) * Res    +   delk*dxU.trace()*dxphi_c.row(i).transpose() );
         
         for (int c = 0; c < dim; c++)
           FUloc(i*dim + c) += vec(c);
           
       }
       for (int i = 0; i < n_dofs_p_per_cell; ++i)
-        FPloc(i) -= Jx_mid*weight *tauk* dxpsi_c.row(i).dot(Res);
+        FPloc(i) -= JxW_mid *tauk* dxpsi_c.row(i).dot(Res);
     }
 
     if (behaviors & BH_bble_condens_CR)
     {
-      bble_integ += Jx_mid*weight*bble[qp];
+      bble_integ += JxW_mid*bble[qp];
 
       for (int c = 0; c < dim; ++c)
       {
         for (int i = 0; i < n_dofs_u_per_cell/dim; ++i)
           for (int j = 0; j < dim; ++j) // pressure gradient
-            Gnx(i*dim + c,j) -= Jx_mid*weight* (Xqp(j) - Xc(j))*dxphi_c(i,c);
+            Gnx(i*dim + c,j) -= JxW_mid* (Xqp(j) - Xc(j))*dxphi_c(i,c);
 
-        FPx(c) -= Jx_mid*weight* dxU_new.trace()*(Xqp(c) - Xc(c));
+        FPx(c) -= JxW_mid* dxU.trace()*(Xqp(c) - Xc(c));
       }
     }
-    */
+    
+  
   } // fim quadratura
 
-  
-  /* stabilization */
-  /*
+  //
+  // stabilization
+  //
   if (behaviors & BH_bble_condens_PnPn)
   {
     //iBbb = iBbb.inverse().eval();
     invert(iBbb,dim);
     
     FUloc = FUloc - Bnb*iBbb*FUb;
-    FPloc = FPloc - Gbp.transpose()*iBbb*FUb;
+    FPloc = FPloc - utheta*Gbp.transpose()*iBbb*FUb;
   }
 
   if(behaviors & BH_bble_condens_CR)
@@ -587,7 +591,7 @@ void AppCtx::formCellFunction(cell_iterator &cell,
     
     FUloc +=  a*Gnx*iBbb*FPx - b*Bnb*FPx - b*Gnx*FUb;
   }
-  */
+  
 
 
   //PetscFunctionReturn(0);
@@ -597,42 +601,59 @@ void AppCtx::formCellFunction(cell_iterator &cell,
 // ***********
 // form the residue of the facet
 void AppCtx::formFacetFunction(facet_iterator &facet,
-                       VectorXi const&/*mapU_f*/,  VectorXi const&/*mapP_f*/, // mappers
-                       MatrixXd &u_coefs_f,  VectorXd &/*p_coefs_f*/, // coefficients
+                       VectorXi const& mapU_f,  VectorXi const& mapP_f,   // mappers
+                       MatrixXd &u_coefs_f_new,  VectorXd &p_coefs_f_new, // coefficients
                        VectorXd &FUloc) // output: local residue
 {
   int                 tag;
   bool                is_neumann;
   bool                is_surface;
   bool                is_solid;
-  //MatrixXd           u_coefs_f(n_dofs_u_per_facet/dim, dim);
+  //MatrixXd           u_coefs_c_new(n_dofs_u_per_facet/dim, dim);
   //VectorXd           p_coefs_f(n_dofs_p_per_facet);
-  MatrixXd            u_coefs_f_trans(dim, n_dofs_u_per_facet/dim);
-  MatrixXd             x_coefs_f(nodes_per_facet, dim);
-  MatrixXd            x_coefs_f_trans(dim, nodes_per_facet);
-  Tensor              F_f(dim,dim-1);
-  Tensor              invF_f(dim-1,dim);
+  MatrixXd            u_coefs_f_mid_trans(dim, n_dofs_u_per_facet/dim);  // n+utheta
+  MatrixXd            u_coefs_f_old(n_dofs_u_per_facet/dim, dim);        // n
+  MatrixXd            u_coefs_f_old_trans(dim,n_dofs_u_per_facet/dim);   // n
+  MatrixXd            u_coefs_f_new_trans(dim,n_dofs_u_per_facet/dim);   // n+1
+  
+  MatrixXd            x_coefs_f_mid_trans(dim, nodes_per_facet); // n+utheta
+  MatrixXd            x_coefs_f_new(nodes_per_facet, dim);       // n+1
+  MatrixXd            x_coefs_f_new_trans(dim, nodes_per_facet); // n+1
+  MatrixXd            x_coefs_f_old(nodes_per_facet, dim);       // n
+  MatrixXd            x_coefs_f_old_trans(dim, nodes_per_facet); // n
+  
+  Tensor              F_f_mid(dim,dim-1);       // n+utheta
+  Tensor              invF_f_mid(dim-1,dim);    // n+utheta
+  Tensor              fff_f_mid(dim-1,dim-1);   // n+utheta; first fundamental form
+  //Tensor              invFT_c_mid(dim,dim);   // n+utheta  
+  
   MatrixXd            dxphi_f(n_dofs_u_per_facet/dim, dim);
   Tensor              dxU_f(dim,dim);   // grad u
   Vector              Xqp(dim);
+  Vector              Xqp_new(dim);
+  Vector              Xqp_old(dim);
   Vector              Uqp(dim);
+  Vector              Uqp_new(dim);
+  Vector              Uqp_old(dim);
   //VectorXd          FUloc(n_dofs_u_per_facet);
   MatrixXd            Aloc_f(n_dofs_u_per_facet, n_dofs_u_per_facet);
   VectorXi            facet_nodes(nodes_per_facet);
   Vector              normal(dim);
-  double              Jx_mid=0;
+  double              J_mid=0,JxW_mid;
   double              weight=0;
+  double              visc;
+  double              rho;
 
-  VectorXi               mapM_f(dim*nodes_per_facet);
+  VectorXi            mapM_f(dim*nodes_per_facet);
 
-  MatrixXd         R(n_dofs_u_per_facet,n_dofs_u_per_facet);
-  MatrixXd         tmp;
-  Vector           traction_(dim);
+  Vector              traction_(dim);
 
   // ----- computations ------
   FUloc.setZero();
 
   tag = facet->getTag();
+
+  dof_handler[DH_MESH].getVariable(VAR_M).getFacetDofs(mapM_f.data(), &*facet);
 
   is_neumann = (neumann_tags.end() != std::find(neumann_tags.begin(), neumann_tags.end(), tag));
   is_surface = (interface_tags.end() != std::find(interface_tags.begin(), interface_tags.end(), tag));
@@ -642,43 +663,58 @@ void AppCtx::formFacetFunction(facet_iterator &facet,
     //PetscFunctionReturn(0);
     return;
 
-  mesh->getFacetNodesId(&*facet, facet_nodes.data());
-  mesh->getNodesCoords(facet_nodes.begin(), facet_nodes.end(), x_coefs_f.data());
-  x_coefs_f_trans = x_coefs_f.transpose();
+  //mesh->getFacetNodesId(&*facet, facet_nodes.data());
+  //mesh->getNodesCoords(facet_nodes.begin(), facet_nodes.end(), x_coefs_f.data());
+  //x_coefs_f_mid_trans = x_coefs_f.transpose();
 
-
+  VecGetValues(Vec_x_0,     mapM_f.size(), mapM_f.data(), x_coefs_f_old.data());
+  VecGetValues(Vec_x_1,     mapM_f.size(), mapM_f.data(), x_coefs_f_new.data());
+  VecGetValues(Vec_up_0,    mapU_f.size(), mapU_f.data(), u_coefs_f_old.data());
   
-  u_coefs_f_trans = u_coefs_f.transpose();
+  // get nodal coordinates of the old and new cell
+  mesh->getFacetNodesId(&*facet, facet_nodes.data());
+  //mesh->getNodesCoords(cell_nodes.begin(), cell_nodes.end(), x_foefs_f.data());
+  //x_foefs_f_trans = x_foefs_f.transpose();
+  
+  x_coefs_f_old_trans = x_coefs_f_old.transpose();
+  x_coefs_f_new_trans = x_coefs_f_new.transpose();
+  u_coefs_f_old_trans = u_coefs_f_old.transpose();
+  u_coefs_f_new_trans = u_coefs_f_new.transpose();
+
+  u_coefs_f_mid_trans = utheta*u_coefs_f_new_trans + (1.-utheta)*u_coefs_f_old_trans;
+  x_coefs_f_mid_trans = utheta*x_coefs_f_new_trans + (1.-utheta)*x_coefs_f_old_trans;
+
+  visc = muu(tag);
+  rho  = pho(Xqp,tag);
 
 
   for (int qp = 0; qp < n_qpts_facet; ++qp)
   {
 
-    F_f   = x_coefs_f_trans * dLqsi_f[qp];
+    F_f_mid   = x_coefs_f_mid_trans * dLqsi_f[qp];
 
-    tmp.resize(dim-1,dim-1);
-    tmp = F_f.transpose()*F_f;
-    Jx_mid = sqrt(tmp.determinant());
-    tmp = tmp.inverse();
-    invF_f = tmp*F_f.transpose();
-
+    fff_f_mid.resize(dim-1,dim-1);
+    fff_f_mid  = F_f_mid.transpose()*F_f_mid;
+    J_mid     = sqrt(fff_f_mid.determinant());
+    invF_f_mid = fff_f_mid.inverse()*F_f_mid.transpose();
 
     weight  = quadr_facet->weight(qp);
-    Xqp     = x_coefs_f_trans * qsi_f[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
-    dxphi_f = dLphi_f[qp] * invF_f;
-    dxU_f   = u_coefs_f_trans * dxphi_f; // n+utheta
-    Uqp  = u_coefs_f_trans * phi_f[qp];
+    JxW_mid = J_mid*weight;
+    Xqp     = x_coefs_f_mid_trans * qsi_f[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
+    dxphi_f = dLphi_f[qp] * invF_f_mid;
+    dxU_f   = u_coefs_f_mid_trans * dxphi_f; // n+utheta
+    Uqp     = u_coefs_f_mid_trans * phi_f[qp];
 
     if (is_neumann)
     //traction_ = utheta*(traction(Xqp,current_time+dt,tag)) + (1.-utheta)*traction(Xqp,current_time,tag);
-    traction_ = traction(Xqp,current_time + dt,tag);
+    traction_ = traction(Xqp,current_time + dt/2,tag);
     //traction_ = (traction(Xqp,current_time,tag) +4.*traction(Xqp,current_time+dt/2.,tag) + traction(Xqp,current_time+dt,tag))/6.;
     
       for (int i = 0; i < n_dofs_u_per_facet/dim; ++i)
       {
         for (int c = 0; c < dim; ++c)
         {
-          FUloc(i*dim + c) -= Jx_mid*weight * traction_(c) * phi_f[qp][i] ; // força
+          FUloc(i*dim + c) -= JxW_mid * traction_(c) * phi_f[qp][i] ; // força
         }
       }
 
@@ -687,7 +723,7 @@ void AppCtx::formFacetFunction(facet_iterator &facet,
       {
         for (int c = 0; c < dim; ++c)
         {
-          FUloc(i*dim + c) += Jx_mid*weight *gama(Xqp,current_time,tag)*
+          FUloc(i*dim + c) += JxW_mid *gama(Xqp,current_time,tag)*
                                           (dxphi_f(i,c) + 0*(unsteady*dt) *dxU_f.row(c).dot(dxphi_f.row(i)));
         }
       }
@@ -697,7 +733,7 @@ void AppCtx::formFacetFunction(facet_iterator &facet,
       {
         for (int c = 0; c < dim; ++c)
         {
-          FUloc(i*dim + c) += Jx_mid*weight *beta_diss()*Uqp(c)*phi_f[qp][i];
+          FUloc(i*dim + c) += JxW_mid *beta_diss()*Uqp(c)*phi_f[qp][i];
         }
       }
 
@@ -713,20 +749,22 @@ void AppCtx::formFacetFunction(facet_iterator &facet,
 // ***********
 // form the residue of the contact line (2D)
 void AppCtx::formCornerFunction(corner_iterator &corner,
-                        VectorXi const&/*mapU_r*/,  VectorXi const&/*mapP_r*/, // mappers
-                        MatrixXd &u_coefs_r, // coefficients
+                        VectorXi const& mapU_r,  VectorXi const&/*mapP_r*/, // mappers
+                        MatrixXd &u_coefs_r_new, // coefficients
                         VectorXd &FUloc)
 {
 
   bool                gen_error = false;
   int                 tag;
   bool                is_triple;
-  //MatrixXd             u_coefs_r(n_dofs_u_per_corner/dim, dim);
-  MatrixXd            u_coefs_r_trans(dim, n_dofs_u_per_corner/dim);
-  MatrixXd            x_coefs_r(nodes_per_corner, dim);
-  MatrixXd            x_coefs_r_trans(dim, nodes_per_corner);
-  Tensor              F_r(dim,dim-2);
-  Tensor              invF_r(dim-2,dim);
+  //MatrixXd             u_coefs_r_mid(n_dofs_u_per_corner/dim, dim);
+  MatrixXd            u_coefs_r_mid_trans(dim, n_dofs_u_per_facet/dim);  // n+utheta
+  MatrixXd            u_coefs_r_old(n_dofs_u_per_facet/dim, dim);        // n
+  MatrixXd            x_coefs_r_mid_trans(dim, nodes_per_corner);
+  MatrixXd            x_coefs_r_new(nodes_per_corner, dim);
+  MatrixXd            x_coefs_r_old(nodes_per_corner, dim);
+  Tensor              F_r_mid(dim,dim-2);
+  Tensor              invF_r_mid(dim-2,dim);
   MatrixXd            dxphi_r(n_dofs_u_per_corner/dim, dim);
   Tensor              dxU_r(dim,dim);   // grad u
   Vector              Xqp(dim);
@@ -741,20 +779,21 @@ void AppCtx::formCornerFunction(corner_iterator &corner,
   Vector              point_b(dim); // ponto na linha triplice
   Vector              ifacet_normal(dim); // ponto na linha triplice
   double              line_normal_sign; // +1 or -1
-  double              Jx_mid=0;
+  double              J_mid=0, JxW_mid;
   double              weight=0;
+  double              gama_mid;
+  double              visc;
+  double              rho;
   int                 iCs[FEPIC_MAX_ICELLS];
   int                 eiCs[FEPIC_MAX_ICELLS];
   int                 *iCs_end;
   int                 *iCs_it;
   Cell                *fluid_cell;
 
-  //VectorXi               mapU_r(n_dofs_u_per_corner);
-  //VectorXi               mapP_r(n_dofs_p_per_corner);
-  VectorXi               mapM_r(dim*nodes_per_corner);
+  //VectorXi            mapU_r(n_dofs_u_per_corner);
+  //VectorXi            mapP_r(n_dofs_p_per_corner);
+  VectorXi            mapM_r(dim*nodes_per_corner);
 
-  MatrixXd         R(n_dofs_u_per_corner,n_dofs_u_per_corner);
-  MatrixXd         tmp;
 
 
   tag = corner->getTag();
@@ -767,6 +806,19 @@ void AppCtx::formCornerFunction(corner_iterator &corner,
     return;
 
   mesh->getCornerNodesId(&*corner, corner_nodes.data());
+ // mesh->getNodesCoords(corner_nodes.begin(), corner_nodes.end(), x_coefs_r_mid.data());
+
+  dof_handler[DH_MESH].getVariable(VAR_M).getCornerDofs(mapM_r.data(), &*corner);
+
+  VecGetValues(Vec_x_0,     mapM_r.size(), mapM_r.data(), x_coefs_r_old.data());
+  VecGetValues(Vec_x_1,     mapM_r.size(), mapM_r.data(), x_coefs_r_new.data());
+  VecGetValues(Vec_up_0,    mapU_r.size(), mapU_r.data(), u_coefs_r_old.data());
+
+  u_coefs_r_mid_trans = utheta*u_coefs_r_new.transpose() + (1.-utheta)*u_coefs_r_old.transpose();
+  x_coefs_r_mid_trans = utheta*x_coefs_r_new.transpose() + (1.-utheta)*x_coefs_r_old.transpose();
+
+  visc = muu(tag);
+  rho  = pho(Xqp,tag);
 
   if (dim==3)
   {
@@ -864,37 +916,35 @@ void AppCtx::formCornerFunction(corner_iterator &corner,
   }
 
 
-  //mesh->getCornerNodesId(&*corner, corner_nodes.data());
-  mesh->getNodesCoords(corner_nodes.begin(), corner_nodes.end(), x_coefs_r.data());
-  x_coefs_r_trans = x_coefs_r.transpose();
-
   
-  u_coefs_r_trans = u_coefs_r.transpose();
-
-
   for (int qp = 0; qp < n_qpts_corner; ++qp)
   {
     if (dim==3)
     {
-      F_r   = x_coefs_r_trans * dLqsi_r[qp];
-      Jx_mid = F_r.norm();
+      F_r_mid   = x_coefs_r_mid_trans * dLqsi_r[qp];
+      J_mid = F_r_mid.norm();
     }
     else
     {
-      Jx_mid = 1;
+      J_mid = 1;
     }
-    //invF_r = F_r.transpose()/(Jx_mid*Jx_mid);
+    //invF_r_mid = F_r_mid.transpose()/(J_mid*J_mid);
 
     weight  = quadr_corner->weight(qp);
-    Xqp = x_coefs_r_trans * qsi_r[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
-    //dxphi_r = dLphi_r[qp] * invF_r;
-    //dxU_r   = u_coefs_r_trans * dxphi_r; // n+utheta
-    Uqp  = u_coefs_r_trans * phi_r[qp];
+    JxW_mid = J_mid*weight;
+    Xqp = x_coefs_r_mid_trans * qsi_r[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
+    //dxphi_r = dLphi_r[qp] * invF_r_mid;
+    //dxU_r   = u_coefs_r_mid_trans * dxphi_r; // n+utheta
+    Uqp  = u_coefs_r_mid_trans * phi_r[qp];
+
+    gama_mid = gama(Xqp, current_time+dt/2., tag);
 
     if (dim==3)
     {
       normal  = solid_normal(Xqp, current_time, tag);
-      line_normal(0)= F_r(0,0);line_normal(1)= F_r(1,0);line_normal(2)= F_r(2,0);
+      line_normal(0)= F_r_mid(0,0);
+      line_normal(1)= F_r_mid(1,0);
+      line_normal(2)= F_r_mid(2,0);
       line_normal *= line_normal_sign;
       // a = a cross b
       cross(line_normal, normal);
@@ -903,10 +953,11 @@ void AppCtx::formCornerFunction(corner_iterator &corner,
 
     for (int i = 0; i < n_dofs_u_per_corner/dim; ++i)
     {
-      for (int j = 0; j < dim; ++j)
-      {
-        FUloc(i*dim + j) += Jx_mid*weight*(-gama(Xqp, current_time, tag)*cos_theta0() + zeta(0,0)*line_normal.dot(Uqp))*line_normal(j)*phi_r[qp][i];
-      }
+      //for (int j = 0; j < dim; ++j)
+      //{
+        //FUloc(i*dim + j) += JxW_mid*(-gama_mid*cos_theta0() + zeta(0,0)*line_normal.dot(Uqp))*line_normal(j)*phi_r[qp][i];
+      //}
+      FUloc.segment(i*dim, dim) += JxW_mid* phi_r[qp][i] * (-gama_mid*cos_theta0() + zeta(0,0)*line_normal.dot(Uqp))*line_normal;
     }
 
 
@@ -923,6 +974,57 @@ void AppCtx::formCornerFunction(corner_iterator &corner,
 
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

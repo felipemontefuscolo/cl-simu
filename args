@@ -1,8 +1,8 @@
 -dim 2  				        # cell dimension (= space dimension)
--dt 0.015625                # time step
+-dt 0.25                # time step
 -renumber_dofs 0        # dofs renumbering
--maxts 1280               # maximum number of time steps
--print_step 1000        # print step
+-maxts 80               # maximum number of time steps
+-print_step 10000           # print step
 -has_convec 1           # convective term: true or false
 -unsteady   1           # steady or unsteady problem
 -boundary_smoothing 0
@@ -90,20 +90,20 @@ options: dir_tags, neum_tags, interf_tags, solid_tags, triple_tags
 # ramp:        interf_tags 2 solid_tags 3 triple_tags 20,21
 # satic drop:  interf_tags 2
 # kovasznay    dir_tags 2 neum_tags 1
-# couette      -dir_tags 1,2 neum_tags 1
+# couette      -dir_tags 2 -neum_tags 1
 
 ############################################################################
 
-function_space 1 # P1P1 (or Q1Q1) GLS stabilization
+-function_space 1 # P1P1 (or Q1Q1) GLS stabilization
 function_space 2 # P1+P1 with bubble condensation
 function_space 3 # P2+Pm1 with bubble condensation and pressure gradient elimination
 function_space 4 # P2P1 (or Q2Q1)
--function_space 5 # P1+P1
+function_space 5 # P1+P1
 function_space 6 # P2P0 
 function_space 7 # P2+Pm1 full
 
--mesh_type 8      # TRIANGLE3        = 0x8,
-mesh_type 16     # TRIANGLE6        = 0x10,
+mesh_type 8      # TRIANGLE3        = 0x8,
+-mesh_type 16     # TRIANGLE6        = 0x10,
 mesh_type 32     # QUADRANGLE4      = 0x20,
 mesh_type 64     # QUADRANGLE8      = 0x40,
 mesh_type 128    # QUADRANGLE9      = 0x80,
@@ -150,4 +150,14 @@ fin  results/ramp/2d/mesh/ramp2nd.msh
 fout results/ramp/2d/mesh/ramp2nd.vtk
 
 
+
+
+Point(1) = {0.0, 0.0, 0.0, 1.0};
+Point(2) = {0.0, 0.0, 0.5, 1.0};
+Point(3) = {0.0, 0.5, 0.0, 1.0};
+Point(4) = {0.0, 0.5, 0.5, 1.0};
+Point(5) = {0.5, 0.0, 0.0, 1.0};
+Point(6) = {0.5, 0.0, 0.5, 1.0};
+Point(7) = {0.5, 0.5, 0.0, 1.0};
+Point(8) = {0.5, 0.5, 0.5, 1.0};
 

@@ -14,7 +14,7 @@ inline double sqr(double v) {return v*v;}
 
 double pho(Vector const& X, int tag);
 double gama(Vector const& X, double t, int tag);
-double muu(double t, int tag);
+double muu(int tag);
 Vector force(Vector const& X, double t, int tag);
 Vector u_exact(Vector const& X, double t, int tag);
 Vector traction(Vector const& X, double t, int tag);
@@ -68,7 +68,7 @@ double gama(Vector const& X, double t, int tag)
 {
   return 1;
 }
-double muu(double t, int tag)
+double muu(int tag)
 {
   return 1;
 }
@@ -155,7 +155,7 @@ double gama(Vector const& X, double t, int tag)
 {
   return 1;
 }
-double muu(double t, int tag)
+double muu(int tag)
 {
   return  0.025;
 }
@@ -169,7 +169,7 @@ Vector u_exact(Vector const& X, double t, int tag)
   double y = X(1);
   Vector v(Vector::Zero(2));  
   
-  const double a = 1./(2.*muu(t,tag)) - sqrt(1./(4.*sqr(muu(t,tag))) + 4.*pi2);
+  const double a = 1./(2.*muu(tag)) - sqrt(1./(4.*sqr(muu(tag))) + 4.*pi2);
   v(0) = 1-exp(a*x)*cos(2.*pi*y);
   v(1) = a*exp(a*x)*sin(2.*pi*y)/(2.*pi);
   return v;
@@ -180,9 +180,9 @@ Vector traction(Vector const& X, double t, int tag)
   double y = X(1);
   Vector T(Vector::Zero(X.size()));
 
-  const double a = 1./(2.*muu(t,tag)) - sqrt(1./(4.*sqr(muu(t,tag))) + 4.*pi2);
-  T(0) = -2*a*muu(t,tag)*exp(a*x)*cos(2*pi*y) - (1-exp(2*a*x))/2.;
-  T(1) = (a*a*muu(t,tag)*exp(a*x)*sin(2*pi*y))/(2*pi) + 2*pi*muu(t,tag)*exp(a*x)*sin(2*pi*y);
+  const double a = 1./(2.*muu(tag)) - sqrt(1./(4.*sqr(muu(tag))) + 4.*pi2);
+  T(0) = -2*a*muu(tag)*exp(a*x)*cos(2*pi*y) - (1-exp(2*a*x))/2.;
+  T(1) = (a*a*muu(tag)*exp(a*x)*sin(2*pi*y))/(2*pi) + 2*pi*muu(tag)*exp(a*x)*sin(2*pi*y);
   return T;
 }
 double pressure_exact(Vector const& X, double t, int tag)
@@ -190,7 +190,7 @@ double pressure_exact(Vector const& X, double t, int tag)
   double x = X(0);
   double y = X(1);
 
-  const double a = 1./(2.*muu(t,tag)) - sqrt(1./(4.*sqr(muu(t,tag))) + 4.*pi2);
+  const double a = 1./(2.*muu(tag)) - sqrt(1./(4.*sqr(muu(tag))) + 4.*pi2);
   //return  0.5*(1.-exp(2.*a*x));
   return  (1.-exp(2.*a*x))/2.;
 }
@@ -200,7 +200,7 @@ Vector grad_p_exact(Vector const& X, double t, int tag)
   double y = X(1);
   Vector dxP(Vector::Zero(2));
   
-  const double a = 1./(2.*muu(t,tag)) - sqrt(1./(4.*sqr(muu(t,tag))) + 4.*pi2);
+  const double a = 1./(2.*muu(tag)) - sqrt(1./(4.*sqr(muu(tag))) + 4.*pi2);
   dxP(0) = -a*exp(2.*a*x);
   return dxP;
 }
@@ -210,7 +210,7 @@ Tensor grad_u_exact(Vector const& X, double t, int tag)
   double y = X(1);
   Tensor dxU(Tensor::Zero(X.size(), X.size()));
 
-  const double a = 1./(2.*muu(t,tag)) - sqrt(1./(4.*sqr(muu(t,tag))) + 4.*pi2);
+  const double a = 1./(2.*muu(tag)) - sqrt(1./(4.*sqr(muu(tag))) + 4.*pi2);
   dxU(0,0) = -a*exp(a*x)*cos(2*pi*y);
   dxU(0,1) = 2*pi*exp(a*x)*sin(2*pi*y);
   dxU(1,0) = (pow(a,2)*exp(a*x)*sin(2*pi*y))/(2*pi);
@@ -267,7 +267,7 @@ double gama(Vector const& X, double t, int tag)
 {
   return 1;
 }
-double muu(double t, int tag)
+double muu(int tag)
 {
   return 1;
 }
@@ -389,7 +389,7 @@ double gama(Vector const& X, double t, int tag)
 {
   return 1e+5;
 }
-double muu(double t, int tag)
+double muu(int tag)
 {
   return 1;
 }
@@ -469,7 +469,7 @@ double gama(Vector const& X, double t, int tag)
 {
   return 0;
 }
-double muu(double t, int tag)
+double muu(int tag)
 {
   return 0.01;
 }
@@ -579,7 +579,7 @@ double gama(Vector const& X, double t, int tag)
 {
   return 1;
 }
-double muu(double t, int tag)
+double muu(int tag)
 {
   return 0.025;
 }
@@ -589,9 +589,9 @@ Vector force(Vector const& X, double t, int tag)
   double y = X(1);
   double z = X(2);
   Vector f(3);
-  f(0) = exp(-y*z-x*z-y-x)*(2*pi*y*z*exp(y*z+x*z+y+x)*cos(x*y*z)+(muu(t,tag)*exp(y+x)*pow(z,2)+muu(t,tag)*pow(y,2)*exp(y+x)+y)*exp(x*z)+exp(y+x)*z);
-  f(1) = exp(-y*z-x*z-y-x)*(2*pi*x*z*exp(y*z+x*z+y+x)*cos(x*y*z)+(-muu(t,tag)*exp(y+x)*pow(z,2)-muu(t,tag)*pow(x,2)*exp(y+x)-x)*exp(y*z)+exp(y+x)*z);
-  f(2) = exp(-y*z-x*z-y-x)*(2*pi*x*y*exp(y*z+x*z+y+x)*cos(x*y*z)+(-2*muu(t,tag)*exp(x*z)-1)*exp(y*z)+exp(x*z));
+  f(0) = exp(-y*z-x*z-y-x)*(2*pi*y*z*exp(y*z+x*z+y+x)*cos(x*y*z)+(muu(tag)*exp(y+x)*pow(z,2)+muu(tag)*pow(y,2)*exp(y+x)+y)*exp(x*z)+exp(y+x)*z);
+  f(1) = exp(-y*z-x*z-y-x)*(2*pi*x*z*exp(y*z+x*z+y+x)*cos(x*y*z)+(-muu(tag)*exp(y+x)*pow(z,2)-muu(tag)*pow(x,2)*exp(y+x)-x)*exp(y*z)+exp(y+x)*z);
+  f(2) = exp(-y*z-x*z-y-x)*(2*pi*x*y*exp(y*z+x*z+y+x)*cos(x*y*z)+(-2*muu(tag)*exp(x*z)-1)*exp(y*z)+exp(x*z));
 
   return f;
 }
@@ -619,9 +619,9 @@ Vector traction(Vector const& X, double t, int tag)
   double z = X(2);
   Vector T(Vector::Zero(X.size()));
 
-  T(0) = muu(t,tag)*z*exp(-y*z)-muu(t,tag)*z*exp(-x*z);
+  T(0) = muu(tag)*z*exp(-y*z)-muu(tag)*z*exp(-x*z);
   T(1) = -2*pi*sin(x*y*z);
-  T(2) = -muu(t,tag)*x*exp(-x*z)-muu(t,tag)*exp(-y-x);  
+  T(2) = -muu(tag)*x*exp(-x*z)-muu(tag)*exp(-y-x);  
   
   return T;
 }
@@ -708,7 +708,7 @@ double gama(Vector const& X, double t, int tag)
 {
   return 1;
 }
-double muu(double t, int tag)
+double muu(int tag)
 {
   return 0.01;
 }
@@ -798,7 +798,7 @@ double gama(Vector const& X, double t, int tag)
 {
   return 2;//75.*1e-3;
 }
-double muu(double t, int tag)
+double muu(int tag)
 {
   return 1;//1e-5;
 }
@@ -931,7 +931,7 @@ double gama(Vector const& X, double t, int tag)
 {
   return 1;
 }
-double muu(double t, int tag)
+double muu(int tag)
 {
   return 1.0;
 }
@@ -1058,7 +1058,7 @@ double gama(Vector const& X, double t, int tag)
 {
   return 1;
 }
-double muu(double t, int tag)
+double muu(int tag)
 {
   return 0.1;
 }
@@ -1187,7 +1187,7 @@ double gama(Vector const& X, double t, int tag)
 {
   return 0;
 }
-double muu(double t, int tag)
+double muu(int tag)
 {
   return  1.;
 }
@@ -1246,7 +1246,7 @@ Vector traction(Vector const& X, double t, int tag)
   Vector T(X.size());
   
   T(0) = -pressure_exact(X,t,tag);
-  T(1) = muu(t,tag)*(cos(w_*t) + sin(w_*t));
+  T(1) = muu(tag)*(cos(w_*t) + sin(w_*t));
   
   return T;
 }
