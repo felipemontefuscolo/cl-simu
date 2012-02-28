@@ -1,12 +1,12 @@
--dim 3  				        # cell dimension (= space dimension)
--dt 0.03125                # time step
+-dim 2  				        # cell dimension (= space dimension)
+-dt 0.0625           # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125
 -renumber_dofs 0        # dofs renumbering
--maxts 80               # maximum number of time steps
+-maxts 320              # maximum number of time steps
 -print_step 10000       # print step
 -has_convec 1           # convective term: true or false
 -unsteady   1           # steady or unsteady problem
 -boundary_smoothing 0
--force_mesh_velocity 1  # imposes the mesh velocity of boundary grid
+-force_mesh_velocity 0  # imposes the mesh velocity of boundary grid
 -fprint_ca 0            # print contact angle at file ContactHistory
 -beta1 0.0              # Vmesh = bet1 * Ufluid  +  bet2 * Uelastic
 -beta2 1.0  
@@ -15,7 +15,7 @@
 -sst -1.e-7             # steady state tol (Unew-Uold)/(Unew)
 -utheta 0.5             # time discretization theta method (momentum)
 -vtheta 1.0             # time discretization theta method (mesh velocity)
--quadr_c 6              # quadrature degree (cell)
+-quadr_c 4              # quadrature degree (cell)
 -quadr_f 3              # quadrature degree (facet)
 -quadr_r 2              # quadrature degree (corner)
 -quadr_e 8              # quadrature degree (exact)
@@ -45,7 +45,7 @@ pc_factor_in_place
 -fp_trap 1           # stop on floating-point exceptions
 -on_error_abort 1
 log_trace stdout
--malloc_debug 1
+malloc_debug 1
 snes_fd 0
 -snes_ls basic      # line search: basic, cubic, quadratic
 snes_type test ksponly   # Nonlinear solver method (one of) ls tr test picard ksponly vi ngmres sorqn
@@ -127,8 +127,8 @@ fout results/osc_drop/mesh/drop.vtk
 fin  results/kovasznay/mesh/kovas.msh
 fout results/kovasznay/mesh/kovas.vtk
 
--fin  results/couette/3d/mesh/couette.msh
--fout results/couette/3d/mesh/couette.vtk
+-fin  results/couette/2d/mesh/couette.msh
+-fout results/couette/2d/mesh/couette.vtk
 
 fin malha/cavity2d-1o.msh
 fout malha/cavity2d-1o.vtk

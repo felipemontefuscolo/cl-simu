@@ -18,7 +18,7 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
 
   //  LOOP NOS ELEMENTOS
   //
-  //#pragma omp parallel default(none) shared(JJ,Vec_up_k,cout)
+  #pragma omp parallel default(none) shared(JJ,Vec_up_k,cout)
   {
 
     /* local data */
@@ -72,7 +72,7 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
     Vector              Uconv_qp(dim);
     Vector              dUdt(dim);
     double              Pqp_new;
-    double              bble_integ;
+    double              bble_integ=0;
     //VectorXd          FUloc(n_dofs_u_per_cell); // subvetor da função f (parte de U)
     //VectorXd          FPloc(n_dofs_p_per_cell);     // subvetor da função f (parte de P)
     VectorXi            cell_nodes(nodes_per_cell);
@@ -82,8 +82,8 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
     double              visc=-1; // viscosity
     double              cell_volume;
     double              hk2;
-    double              tauk;
-    double              delk;
+    double              tauk=0;
+    double              delk=0;
     double              delta_cd;
     double              rho;
     
@@ -118,8 +118,8 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
 
     Tensor              Id(Tensor::Identity(dim,dim));
 
-    //const int tid = omp_get_thread_num();
-    //const int nthreads = omp_get_num_threads();
+    const int tid = omp_get_thread_num();
+    const int nthreads = omp_get_num_threads();
     //const int n_cell_colors = mesh->numCellColors();
     //
     //cell_iterator cell;
@@ -130,8 +130,11 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
       //cell = mesh->cellBegin(EColor(color),tid,nthreads);
       //cell_end = mesh->cellEnd(EColor(color),tid,nthreads);
 
-      cell_iterator cell = mesh->cellBegin();
-      cell_iterator cell_end = mesh->cellEnd();
+      cell_iterator cell = mesh->cellBegin(tid,nthreads);
+      cell_iterator cell_end = mesh->cellEnd(tid,nthreads);
+
+      //cell_iterator cell = mesh->cellBegin();
+      //cell_iterator cell_end = mesh->cellEnd();
       for (; cell != cell_end; ++cell)
       {
         tag = cell->getTag();
@@ -504,15 +507,16 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
           Aloc += utheta*a*Gnx*iBbb*Gnx.transpose() - utheta*b*Bnb*Gnx.transpose() - b*Gnx*Bbn;
         }
         
-        
-        MatSetValues(*JJ, mapU_c.size(), mapU_c.data(), mapU_c.size(), mapU_c.data(), Aloc.data(),  ADD_VALUES);
-        MatSetValues(*JJ, mapU_c.size(), mapU_c.data(), mapP_c.size(), mapP_c.data(), Gloc.data(),  ADD_VALUES);
-        MatSetValues(*JJ, mapP_c.size(), mapP_c.data(), mapU_c.size(), mapU_c.data(), Dloc.data(),  ADD_VALUES);
-        if (pres_pres_block)
+        #pragma omp critical
         {
-          MatSetValues(*JJ, mapP_c.size(), mapP_c.data(), mapP_c.size(), mapP_c.data(), Eloc.data(),  ADD_VALUES);
+          MatSetValues(*JJ, mapU_c.size(), mapU_c.data(), mapU_c.size(), mapU_c.data(), Aloc.data(),  ADD_VALUES);
+          MatSetValues(*JJ, mapU_c.size(), mapU_c.data(), mapP_c.size(), mapP_c.data(), Gloc.data(),  ADD_VALUES);
+          MatSetValues(*JJ, mapP_c.size(), mapP_c.data(), mapU_c.size(), mapU_c.data(), Dloc.data(),  ADD_VALUES);
+          if (pres_pres_block)
+          {
+            MatSetValues(*JJ, mapP_c.size(), mapP_c.data(), mapP_c.size(), mapP_c.data(), Eloc.data(),  ADD_VALUES);
+          }
         }
-
       }
 
       //#pragma omp barrier

@@ -1145,6 +1145,8 @@ PetscErrorCode AppCtx::solveTimeProblem()
   //cout << "Number of Newton iterations = " << its << endl;
   //cout << "number of linear iterations used by the nonlinear solver " << lits << endl;
 
+  double initial_volume = getMeshVolume(), final_volume;
+
   if (print_to_matlab)
     printMatlabLoader();
 
@@ -1154,7 +1156,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
   setInitialConditions();
   int its;
     
-  printf("initial volume: %.15lf \n", getMeshVolume());
+  printf("initial volume: %.15lf \n", initial_volume);
   current_time = 0;
   time_step = 0;
   double Qmax=0;
@@ -1217,7 +1219,8 @@ PetscErrorCode AppCtx::solveTimeProblem()
     {
       copyVec2Mesh(Vec_x_1);
       VecCopy(Vec_x_1, Vec_x_0);
-      moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, current_time, Vec_x_1); // Adams-Bashforth
+      //moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, current_time, Vec_x_1); // Adams-Bashforth
+      moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, current_time, Vec_x_1); // Euler
       calcMeshVelocity(Vec_x_0, Vec_x_1, Vec_v_mid);
       
       // initial guess for the next time step; u(n+1) = 2*u(n) - u(n-1)
@@ -1257,7 +1260,11 @@ PetscErrorCode AppCtx::solveTimeProblem()
   }
   cout << endl;
 
-  printf("final volume: %.15lf \n", getMeshVolume());
+  final_volume = getMeshVolume();
+  printf("final volume: %.15lf \n", final_volume);
+  printf("volume error 100*(f-i)/i: %.15lf \%\n", 100*abs(final_volume-initial_volume)/initial_volume);
+  
+
 
 
   SNESConvergedReason reason;

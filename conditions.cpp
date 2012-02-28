@@ -1163,6 +1163,7 @@ Vector v_exact(Vector const& , double , int ) //(X,t,tag)
 #if (PROBLEM_TYPE==COUETTE)
 
 double const w_ = pi;
+double const a__= 0.4;
 
 double pho(Vector const& X, int tag)
 {
@@ -1198,8 +1199,8 @@ Vector force(Vector const& X, double t, int tag)
   
   Vector f(Vector::Zero(X.size()));
   
-  f(0) = pho(X,tag)*(  -w_*sin(w_*t)*y + x*cos(w_*t)*sin(w_*t));
-  f(1) = pho(X,tag)*(  +w_*cos(w_*t)*x + y*cos(w_*t)*sin(w_*t));
+  f(0) = a__*pho(X,tag)*(  -w_*sin(w_*t)*y + a__*x*cos(w_*t)*sin(w_*t));
+  f(1) = a__*pho(X,tag)*(  +w_*cos(w_*t)*x + a__*y*cos(w_*t)*sin(w_*t));
   
   return f;
 }
@@ -1210,8 +1211,8 @@ Vector u_exact(Vector const& X, double t, int tag)
 
   Vector v(Vector::Zero(X.size()));  
   
-  v(0) = y*cos(w_*t);
-  v(1) = x*sin(w_*t);
+  v(0) = a__*y*cos(w_*t);
+  v(1) = a__*x*sin(w_*t);
   return v;
 }
 double pressure_exact(Vector const& X, double t, int tag)
@@ -1236,8 +1237,8 @@ Tensor grad_u_exact(Vector const& X, double t, int tag)
   Tensor dxU(Tensor::Zero(X.size(), X.size()));
 
   dxU(0,0) = 0;
-  dxU(0,1) = cos(w_*t);
-  dxU(1,0) = sin(w_*t);
+  dxU(0,1) = a__*cos(w_*t);
+  dxU(1,0) = a__*sin(w_*t);
   dxU(1,1) = 0;
   return dxU;
 }
@@ -1271,7 +1272,7 @@ Vector v_exact(Vector const& X, double t, int tag) //(X,t,tag)
   double const w_ = pi/4.;
   Vector v(Vector::Zero(X.size()));
   v(0) = 0.0*(cos(w_*t));//*(X(0)+0.5)*(X(0)-0.5)/2.;
-  v(1) = 0.05*(cos(w_*t));//*(X(1)+0.5)*(X(1)-0.5)/2.;
+  v(1) = 0.1*(cos(w_*t));//*(X(1)+0.5)*(X(1)-0.5)/2.;
   return v * (tag!=1 && tag!=2);
 }
 #endif
