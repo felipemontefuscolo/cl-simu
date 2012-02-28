@@ -39,6 +39,17 @@ enum DofHandlerNumber {
   DH_MESH = 1
 };
 
+enum PairSpace {
+
+  P1P1      = 1,
+  P1bP1_c   = 2,
+  P2bPm1_c  = 3,
+  P2P1      = 4,
+  P1bP1     = 5,
+  P2P0      = 6,
+  P2bPm1    = 7
+  
+};
 
 const double pi  = 3.141592653589793;
 const double pi2 = pi*pi;

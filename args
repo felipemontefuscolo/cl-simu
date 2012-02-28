@@ -1,8 +1,8 @@
--dim 2  				        # cell dimension (= space dimension)
--dt 0.25                # time step
+-dim 3  				        # cell dimension (= space dimension)
+-dt 0.03125                # time step
 -renumber_dofs 0        # dofs renumbering
 -maxts 80               # maximum number of time steps
--print_step 10000           # print step
+-print_step 10000       # print step
 -has_convec 1           # convective term: true or false
 -unsteady   1           # steady or unsteady problem
 -boundary_smoothing 0
@@ -45,7 +45,7 @@ pc_factor_in_place
 -fp_trap 1           # stop on floating-point exceptions
 -on_error_abort 1
 log_trace stdout
-malloc_debug 1
+-malloc_debug 1
 snes_fd 0
 -snes_ls basic      # line search: basic, cubic, quadratic
 snes_type test ksponly   # Nonlinear solver method (one of) ls tr test picard ksponly vi ngmres sorqn
@@ -90,7 +90,7 @@ options: dir_tags, neum_tags, interf_tags, solid_tags, triple_tags
 # ramp:        interf_tags 2 solid_tags 3 triple_tags 20,21
 # satic drop:  interf_tags 2
 # kovasznay    dir_tags 2 neum_tags 1
-# couette      -dir_tags 2 -neum_tags 1
+# couette      -dir_tags 1,2 neum_tags 1
 
 ############################################################################
 
@@ -103,7 +103,7 @@ function_space 6 # P2P0
 function_space 7 # P2+Pm1 full
 
 mesh_type 8      # TRIANGLE3        = 0x8,
--mesh_type 16     # TRIANGLE6        = 0x10,
+mesh_type 16     # TRIANGLE6        = 0x10,
 mesh_type 32     # QUADRANGLE4      = 0x20,
 mesh_type 64     # QUADRANGLE8      = 0x40,
 mesh_type 128    # QUADRANGLE9      = 0x80,
@@ -127,8 +127,8 @@ fout results/osc_drop/mesh/drop.vtk
 fin  results/kovasznay/mesh/kovas.msh
 fout results/kovasznay/mesh/kovas.vtk
 
--fin  results/couette/2d/mesh/couette.msh
--fout results/couette/2d/mesh/couette.vtk
+-fin  results/couette/3d/mesh/couette.msh
+-fout results/couette/3d/mesh/couette.vtk
 
 fin malha/cavity2d-1o.msh
 fout malha/cavity2d-1o.vtk

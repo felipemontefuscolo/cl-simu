@@ -1196,7 +1196,7 @@ Vector force(Vector const& X, double t, int tag)
   double x = X(0);
   double y = X(1);
   
-  Vector f(X.size());
+  Vector f(Vector::Zero(X.size()));
   
   f(0) = pho(X,tag)*(  -w_*sin(w_*t)*y + x*cos(w_*t)*sin(w_*t));
   f(1) = pho(X,tag)*(  +w_*cos(w_*t)*x + y*cos(w_*t)*sin(w_*t));
@@ -1208,7 +1208,7 @@ Vector u_exact(Vector const& X, double t, int tag)
   double x = X(0);
   double y = X(1);
 
-  Vector v(Vector::Zero(2));  
+  Vector v(Vector::Zero(X.size()));  
   
   v(0) = y*cos(w_*t);
   v(1) = x*sin(w_*t);
@@ -1243,7 +1243,7 @@ Tensor grad_u_exact(Vector const& X, double t, int tag)
 }
 Vector traction(Vector const& X, double t, int tag)
 {
-  Vector T(X.size());
+  Vector T(Vector::Zero(X.size()));
   
   T(0) = -pressure_exact(X,t,tag);
   T(1) = muu(tag)*(cos(w_*t) + sin(w_*t));
@@ -1269,9 +1269,9 @@ Vector solid_normal(Vector const& X, double t, int tag)
 Vector v_exact(Vector const& X, double t, int tag) //(X,t,tag)
 {
   double const w_ = pi/4.;
-  Vector v(X.size());
+  Vector v(Vector::Zero(X.size()));
   v(0) = 0.0*(cos(w_*t));//*(X(0)+0.5)*(X(0)-0.5)/2.;
-  v(1) = 0.1*(cos(w_*t));//*(X(1)+0.5)*(X(1)-0.5)/2.;
+  v(1) = 0.05*(cos(w_*t));//*(X(1)+0.5)*(X(1)-0.5)/2.;
   return v * (tag!=1 && tag!=2);
 }
 #endif

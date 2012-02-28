@@ -256,6 +256,58 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
 
 
   PetscOptionsEnd();
+  
+  switch (function_space)
+  {
+    case P1P1:
+    {
+      if(dim==2) mesh_cell_type = TRIANGLE3;
+      else       mesh_cell_type = TETRAHEDRON4;
+      break;
+    }
+    case P1bP1_c:
+    {
+      if(dim==2) mesh_cell_type = TRIANGLE3;
+      else       mesh_cell_type = TETRAHEDRON4;
+      break;
+    }
+    case P2bPm1_c:
+    {
+      if(dim==2) mesh_cell_type = TRIANGLE6;
+      else       mesh_cell_type = TETRAHEDRON10;
+      break;
+    }
+    case P2P1:
+    {
+      if(dim==2) mesh_cell_type = TRIANGLE6;
+      else       mesh_cell_type = TETRAHEDRON10; 
+      break;
+    }
+    case P1bP1:
+    {
+      if(dim==2) mesh_cell_type = TRIANGLE3;
+      else       mesh_cell_type = TETRAHEDRON4;
+      break;
+    }
+    case P2P0:
+    {
+      if(dim==2) mesh_cell_type = TRIANGLE6;
+      else       mesh_cell_type = TETRAHEDRON10;
+      break;
+    }
+    case P2bPm1:
+    {
+      if(dim==2) mesh_cell_type = TRIANGLE6;
+      else       mesh_cell_type = TETRAHEDRON10;
+      break;
+    }
+    default:
+    {
+      cout << "invalid function space " << function_space << endl;
+      throw;
+    }
+  };
+
 
   if(ask_help)
     return true;
@@ -976,7 +1028,17 @@ void AppCtx::setInitialConditions()
   int       dof;
   int tag;
   
+  VecZeroEntries(Vec_res);
+  VecZeroEntries(Vec_up_0);
+  VecZeroEntries(Vec_up_1);
+  VecZeroEntries(Vec_v_mid);
+  VecZeroEntries(Vec_x_0);
+  VecZeroEntries(Vec_x_1);  
+  VecZeroEntries(Vec_normal);
+
+  
   copyMesh2Vec(Vec_x_0);
+
   
   // velocidade inicial
   point_iterator point = mesh->pointBegin();

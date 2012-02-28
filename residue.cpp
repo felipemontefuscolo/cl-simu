@@ -472,21 +472,21 @@ void AppCtx::formCellFunction(cell_iterator &cell,
 
     for (int i = 0; i < n_dofs_u_per_cell/dim; ++i)
     {
-      //for (int c = 0; c < dim; ++c)
-      //{
-      //  FUloc(i*dim + c) += JxW_mid*
-      //          ( rho*(dUdt(c) + has_convec*Uconv_qp.dot(dxU.row(c)))*phi_c[qp][i] + // aceleração
-      //            visc*dxphi_c.row(i).dot(dxU.row(c) + dxU.col(c).transpose()) - //rigidez
-      //            Pqp_new*dxphi_c(i,c) - // pressão
-      //            force_at_mid(c)*phi_c[qp][i]   ); // força
-      //
-      //}
+      for (int c = 0; c < dim; ++c)
+      {
+        FUloc(i*dim + c) += JxW_mid*
+                ( rho*(dUdt(c) + has_convec*Uconv_qp.dot(dxU.row(c)))*phi_c[qp][i] + // aceleração
+                  visc*dxphi_c.row(i).dot(dxU.row(c) + dxU.col(c).transpose()) - //rigidez
+                  Pqp_new*dxphi_c(i,c) - // pressão
+                  force_at_mid(c)*phi_c[qp][i]   ); // força
       
-      FUloc.segment(i*dim,dim) += JxW_mid*
-                              (   phi_c[qp][i]*rho* (  dUdt + has_convec* dxU*Uconv_qp  ) // aceleração
-                                + visc* ( dxU + dxU.transpose() )*dxphi_c.row(i).transpose()       //rigidez
-                                - Pqp_new*dxphi_c.row(i).transpose() // pressão
-                                - phi_c[qp][i]* force_at_mid   ); // força
+      }
+      
+      //FUloc.segment(i*dim,dim) += JxW_mid*
+      //                        (   phi_c[qp][i]*rho* (  dUdt + has_convec* dxU*Uconv_qp  ) // aceleração
+      //                          + visc* ( dxU + dxU.transpose() )*dxphi_c.row(i).transpose()       //rigidez
+      //                          - Pqp_new*dxphi_c.row(i).transpose() // pressão
+      //                          - phi_c[qp][i]* force_at_mid   ); // força
       
     }
     for (int i = 0; i < n_dofs_p_per_cell; ++i)
