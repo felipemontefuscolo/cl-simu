@@ -1,0 +1,20 @@
+/* [wxMaxima batch file version 1] [ DO NOT EDIT BY HAND! ]*/
+/* [ Created with wxMaxima version 11.04.0 ] */
+
+/* [wxMaxima: input   start ] */
+eq1: 'diff(x(t),t) - a*cos(w*t)*x(t);
+eq2: 'diff(y(t),t) + a*cos(w*t)*y(t);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+ode2(eq1,x(t),t);
+ode2(eq2,y(t),t);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+assume(t>0);
+integrate(exp(-a*cos(w*z)/w)*sin(w*z),z,0,t);
+/* [wxMaxima: input   end   ] */
+
+/* Maxima can't load/batch files which end with a comment! */
+"Created with wxMaxima"$

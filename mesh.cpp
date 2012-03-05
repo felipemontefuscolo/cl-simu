@@ -125,21 +125,23 @@ void AppCtx::smoothsMesh(Vec & Vec_normal_, Vec &Vec_x_)
   //double     *Vec_x__array;
   bool const u_has_edge_assoc_dof = shape_phi_c->numDofsAssociatedToFacet()+shape_phi_c->numDofsAssociatedToCorner() > 0;
 
-  Vector     Xm(dim); // X mean
-  Vector     Xi(dim);
-  Vector     dX(dim);
-  Vector     normal(dim);
-  Vector     tmp(dim), tmp2(dim);
-  Vector     Uf(dim), Ue(dim), Umsh(dim); // Ue := elastic velocity
-  int        tag;
-  int        iVs[128], *iVs_end;
-  VectorXi   vtx_dofs_umesh(dim);  // indices de onde pegar a velocidade
-  VectorXi   vtx_dofs_fluid(dim); // indices de onde pegar a velocidade
-  VectorXi   edge_dofs_umesh(3*dim);
-  VectorXi   edge_dofs_fluid((2+u_has_edge_assoc_dof)*dim);
-  VectorXi   edge_nodes(3);
-  double     error;
-  bool       in_boundary;
+  Vector      Xm(dim); // X mean
+  Vector      Xi(dim);
+  Vector      dX(dim);
+  Vector      normal(dim);
+  Vector      tmp(dim), tmp2(dim);
+  Vector      Uf(dim), Ue(dim), Umsh(dim); // Ue := elastic velocity
+  int         tag;
+  int         iVs[128], *iVs_end;
+  int         iCs[128], viCs[128];
+  VectorXi    vtx_dofs_umesh(dim);  // indices de onde pegar a velocidade
+  VectorXi    vtx_dofs_fluid(dim); // indices de onde pegar a velocidade
+  VectorXi    edge_dofs_umesh(3*dim);
+  VectorXi    edge_dofs_fluid((2+u_has_edge_assoc_dof)*dim);
+  VectorXi    edge_nodes(3);
+  double      error;
+  double      old_quality, new_quality;
+  bool        in_boundary;
   //int        id;
   
   
@@ -171,25 +173,35 @@ void AppCtx::smoothsMesh(Vec & Vec_normal_, Vec &Vec_x_)
           continue;
 
         Xm = Vector::Zero(dim);
-        iVs_end = mesh->connectedVtcs(&*point, iVs);
+        //iVs_end = mesh->connectedVtcs(&*point, iVs);
+        iVs_end = mesh->connectedVtcs(&*point, iVs, iCs, viCs);
 
         if (!in_boundary)
         {
           for (int *it = iVs; it != iVs_end ; ++it)
           {
             dof_handler[DH_MESH].getVariable(VAR_M).getVertexDofs(vtx_dofs_umesh.data(), mesh->getNode(*it));
-            // debug
             VecGetValues(Vec_x_, dim, vtx_dofs_umesh.data(), tmp.data());
             Xm += tmp;
           }
           Xm /= (iVs_end-iVs);
-          dof_handler[DH_MESH].getVariable(VAR_M).getVertexDofs(vtx_dofs_umesh.data(), &*point);
           
-          // compute error
-          VecGetValues(Vec_x_, dim, vtx_dofs_umesh.data(), tmp.data());
+          dof_handler[DH_MESH].getVariable(VAR_M).getVertexDofs(vtx_dofs_umesh.data(), &*point);
+          //// compute error
+          VecGetValues(Vec_x_, dim, vtx_dofs_umesh.data(), tmp.data()); // old coord
           error += (tmp-Xm).norm();
+          old_quality = getCellPatchQuality(Vec_x_, iCs);
           
           VecSetValues(Vec_x_, dim, vtx_dofs_umesh.data(), Xm.data(), INSERT_VALUES);
+          
+          new_quality = getCellPatchQuality(Vec_x_, iCs);
+          
+          // se a qualidade piorou, volta no que estava antes
+          if (new_quality < old_quality)
+          {
+            VecSetValues(Vec_x_, dim, vtx_dofs_umesh.data(), tmp.data(), INSERT_VALUES);
+          }
+          
         }
         else
         {
@@ -225,9 +237,16 @@ void AppCtx::smoothsMesh(Vec & Vec_normal_, Vec &Vec_x_)
 
           // compute error
           VecGetValues(Vec_x_, dim, vtx_dofs_umesh.data(), tmp.data());
-          error += (tmp-Xi).norm();          
-          
+          error += (tmp-Xi).norm(); 
+
+          old_quality = getCellPatchQuality(Vec_x_, iCs);
           VecSetValues(Vec_x_, dim, vtx_dofs_umesh.data(), Xi.data(), INSERT_VALUES);
+          new_quality = getCellPatchQuality(Vec_x_, iCs);
+          // se a qualidade piorou, volta no que estava antes
+          if (new_quality < old_quality)
+          {
+            VecSetValues(Vec_x_, dim, vtx_dofs_umesh.data(), tmp.data(), INSERT_VALUES);
+          }
         }
 
       }
@@ -456,16 +475,83 @@ PetscErrorCode AppCtx::moveMesh(Vec const& Vec_x_0, Vec const& Vec_up_0, Vec con
   PetscFunctionReturn(0);
 }
 
+/// @param Vec_x the mesh
+/// @param cell_id cell id
+/// @return quality number in range ]-inf,1] ... 1 is the best
+double AppCtx::getCellQuality(Vec const& Vec_x_, int cell_id) const
+{
+  MatrixXd  x_coefs(nodes_per_cell, dim);
+  VectorXi  mapM_c(dim*nodes_per_cell); // mesh velocity
+  
+  dof_handler[DH_MESH].getVariable(VAR_M).getCellDofs(mapM_c.data(), mesh->getCell(cell_id));
 
+  VecGetValues(Vec_x_, mapM_c.size(), mapM_c.data(), x_coefs.data());
+  
+  if (dim==2)
+  {
+    double l_sqr; // l0^2 + l1^2 + l2^2
+    
+    l_sqr  = sqr(x_coefs(1,0)-x_coefs(0,0)) + sqr(x_coefs(1,1)-x_coefs(0,1));
+    l_sqr += sqr(x_coefs(2,0)-x_coefs(1,0)) + sqr(x_coefs(2,1)-x_coefs(1,1));
+    l_sqr += sqr(x_coefs(0,0)-x_coefs(2,0)) + sqr(x_coefs(0,1)-x_coefs(2,1));
+    
+    double const f = 6.92820323027551; // 4*sqrt(3)
+    double const area = ((x_coefs(0,0)-x_coefs(2,0))*(x_coefs(1,1)-x_coefs(2,1))-(x_coefs(1,0)-x_coefs(2,0))*(x_coefs(0,1)-x_coefs(2,1)))/2;
+    
+    return f*area/l_sqr;
+  }
+  else // if dim==3
+  {
+    double l_rms_3; // pow( (l0^2 + l1^2 + l2^2 + l3^2 + l4^2 + l5^2 + l6^2)/6 , 1.5)
+    
+    l_rms_3  = sqr(x_coefs(0,0)-x_coefs(1,0))   +   sqr(x_coefs(0,1)-x_coefs(1,1))   +   sqr(x_coefs(0,2)-x_coefs(1,2));
+    l_rms_3 += sqr(x_coefs(0,0)-x_coefs(2,0))   +   sqr(x_coefs(0,1)-x_coefs(2,1))   +   sqr(x_coefs(0,2)-x_coefs(2,2));
+    l_rms_3 += sqr(x_coefs(0,0)-x_coefs(3,0))   +   sqr(x_coefs(0,1)-x_coefs(3,1))   +   sqr(x_coefs(0,2)-x_coefs(3,2));
+    l_rms_3 += sqr(x_coefs(1,0)-x_coefs(2,0))   +   sqr(x_coefs(1,1)-x_coefs(2,1))   +   sqr(x_coefs(1,2)-x_coefs(2,2));
+    l_rms_3 += sqr(x_coefs(1,0)-x_coefs(3,0))   +   sqr(x_coefs(1,1)-x_coefs(3,1))   +   sqr(x_coefs(1,2)-x_coefs(3,2));
+    l_rms_3 += sqr(x_coefs(2,0)-x_coefs(3,0))   +   sqr(x_coefs(2,1)-x_coefs(3,1))   +   sqr(x_coefs(2,2)-x_coefs(3,2));
+    l_rms_3 /= 6.;
+    
+    l_rms_3 = pow(l_rms_3,1.5);
+    
+    double const f = 8.48528137423857; // 6*sqrt(2)
+    
+    double x21 = x_coefs(1,0) - x_coefs(0,0);
+    double x32 = x_coefs(2,0) - x_coefs(1,0);
+    double x43 = x_coefs(3,0) - x_coefs(2,0);
+    double y12 = x_coefs(0,1) - x_coefs(1,1);
+    double y23 = x_coefs(1,1) - x_coefs(2,1);
+    double y34 = x_coefs(2,1) - x_coefs(3,1);
+    double z12 = x_coefs(0,2) - x_coefs(1,2);
+    double z23 = x_coefs(1,2) - x_coefs(2,2);
+    double z34 = x_coefs(2,2) - x_coefs(3,2);
+    double volume = x21*(y23*z34 - y34*z23 ) + x32*(y34*z12 - y12*z34 ) + x43*(y12*z23 - y23*z12 );
+    
+    return f*volume/l_rms_3;
+  }
+  
+  
+}
 
+/// @param Vec_x_ the mesh
+/// 
+double AppCtx::getCellPatchQuality(Vec const& Vec_x_, int const* cells) const
+{
+  double quality=99999999, aux;
+  
+  for (int i = 0; ; ++i)
+  {
+    if (cells[i] < 0)
+      break;
 
+    aux = getCellQuality(Vec_x_, cells[i]);
+    if (aux < quality)
+      quality = aux;
+  }
 
-
-
-
-
-
-
+  return quality;
+  
+}
 
 
 

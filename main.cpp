@@ -330,7 +330,7 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
   {
     if (ale) {
       printf("ale with steady problem?\n");
-      throw;
+      //throw;
     }
     //dt = 1.e50;
   }
@@ -1018,14 +1018,16 @@ void AppCtx::onUpdateMesh()
   computeDirichletEntries();
 }
 
-void AppCtx::setInitialConditions()
+PetscErrorCode AppCtx::setInitialConditions()
 {
+  PetscErrorCode      ierr(0);
+  
   Vector    Uf(dim);
-  double    pf;
+  //double    pf;
   Vector    X(dim);
   Tensor    R(dim,dim);
   VectorXi  dofs(dim);
-  int       dof;
+  //int       dof;
   int tag;
   
   VecZeroEntries(Vec_res);
@@ -1038,7 +1040,7 @@ void AppCtx::setInitialConditions()
 
   
   copyMesh2Vec(Vec_x_0);
-
+  copyMesh2Vec(Vec_x_1);
   
   // velocidade inicial
   point_iterator point = mesh->pointBegin();
@@ -1065,17 +1067,40 @@ void AppCtx::setInitialConditions()
   double tt=0;
   moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, tt, Vec_x_1);
 
-  //point = mesh->pointBegin();
-  //point_end = mesh->pointEnd();
-  //for (; point != point_end; ++point)
-  //{
-    //point->getCoord(X.data());
-    //cout << "HAAAA : " << X.transpose() << endl;
-  //} // end point loop 
+  point = mesh->pointBegin();
+  point_end = mesh->pointEnd();
+  for (; point != point_end; ++point)
+  {
+  //point->getCoord(X.data());
+  //cout << "HAAAA : " << X.transpose() << endl;
+  } // end point loop 
 
+  for (int i = 0; i < 5; ++i)
+  {
+    // * SOLVE THE SYSTEM *
+    if (solve_the_sys)
+      ierr = SNESSolve(snes,PETSC_NULL,Vec_up_1);  CHKERRQ(ierr);
+    // * SOLVE THE SYSTEM *
   
-  calcMeshVelocity(Vec_x_0, Vec_x_1, Vec_v_mid);
+    // update
+    if (ale)
+    {
+      //double tt = time_step==0? dt : current_time;
   
+      moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, 0/*time*/, Vec_x_1); // Euler
+      //moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, current_time, Vec_x_1); // Adams-Bashforth
+      calcMeshVelocity(Vec_x_0, Vec_x_1, Vec_v_mid);
+      
+      // initial guess for the next time step; u(n+1) = 2*u(n) - u(n-1)
+      VecCopy(Vec_up_1, Vec_res);
+      VecScale(Vec_res,2.);
+      VecAXPY(Vec_res, -1., Vec_up_0);
+      VecCopy(Vec_res, Vec_up_1); // u(n+1) = 2*u(n) - u(n-1)
+      
+    }    
+  }
+  
+  PetscFunctionReturn(0);
 }
 
 PetscErrorCode AppCtx::checkSnesConvergence(SNES snes, PetscInt it,PetscReal xnorm, PetscReal pnorm, PetscReal fnorm, SNESConvergedReason *reason)
@@ -1146,6 +1171,8 @@ PetscErrorCode AppCtx::solveTimeProblem()
   //cout << "number of linear iterations used by the nonlinear solver " << lits << endl;
 
   double initial_volume = getMeshVolume(), final_volume;
+  Vector X(dim), Xe(dim);
+  double x_error=0;
 
   if (print_to_matlab)
     printMatlabLoader();
@@ -1153,17 +1180,27 @@ PetscErrorCode AppCtx::solveTimeProblem()
   // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   // Solve nonlinear system
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  setInitialConditions();
-  int its;
     
   printf("initial volume: %.15lf \n", initial_volume);
   current_time = 0;
   time_step = 0;
   double Qmax=0;
   double steady_error=1;
+  setInitialConditions();
+  int its;  
+  
+  
+  // WARNING: ADAMS-BASHFORTH IS NOT SELF STARTING
   for(;;)
   {
-    if ((time_step%print_step) == 0)
+    if (maxts==0)
+    {
+      //check initial conditions
+      computeError(Vec_x_0, Vec_up_0,current_time);
+      break;
+    }
+      
+    if ((time_step%print_step)==0)
     {
       if (family_files)
       {
@@ -1204,6 +1241,11 @@ PetscErrorCode AppCtx::solveTimeProblem()
       
     }
 
+    mesh->getNode(0)->getCoord(X.data());
+    Xe(0) = exp(0.4*sin(pi*current_time)/pi);
+    Xe(1) = 0;
+    x_error += (X-Xe).norm()/maxts;
+    
     // * SOLVE THE SYSTEM *
     if (solve_the_sys)
       ierr = SNESSolve(snes,PETSC_NULL,Vec_up_1);        CHKERRQ(ierr);
@@ -1217,10 +1259,13 @@ PetscErrorCode AppCtx::solveTimeProblem()
     // update
     if (ale)
     {
+      //double tt = time_step==0? dt : current_time;
+
       copyVec2Mesh(Vec_x_1);
       VecCopy(Vec_x_1, Vec_x_0);
-      //moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, current_time, Vec_x_1); // Adams-Bashforth
-      moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, current_time, Vec_x_1); // Euler
+
+      //moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, current_time, Vec_x_1); // Euler
+      moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, current_time, Vec_x_1); // Adams-Bashforth
       calcMeshVelocity(Vec_x_0, Vec_x_1, Vec_v_mid);
       
       // initial guess for the next time step; u(n+1) = 2*u(n) - u(n-1)
@@ -1241,7 +1286,6 @@ PetscErrorCode AppCtx::solveTimeProblem()
     VecAXPY(Vec_res,-1.0,Vec_up_1);
     steady_error = VecNorm(Vec_res, NORM_1)/(Qmax==0.?1.:Qmax);
     
-    
     printContactAngle(fprint_ca);
     
     
@@ -1258,12 +1302,19 @@ PetscErrorCode AppCtx::solveTimeProblem()
       break;
     }
   }
+  //
+  // END TIME LOOP
+  //
+  
+  
+  
+
   cout << endl;
 
   final_volume = getMeshVolume();
   printf("final volume: %.15lf \n", final_volume);
-  printf("volume error 100*(f-i)/i: %.15lf \%\n", 100*abs(final_volume-initial_volume)/initial_volume);
-  
+  printf("volume error 100*(f-i)/i: %.15lf per percent\n", 100*abs(final_volume-initial_volume)/initial_volume);
+  printf("x error : %.15lf \n", x_error);
 
 
 
@@ -1297,7 +1348,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
   int lits;
   SNESGetLinearSolveIterations(snes,&lits);
 
-  if (unsteady)
+  //if (unsteady)
   {
     cout << "\nmean errors: \n";
     cout << "# hmean            u_L2_norm         p_L2_norm         grad_u_L2_norm    grad_p_L2_norm" << endl;
@@ -1330,6 +1381,7 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
   double              Jx;
   double              weight;
   int                 tag;
+  double              volume=0;
 
   double              p_L2_norm = 0.;
   double              u_L2_norm = 0.;
@@ -1393,6 +1445,7 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
       grad_u_L2_norm   += (grad_u_exact(Xqp, tt, tag) - dxU).squaredNorm()*weight*Jx;
       grad_p_L2_norm   += (grad_p_exact(Xqp, tt, tag) - dxP).squaredNorm()*weight*Jx;
 
+      volume += Jx*weight;
     } // fim quadratura
 
   } // end elementos
@@ -1464,10 +1517,10 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
     printf("%.15lf %.15lf %.15lf %.15lf %.15lf\n",hmean, u_L2_norm, p_L2_norm, grad_u_L2_norm, grad_p_L2_norm);
   }
   
-  Stats.add_u_L2(u_L2_norm/maxts);
-  Stats.add_p_L2(p_L2_norm/maxts);
-  Stats.add_grad_u_L2(grad_u_L2_norm/maxts);
-  Stats.add_grad_p_L2(grad_p_L2_norm/maxts);
+  Stats.add_u_L2(u_L2_norm/max(maxts,1));
+  Stats.add_p_L2(p_L2_norm/max(maxts,1));
+  Stats.add_grad_u_L2(grad_u_L2_norm/max(maxts,1));
+  Stats.add_grad_p_L2(grad_p_L2_norm/max(maxts,1));
   
 }
 

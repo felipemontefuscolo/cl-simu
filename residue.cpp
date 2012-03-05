@@ -247,7 +247,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 // ***********
 // form the residue of the cell
 void AppCtx::formCellFunction(cell_iterator &cell,
-                              VectorXi &mapU_c,  VectorXi &mapP_c, // mappers
+                              VectorXi &mapU_c,  VectorXi &/*mapP_c*/, // mappers
                               MatrixXd &u_coefs_c_new,  VectorXd &p_coefs_c_new, // coefficients
                               VectorXd &FUloc, VectorXd &FPloc) // output: local residue
 {
@@ -304,7 +304,9 @@ void AppCtx::formCellFunction(cell_iterator &cell,
   double              bble_integ=0;
 
   VectorXi            cell_nodes(nodes_per_cell);
-  double              J_mid, J_new, J_old;
+  double              J_mid;
+  //double              J_new;
+  //double              J_old;
   double              JxW_mid;
   double              weight=0;
   double              visc=-1; // viscosity
@@ -601,8 +603,8 @@ void AppCtx::formCellFunction(cell_iterator &cell,
 // ***********
 // form the residue of the facet
 void AppCtx::formFacetFunction(facet_iterator &facet,
-                       VectorXi const& mapU_f,  VectorXi const& mapP_f,   // mappers
-                       MatrixXd &u_coefs_f_new,  VectorXd &p_coefs_f_new, // coefficients
+                       VectorXi const& mapU_f,  VectorXi const& /*mapP_f*/,   // mappers
+                       MatrixXd &u_coefs_f_new,  VectorXd &/*p_coefs_f_new*/, // coefficients
                        VectorXd &FUloc) // output: local residue
 {
   int                 tag;
@@ -641,8 +643,8 @@ void AppCtx::formFacetFunction(facet_iterator &facet,
   Vector              normal(dim);
   double              J_mid=0,JxW_mid;
   double              weight=0;
-  double              visc;
-  double              rho;
+  //double              visc;
+  //double              rho;
 
   VectorXi            mapM_f(dim*nodes_per_facet);
 
@@ -684,8 +686,8 @@ void AppCtx::formFacetFunction(facet_iterator &facet,
   u_coefs_f_mid_trans = utheta*u_coefs_f_new_trans + (1.-utheta)*u_coefs_f_old_trans;
   x_coefs_f_mid_trans = utheta*x_coefs_f_new_trans + (1.-utheta)*x_coefs_f_old_trans;
 
-  visc = muu(tag);
-  rho  = pho(Xqp,tag);
+  //visc = muu(tag);
+  //rho  = pho(Xqp,tag);
 
 
   for (int qp = 0; qp < n_qpts_facet; ++qp)
@@ -782,8 +784,8 @@ void AppCtx::formCornerFunction(corner_iterator &corner,
   double              J_mid=0, JxW_mid;
   double              weight=0;
   double              gama_mid;
-  double              visc;
-  double              rho;
+  //double              visc;
+  //double              rho;
   int                 iCs[FEPIC_MAX_ICELLS];
   int                 eiCs[FEPIC_MAX_ICELLS];
   int                 *iCs_end;
@@ -817,8 +819,8 @@ void AppCtx::formCornerFunction(corner_iterator &corner,
   u_coefs_r_mid_trans = utheta*u_coefs_r_new.transpose() + (1.-utheta)*u_coefs_r_old.transpose();
   x_coefs_r_mid_trans = utheta*x_coefs_r_new.transpose() + (1.-utheta)*x_coefs_r_old.transpose();
 
-  visc = muu(tag);
-  rho  = pho(Xqp,tag);
+  //visc = muu(tag);
+  //rho  = pho(Xqp,tag);
 
   if (dim==3)
   {

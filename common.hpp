@@ -330,7 +330,7 @@ public:
   void evaluateQuadraturePts();
   void computeDirichletEntries();
   void onUpdateMesh();
-  void setInitialConditions();
+  PetscErrorCode setInitialConditions();
   PetscErrorCode checkSnesConvergence(SNES snes, PetscInt it,PetscReal xnorm, PetscReal pnorm, PetscReal fnorm, SNESConvergedReason *reason);
   PetscErrorCode solveTimeProblem();
   PetscErrorCode formJacobian(SNES /*snes*/,Vec x,Mat *Mat_Jac, Mat* /*prejac*/, MatStructure * /*flag*/);
@@ -392,6 +392,8 @@ public:
   // @param[out] u_mesh
   PetscErrorCode calcMeshVelocity(Vec const& Vec_x_0, Vec const& Vec_x_1, Vec &Vec_v_mid);
   PetscErrorCode moveMesh(Vec const& Vec_x_0, Vec const& Vec_up_0, Vec const& Vec_up_1, double const vtheta, double tt, Vec & Vec_x_new);
+  double getCellQuality(Vec const& Vec_x_, int cell_id) const;
+  double getCellPatchQuality(Vec const& Vec_x_, int const* cells) const;
   void freePetscObjs();
   
   

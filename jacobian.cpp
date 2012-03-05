@@ -76,7 +76,8 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
     //VectorXd          FUloc(n_dofs_u_per_cell); // subvetor da função f (parte de U)
     //VectorXd          FPloc(n_dofs_p_per_cell);     // subvetor da função f (parte de P)
     VectorXi            cell_nodes(nodes_per_cell);
-    double              J_mid, J_new, J_old;
+    double              J_mid;
+    //double              J_new, J_old;
     double              JxW_mid;
     double              weight;
     double              visc=-1; // viscosity
