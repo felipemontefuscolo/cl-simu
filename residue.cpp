@@ -30,6 +30,12 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
     VectorXi          mapU_c(n_dofs_u_per_cell);
     VectorXi          mapP_c(n_dofs_p_per_cell);
 
+    MatrixXd          R(n_dofs_u_per_cell,n_dofs_u_per_cell);
+    VectorXd          zero_entries(n_dofs_u_per_cell);
+    MatrixXd          Elim_normal(n_dofs_u_per_cell,n_dofs_u_per_cell);
+    VectorXi          cell_nodes(nodes_per_cell);
+    
+  
     //const int tid = omp_get_thread_num();
     //const int nthreads = omp_get_num_threads();
     //const int n_cell_colors = mesh->numCellColors();
@@ -59,7 +65,14 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
         formCellFunction(cell, mapU_c, mapP_c, u_coefs_c_new, p_coefs_c, FUloc, FPloc);
 
-
+        // elimination R^T * Ihat * R
+        mesh->getCellNodesId(&*cell, cell_nodes.data());
+        getRotationMatrix(R, nodes_per_cell, cell_nodes.data(), Vec_x_1, current_time+dt);
+        getEliminationVector(zero_entries, nodes_per_cell, cell_nodes.data());
+        Elim_normal = R.transpose()*zero_entries.asDiagonal()*R;
+        
+        FUloc = Elim_normal*FUloc;
+        
         VecSetValues(Vec_fun, mapU_c.size(), mapU_c.data(), FUloc.data(), ADD_VALUES);
         VecSetValues(Vec_fun, mapP_c.size(), mapP_c.data(), FPloc.data(), ADD_VALUES);
 
@@ -74,14 +87,19 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
   // LOOP NAS FACES DO CONTORNO
   //#pragma omp parallel default(none) shared(Vec_up_k,Vec_fun,cout)
   {
-    VectorXd          FUloc(n_dofs_u_per_facet);
+    VectorXd        FUloc(n_dofs_u_per_facet);
     //VectorXd          FPloc(n_dofs_p_per_facet); // don't need it
 
-    MatrixXd             u_coefs_f(n_dofs_u_per_facet/dim, dim);
-    VectorXd             p_coefs_f(n_dofs_p_per_facet);
-
-    VectorXi               mapU_f(n_dofs_u_per_facet);
-    VectorXi               mapP_f(n_dofs_p_per_facet);
+    MatrixXd        u_coefs_f(n_dofs_u_per_facet/dim, dim);
+    VectorXd        p_coefs_f(n_dofs_p_per_facet);
+    
+    VectorXi        mapU_f(n_dofs_u_per_facet);
+    VectorXi        mapP_f(n_dofs_p_per_facet);
+    
+    MatrixXd        R(n_dofs_u_per_facet,n_dofs_u_per_facet);
+    VectorXd        zero_entries(n_dofs_u_per_facet);
+    MatrixXd        Elim_normal(n_dofs_u_per_facet,n_dofs_u_per_facet);
+    VectorXi        facet_nodes(nodes_per_facet);
 
     bool is_neumann;
     bool is_surface;
@@ -124,6 +142,14 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
         formFacetFunction(facet, mapU_f, mapP_f, u_coefs_f, p_coefs_f,FUloc);
 
+        // elimination R^T * Ihat * R
+        mesh->getFacetNodesId(&*facet, facet_nodes.data());
+        getRotationMatrix(R, nodes_per_facet, facet_nodes.data(), Vec_x_1, current_time+dt);
+        getEliminationVector(zero_entries, nodes_per_facet, facet_nodes.data());
+        Elim_normal = R.transpose()*zero_entries.asDiagonal()*R;
+
+        FUloc = Elim_normal*FUloc;
+
         VecSetValues(Vec_fun, mapU_f.size(), mapU_f.data(), FUloc.data(), ADD_VALUES);
 
       }
@@ -137,14 +163,19 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
   // LINHA DE CONTATO
   //#pragma omp parallel shared(Vec_up_k,Vec_fun,cout) default(none)
   {
-    int                 tag;
-    bool                is_triple;
+    int              tag;
+    bool             is_triple;
 
-    MatrixXd             u_coefs_r(n_dofs_u_per_corner/dim, dim);
-    VectorXd          FUloc(n_dofs_u_per_corner);
+    MatrixXd         u_coefs_r(n_dofs_u_per_corner/dim, dim);
+    VectorXd         FUloc(n_dofs_u_per_corner);
 
-    VectorXi               mapU_r(n_dofs_u_per_corner);
-    VectorXi               mapP_r(n_dofs_p_per_corner);
+    VectorXi         mapU_r(n_dofs_u_per_corner);
+    VectorXi         mapP_r(n_dofs_p_per_corner);
+
+    MatrixXd         R(n_dofs_u_per_corner,n_dofs_u_per_corner);
+    VectorXd         zero_entries(n_dofs_u_per_corner);
+    MatrixXd         Elim_normal(n_dofs_u_per_corner,n_dofs_u_per_corner);
+    VectorXi         corner_nodes(nodes_per_corner);
 
     //const int tid = omp_get_thread_num();
     //const int nthreads = omp_get_num_threads();
@@ -170,6 +201,14 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       VecGetValues(Vec_up_k , mapU_r.size(), mapU_r.data(), u_coefs_r.data());
 
       formCornerFunction(corner,mapU_r,mapP_r,u_coefs_r,FUloc);
+
+      // elimination R^T * Ihat * R
+      mesh->getCornerNodesId(&*corner, corner_nodes.data());
+      getRotationMatrix(R, nodes_per_corner, corner_nodes.data(), Vec_x_1, current_time+dt);
+      getEliminationVector(zero_entries, nodes_per_corner, corner_nodes.data());
+      Elim_normal = R.transpose()*zero_entries.asDiagonal()*R;
+
+      FUloc = Elim_normal*FUloc;
 
       VecSetValues(Vec_fun, mapU_r.size(), mapU_r.data(), FUloc.data(), ADD_VALUES);
       //cout << FUloc.transpose() << endl;
@@ -760,8 +799,8 @@ void AppCtx::formCornerFunction(corner_iterator &corner,
   int                 tag;
   bool                is_triple;
   //MatrixXd             u_coefs_r_mid(n_dofs_u_per_corner/dim, dim);
-  MatrixXd            u_coefs_r_mid_trans(dim, n_dofs_u_per_facet/dim);  // n+utheta
-  MatrixXd            u_coefs_r_old(n_dofs_u_per_facet/dim, dim);        // n
+  MatrixXd            u_coefs_r_mid_trans(dim, n_dofs_u_per_corner/dim);  // n+utheta
+  MatrixXd            u_coefs_r_old(n_dofs_u_per_corner/dim, dim);        // n
   MatrixXd            x_coefs_r_mid_trans(dim, nodes_per_corner);
   MatrixXd            x_coefs_r_new(nodes_per_corner, dim);
   MatrixXd            x_coefs_r_old(nodes_per_corner, dim);

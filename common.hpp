@@ -226,6 +226,18 @@ void cross(AnyVector & a, AnyVector const& b)
   a(2) = r2;
 
 }
+template<class AnyVector>
+void cross(AnyVector & c, AnyVector const& a, AnyVector const& b)
+{
+  double const r0 = a(1)*b(2) - a(2)*b(1);
+  double const r1 = a(2)*b(0) - a(0)*b(2);
+  double const r2 = a(0)*b(1) - a(1)*b(0);
+
+  c(0) = r0;
+  c(1) = r1;
+  c(2) = r2;
+
+}
 
 
 
@@ -374,6 +386,120 @@ public:
         const int edge_id = cell->getFacetId(m);
         dof_handler[DH_].getVariable(VAR_).getFacetAssociatedDofs(dofs, mesh->getFacet(edge_id));
       }
+    }
+  }
+
+  /// get rotation matrix at given points
+  /// @param R rotation matrix
+  /// @param n_nodes number of nodes
+  /// @param Vec_x_ the mesh
+  /// @param t time
+  void getRotationMatrix(Eigen::MatrixXd &R, int n_nodes, int const* nodes, Vec const& Vec_x_, double t) const
+  {
+    // check
+    if ((R.rows() != R.cols()) || (R.cols() != dim*n_nodes))
+    {
+      cout << "Rotation matrix: " << R.rows() << " z " << R.cols() << endl;
+      cout << "dim x n_nodes:   " << (dim*n_nodes) << endl;
+    }
+    R.setIdentity();
+    Vector X(dim);
+    Vector normal(dim);
+    Vector tan1(dim);
+    Vector tan2(dim);
+    int    dofs[dim];
+    int    tag;
+    int    k;
+    double aux[3];
+    Point const* point;
+    
+    // NODES
+    for (int i = 0; i < n_nodes; ++i)
+    {
+      point = mesh->getNode(nodes[i]);
+      tag = point->getTag();
+      //m = point->getPosition() - mesh->numVerticesPerCell();
+      //cell = mesh->getCell(point->getIncidCell());
+      
+      if (!is_in(tag,solid_tags) && !is_in(tag,triple_tags))
+        continue;
+      
+      dof_handler[DH_MESH].getVariable(VAR_M).getVertexAssociatedDofs(dofs, point);
+      VecGetValues(Vec_x_, dim, dofs, X.data());
+      
+      normal = -solid_normal(X,t,tag);
+      
+      R.block(i*dim,i*dim,1,dim)  = normal.transpose();
+      tan1.setZero();
+      if (dim==2)
+      {
+        tan1(0) = -normal(1);
+        tan1(1) =  normal(0);
+
+        R.block(i*dim+1,i*dim,1,dim)  = tan1.transpose();
+      }
+      else
+      if (dim==3)
+      {
+        tan2.setZero();
+        
+        aux[0] = sqr(normal(1)) + sqr(normal(2));
+        aux[1] = sqr(normal(2)) + sqr(normal(0));
+        aux[2] = sqr(normal(0)) + sqr(normal(1));
+        
+        if (aux[0] > aux[1])
+        {
+          if (aux[0] > aux[2])
+            k = 0;
+          else
+            k = 2;
+        }
+        else if (aux[1] > aux[2])
+          k = 1;
+        else
+          k = 2;
+        
+        tan1(k) = 1;
+        
+        cross(tan1, normal);
+        tan1 *= -1.0;
+        
+        tan1.normalize();
+        
+        cross(tan2, normal, tan1);
+        
+        tan2.normalize();
+        
+        R.block(i*dim+1,i*dim,1,dim)  = tan1.transpose();
+        
+        R.block(i*dim+2,i*dim,1,dim)  = tan2.transpose();
+      }
+        
+        
+        
+    } // end nodes
+    
+  }
+
+  // Elim.asDiagonal() : matriz que quando multiplica outra remove a componente x dos nós em solid_tags&triple_tags
+  void getEliminationVector(Eigen::VectorXd &Elim, int n_nodes, int const* nodes) const
+  {
+    // check
+    if (Elim.size() != dim*n_nodes)
+    {
+      cout << "getEliminationVector: " << Elim.size() << endl;
+      cout << "dim x n_nodes:   " << (dim*n_nodes) << endl;
+    }
+    
+    Elim.setOnes();
+    
+    int tag;
+    for (int i = 0; i < n_nodes; ++i)
+    {
+      tag = mesh->getNode(nodes[i])->getTag();
+      
+      if (is_in(tag,solid_tags) || is_in(tag,triple_tags))
+        Elim(i*dim) = 0;
     }
   }
 

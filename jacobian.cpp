@@ -103,7 +103,7 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
 
     Vector              force_at_mid(dim);
     Vector              Res(dim);                                     // residue
-    Tensor              dResdu(dim,dim);                                // residue derivative
+    Tensor              dResdu(dim,dim);                              // residue derivative
     Tensor const        I(Tensor::Identity(dim,dim));
     Vector              vec(dim);     // temp
     Tensor              Ten(dim,dim); // temp
@@ -118,6 +118,12 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
     VectorXi            mapM_r(dim*nodes_per_corner);
 
     Tensor              Id(Tensor::Identity(dim,dim));
+
+    MatrixXd            R(n_dofs_u_per_cell,n_dofs_u_per_cell);
+    VectorXd            zero_entries(n_dofs_u_per_cell);
+    MatrixXd            Elim_normal(n_dofs_u_per_cell,n_dofs_u_per_cell);
+    //VectorXi            cell_nodes(nodes_per_cell);
+
 
     const int tid = omp_get_thread_num();
     const int nthreads = omp_get_num_threads();
@@ -507,7 +513,16 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
           double const b = 1./bble_integ;
           Aloc += utheta*a*Gnx*iBbb*Gnx.transpose() - utheta*b*Bnb*Gnx.transpose() - b*Gnx*Bbn;
         }
+
+
+        // elimination R^T * Ihat * R
+        mesh->getCellNodesId(&*cell, cell_nodes.data());
+        getRotationMatrix(R, nodes_per_cell, cell_nodes.data(), Vec_x_1, current_time+dt);
+        getEliminationVector(zero_entries, nodes_per_cell, cell_nodes.data());
+        Elim_normal = R.transpose()*zero_entries.asDiagonal()*R;
         
+        Aloc = Elim_normal*Aloc;
+        Gloc = Elim_normal*Gloc;
         #pragma omp critical
         {
           MatSetValues(*JJ, mapU_c.size(), mapU_c.data(), mapU_c.size(), mapU_c.data(), Aloc.data(),  ADD_VALUES);
@@ -553,6 +568,10 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
     VectorXi           mapU_f(n_dofs_u_per_facet);
     VectorXi           mapP_f(n_dofs_p_per_facet);
 
+    MatrixXd            R(n_dofs_u_per_facet,n_dofs_u_per_facet);
+    VectorXd            zero_entries(n_dofs_u_per_facet);
+    MatrixXd            Elim_normal(n_dofs_u_per_facet,n_dofs_u_per_facet);
+    //VectorXi            facet_nodes(nodes_per_facet);
 
     // LOOP NAS FACES DO CONTORNO
     facet_iterator facet = mesh->facetBegin();
@@ -622,6 +641,12 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
         
       } // end quadratura
 
+      // elimination R^T * Ihat * R
+      mesh->getFacetNodesId(&*facet, facet_nodes.data());
+      getRotationMatrix(R, nodes_per_facet, facet_nodes.data(), Vec_x_1, current_time+dt);
+      getEliminationVector(zero_entries, nodes_per_facet, facet_nodes.data());
+      Elim_normal = R.transpose()*zero_entries.asDiagonal()*R;
+      
       MatSetValues(*JJ, mapU_f.size(), mapU_f.data(), mapU_f.size(), mapU_f.data(), Aloc_f.data(),  ADD_VALUES);
 
 
@@ -650,6 +675,11 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
     VectorXi          mapP_r(n_dofs_p_per_corner);
     double            h;
     volatile    double hh;
+
+    MatrixXd            R(n_dofs_u_per_corner,n_dofs_u_per_corner);
+    VectorXd            zero_entries(n_dofs_u_per_corner);
+    MatrixXd            Elim_normal(n_dofs_u_per_corner,n_dofs_u_per_corner);
+    VectorXi            corner_nodes(nodes_per_corner);
 
     //const int tid = omp_get_thread_num();
     //const int nthreads = omp_get_num_threads();
@@ -696,15 +726,41 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
         }
 
       }
+      
+      // elimination R^T * Ihat * R
+      mesh->getCornerNodesId(&*corner, corner_nodes.data());
+      getRotationMatrix(R, nodes_per_corner, corner_nodes.data(), Vec_x_1, current_time+dt);
+      getEliminationVector(zero_entries, nodes_per_corner, corner_nodes.data());
+      Elim_normal = R.transpose()*zero_entries.asDiagonal()*R;
+              
       MatSetValues(*JJ, mapU_r.size(), mapU_r.data(), mapU_r.size(), mapU_r.data(), Aloc_r.data(),  ADD_VALUES);
 
     }
+  } // end parallel
 
-
-
-
+  // solid & triple tags .. force normal
+  if (force_dirichlet) {
+    int nodeid;
+    int u_dofs[dim];
+    MatrixXd E(dim,dim);
+    MatrixXd R(dim,dim);
+    MatrixXd A(dim,dim);
+    E.setZero();
+    E(0,0) = 1;
+    
+    point_iterator point = mesh->pointBegin();
+    point_iterator point_end = mesh->pointEnd();
+    for ( ; point != point_end; ++point)
+    {
+      if (!is_in(point->getTag(),solid_tags) && !is_in(point->getTag(),triple_tags))
+        continue;
+      dof_handler[DH_UNKS].getVariable(VAR_U).getVertexAssociatedDofs(u_dofs, &*point);
+      nodeid = mesh->getPointId(&*point);
+      getRotationMatrix(R, 1, &nodeid, Vec_x_1, current_time+dt);
+      A = R.transpose()*E*R;
+      MatSetValues(*JJ, dim, u_dofs, dim, u_dofs, A.data(), ADD_VALUES);
+    }
   }
-
 
   Assembly(*JJ);
 

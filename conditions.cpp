@@ -42,7 +42,7 @@ inline double sign(double a) {a<0 ? -1 : 1;};
 #define COUETTE        12
 #define PSEUDO_OSC2D   13
 
-#define PROBLEM_TYPE PSEUDO_OSC2D
+#define PROBLEM_TYPE 5
 
 
 #if (PROBLEM_TYPE==CAVITY_2D_3D)
