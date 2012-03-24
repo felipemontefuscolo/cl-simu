@@ -7,9 +7,9 @@ PETSC_DIR=/home/felipe/libs/petsc-3.2-p2
 #PETSC_DIR=/home/felipe/libs/petsc-dev
 
 CFLAGS   = -Wall -Wextra
-FFLAGS   = 
+FFLAGS   =
 CPPFLAGS = -I. -I${FEPIC_DIR} $(FEP_INCLUDE) -Wall -Wextra -fopenmp -m64 -msse2 -L$(FEP_LIBS_DIR) -lfepic $(FEP_LDFLAGS)
-FPPFLAGS = 
+FPPFLAGS =
 
 #onde é procurado as bibliotecas
 #SLINKER		+= -Wl,-rpath,/home/felipe/Slibs/smesh -L/home/felipe/Slibs/smesh
@@ -19,7 +19,7 @@ include ${PETSC_DIR}/conf/variables
 include ${PETSC_DIR}/conf/rules
 include ${FEPIC_DIR}/conf/variables
 
-#PETSC_COMPILE  +=  -I. -I${FEPIC_DIR} $(FEP_INCLUDE) -Wall -Wextra -fopenmp -m64 -msse2 
+#PETSC_COMPILE  +=  -I. -I${FEPIC_DIR} $(FEP_INCLUDE) -Wall -Wextra -fopenmp -m64 -msse2
 PETSC_KSP_LIB += -L$(FEP_LIBS_DIR) -lfepic $(FEP_LDFLAGS)
 
 

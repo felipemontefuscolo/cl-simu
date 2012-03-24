@@ -35,14 +35,14 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
 
     VectorXd            p_coefs_c_new(n_dofs_p_per_cell);  // n+1
     //VectorXd            p_coefs_c_old(n_dofs_p_per_cell);  // n
-    
+
     //MatrixXd            x_coefs_c_mid(nodes_per_cell, dim);       // n+utheta
     MatrixXd            x_coefs_c_mid_trans(dim, nodes_per_cell); // n+utheta
     MatrixXd            x_coefs_c_new(nodes_per_cell, dim);       // n+1
     MatrixXd            x_coefs_c_new_trans(dim, nodes_per_cell); // n+1
     MatrixXd            x_coefs_c_old(nodes_per_cell, dim);       // n
     MatrixXd            x_coefs_c_old_trans(dim, nodes_per_cell); // n
-    
+
     Tensor              F_c_mid(dim,dim);       // n+utheta
     Tensor              invF_c_mid(dim,dim);    // n+utheta
     Tensor              invFT_c_mid(dim,dim);   // n+utheta
@@ -52,9 +52,9 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
     //Tensor              F_c_old(dim,dim);       // n
     //Tensor              invF_c_old(dim,dim);    // n
     //Tensor              invFT_c_old(dim,dim);   // n
-    
+
     /* All variables are in (n+utheta) by default */
-    
+
     MatrixXd            dxphi_c(n_dofs_u_per_cell/dim, dim);
     MatrixXd            dxpsi_c(n_dofs_p_per_cell, dim);
     MatrixXd            dxqsi_c(nodes_per_cell, dim);
@@ -87,7 +87,7 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
     double              delk=0;
     double              delta_cd;
     double              rho;
-    
+
     MatrixXd            Aloc(n_dofs_u_per_cell, n_dofs_u_per_cell);
     MatrixXd            Gloc(n_dofs_u_per_cell, n_dofs_p_per_cell);
     MatrixXd            Dloc(n_dofs_p_per_cell, n_dofs_u_per_cell);
@@ -112,16 +112,12 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
     VectorXi            mapU_r(n_dofs_u_per_corner);
     VectorXi            mapP_c(n_dofs_p_per_cell);
     VectorXi            mapP_r(n_dofs_p_per_corner);
-    // mesh velocity    
+    // mesh velocity
     VectorXi            mapM_c(dim*nodes_per_cell);
     VectorXi            mapM_f(dim*nodes_per_facet);
     VectorXi            mapM_r(dim*nodes_per_corner);
 
-    Tensor              Id(Tensor::Identity(dim,dim));
-
-    MatrixXd            R(n_dofs_u_per_cell,n_dofs_u_per_cell);
-    VectorXd            zero_entries(n_dofs_u_per_cell);
-    MatrixXd            Elim_normal(n_dofs_u_per_cell,n_dofs_u_per_cell);
+    MatrixXd            Prj(n_dofs_u_per_cell,n_dofs_u_per_cell); // projector matrix
     //VectorXi            cell_nodes(nodes_per_cell);
 
 
@@ -156,12 +152,12 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
         VecGetValues(Vec_up_0,    mapU_c.size(), mapU_c.data(), u_coefs_c_old.data());
         VecGetValues(Vec_up_k,    mapU_c.size(), mapU_c.data(), u_coefs_c_new.data());
         VecGetValues(Vec_up_k,    mapP_c.size(), mapP_c.data(), p_coefs_c_new.data());
-        
+
         // get nodal coordinates of the old and new cell
         //mesh->getCellNodesId(&*cell, cell_nodes.data());
         //mesh->getNodesCoords(cell_nodes.begin(), cell_nodes.end(), x_coefs_c.data());
         //x_coefs_c_trans = x_coefs_c.transpose();
-        
+
         v_coefs_c_mid_trans = v_coefs_c_mid.transpose();
         x_coefs_c_old_trans = x_coefs_c_old.transpose();
         x_coefs_c_new_trans = x_coefs_c_new.transpose();
@@ -171,13 +167,13 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
         u_coefs_c_mid_trans = utheta*u_coefs_c_new_trans + (1.-utheta)*u_coefs_c_old_trans;
         x_coefs_c_mid_trans = utheta*x_coefs_c_new_trans + (1.-utheta)*x_coefs_c_old_trans;
 
-        //  SetUp 
+        //  SetUp
         visc = muu(tag);
         rho  = pho(Xqp,tag);
         Aloc.setZero();
         Gloc.setZero();
         Dloc.setZero();
-        
+
         if (behaviors & BH_bble_condens_PnPn)
         {
           iBbb.setZero();
@@ -197,14 +193,14 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
           }
 
           hk2 = cell_volume / pi; // element size
-          
+
           double const uconv = (u_coefs_c_old - v_coefs_c_mid).lpNorm<Infinity>();
-          
+
           tauk = 4.*visc/hk2 + 2.*rho*uconv/sqrt(hk2);
           tauk = 1./tauk;
           if (dim==3)
             tauk *= 0.1;
-          
+
           delk = 4.*visc + 2.*rho*uconv*sqrt(hk2);
 
           Eloc.setZero();
@@ -229,17 +225,17 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
           }
           Xc /= cell_volume;
         }
-        
+
         for (int qp = 0; qp < n_qpts_cell; ++qp)
         {
           //F_c_new = x_coefs_c_new_trans * dLqsi_c[qp];
           //inverseAndDet(F_c_new,dim,invF_c_new,J_new);
           //invFT_c_new= invF_c_new.transpose();
-          
+
           //F_c_old = x_coefs_c_old_trans * dLqsi_c[qp];
           //inverseAndDet(F_c_old,dim,invF_c_old,J_old);
-          //invFT_c_old= invF_c_old.transpose();        
-                
+          //invFT_c_old= invF_c_old.transpose();
+
           F_c_mid    = x_coefs_c_mid_trans * dLqsi_c[qp];
           inverseAndDet(F_c_mid, dim, invF_c_mid,J_mid);
           invFT_c_mid= invF_c_mid.transpose();
@@ -354,11 +350,11 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
           if(behaviors & BH_GLS)
           {
             Res = rho*( dUdt +  has_convec*dxU*Uconv_qp) + dxP_new - force_at_mid;
-            
+
             for (int j = 0; j < n_dofs_u_per_cell/dim; ++j)
             {
               dResdu = (rho*phi_c[qp][j]/dt)*I + has_convec*rho*utheta*(  phi_c[qp][j]*dxU + Uconv_qp.dot(dxphi_c.row(j))*I );
-              
+
               for (int i = 0; i < n_dofs_p_per_cell; ++i)
               {
                 vec = dxpsi_c.row(i).transpose();
@@ -366,25 +362,25 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
                 vec = -JxW_mid*tauk*  vec;
                 for (int d = 0; d < dim; d++)
                   Dloc(i, j*dim + d) += vec(d);
-            
+
                 // atençao nos indices
                 vec = JxW_mid*tauk*  has_convec*rho*Uconv_qp.dot(dxphi_c.row(j))* dxpsi_c.row(i).transpose();
                 for (int d = 0; d < dim; d++)
                   Cloc(j*dim + d,i) += vec(d);
               }
-              
+
               for (int i = 0; i < n_dofs_u_per_cell/dim; ++i)
               {
                 // supg term
                 Ten = JxW_mid*tauk* has_convec*(  utheta*rho*phi_c[qp][j]*Res*dxphi_c.row(i) + rho*Uconv_qp.dot(dxphi_c.row(i))*dResdu  );
                 // divergence term
                 Ten+= JxW_mid*delk*utheta*dxphi_c.row(i).transpose()*dxphi_c.row(j);
-                
+
                 for (int c = 0; c < dim; ++c)
                   for (int d = 0; d < dim; ++d)
                     Aloc(i*dim + c, j*dim + d) += Ten(c,d);
               }
-            }   
+            }
 
             for (int i = 0; i < n_dofs_p_per_cell; ++i)
               for (int j = 0; j < n_dofs_p_per_cell; ++j)
@@ -400,43 +396,43 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
                 for (int j = 0; j < dim; ++j) // pressure gradient
                   Gnx(i*dim + c,j) -= JxW_mid* (Xqp(j) - Xc(j))*dxphi_c(i,c);
           }
-          
+
 
         } // fim quadratura
 
         Dloc += utheta*Gloc.transpose();
 
         /* estabilização */
-        
+
         if (behaviors & BH_bble_condens_PnPn)
         {
           invert(iBbb,dim);
 
           Dpb  = utheta*Gbp.transpose();
-  
+
           // correções com os coeficientes da bolha
-          
+
           Ubqp = -utheta*iBbb*FUb; // U bolha no tempo n+utheta
-          
-          for (int qp = 0; qp < n_qpts_cell; ++qp) 
+
+          for (int qp = 0; qp < n_qpts_cell; ++qp)
           {
             F_c_mid    = x_coefs_c_mid_trans * dLqsi_c[qp];
             inverseAndDet(F_c_mid, dim, invF_c_mid,J_mid);
             invFT_c_mid= invF_c_mid.transpose();
-            
+
             Uqp    = u_coefs_c_mid_trans * phi_c[qp];     //n+utheta
             dxbble = invFT_c_mid * dLbble[qp];
             dxUb   = Ubqp*dxbble.transpose();
-            
+
             weight = quadr_cell->weight(qp);
             JxW_mid = J_mid*weight;
-            
+
             for (int j = 0; j < n_dofs_u_per_cell/dim; ++j)
             {
               for (int i = 0; i < n_dofs_u_per_cell/dim; ++i)
               {
                 Ten = has_convec*JxW_mid*rho*utheta*phi_c[qp][i]* phi_c[qp][j] * dxUb;  // advecção
-                
+
                 for (int c = 0; c < dim; ++c)
                   for (int d = 0; d < dim; ++d)
                     Aloc(i*dim + c, j*dim + d) += Ten(c,d);
@@ -445,8 +441,8 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
               for (int c = 0; c < dim; ++c)
                 for (int d = 0; d < dim; ++d)
                   Bbn(c, j*dim + d) += Ten(c,d);
-            }            
-          } // fim quadratura 2 vez          
+            }
+          } // fim quadratura 2 vez
 
           Aloc -= Bnb*iBbb*Bbn;
           Gloc -= Bnb*iBbb*Gbp;
@@ -478,26 +474,26 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
 
 
           //Ubqp = -Gnx.transpose()*u_coefs_c_new; // U bolha no tempo n+utheta
-          
-          for (int qp = 0; qp < n_qpts_cell; ++qp) 
+
+          for (int qp = 0; qp < n_qpts_cell; ++qp)
           {
             F_c_mid    = x_coefs_c_mid_trans * dLqsi_c[qp];
             inverseAndDet(F_c_mid, dim, invF_c_mid,J_mid);
             invFT_c_mid= invF_c_mid.transpose();
-            
+
             Uqp    = u_coefs_c_mid_trans * phi_c[qp];     //n+utheta
             dxbble = invFT_c_mid * dLbble[qp];
             dxUb   = Ubqp*dxbble.transpose();
-            
+
             weight = quadr_cell->weight(qp);
             JxW_mid = J_mid*weight;
-                       
+
             for (int j = 0; j < n_dofs_u_per_cell/dim; ++j)
             {
               for (int i = 0; i < n_dofs_u_per_cell/dim; ++i)
               {
                 Ten = has_convec*JxW_mid*rho*utheta*phi_c[qp][i]* phi_c[qp][j] * dxUb;  // advecção
-                
+
                 for (int c = 0; c < dim; ++c)
                   for (int d = 0; d < dim; ++d)
                     Aloc(i*dim + c, j*dim + d) += Ten(c,d);
@@ -506,23 +502,21 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
               for (int c = 0; c < dim; ++c)
                 for (int d = 0; d < dim; ++d)
                   Bbn(c, j*dim + d) += Ten(c,d);
-            }            
+            }
           } // fim quadratura 2 vez
-          
+
           double const a = 1./(bble_integ*bble_integ);
           double const b = 1./bble_integ;
           Aloc += utheta*a*Gnx*iBbb*Gnx.transpose() - utheta*b*Bnb*Gnx.transpose() - b*Gnx*Bbn;
         }
 
 
-        // elimination R^T * Ihat * R
+        // Projection - to force non-penetrarion bc
         mesh->getCellNodesId(&*cell, cell_nodes.data());
-        getRotationMatrix(R, nodes_per_cell, cell_nodes.data(), Vec_x_1, current_time+dt);
-        getEliminationVector(zero_entries, nodes_per_cell, cell_nodes.data());
-        Elim_normal = R.transpose()*zero_entries.asDiagonal()*R;
-        
-        Aloc = Elim_normal*Aloc;
-        Gloc = Elim_normal*Gloc;
+        getProjectorMatrix(Prj, nodes_per_cell, cell_nodes.data(), Vec_x_1, current_time+dt);
+
+        Aloc = Prj*Aloc;
+        Gloc = Prj*Gloc;
         #pragma omp critical
         {
           MatSetValues(*JJ, mapU_c.size(), mapU_c.data(), mapU_c.size(), mapU_c.data(), Aloc.data(),  ADD_VALUES);
@@ -568,9 +562,7 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
     VectorXi           mapU_f(n_dofs_u_per_facet);
     VectorXi           mapP_f(n_dofs_p_per_facet);
 
-    MatrixXd            R(n_dofs_u_per_facet,n_dofs_u_per_facet);
-    VectorXd            zero_entries(n_dofs_u_per_facet);
-    MatrixXd            Elim_normal(n_dofs_u_per_facet,n_dofs_u_per_facet);
+    MatrixXd           Prj(n_dofs_u_per_facet,n_dofs_u_per_facet);
     //VectorXi            facet_nodes(nodes_per_facet);
 
     // LOOP NAS FACES DO CONTORNO
@@ -628,7 +620,7 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
               for (int c = 0; c < dim; ++c)
                 Aloc_f(i*dim + c, j*dim + c) += JxW_mid* (unsteady*dt) *gama(Xqp,current_time,tag)*dxphi_f.row(i).dot(dxphi_f.row(j));
         }
-        
+
         if (is_solid) // dissipation
         {
           for (int i = 0; i < n_dofs_u_per_facet/dim; ++i)
@@ -636,24 +628,22 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
               for (int c = 0; c < dim; ++c)
                 Aloc_f(i*dim + c, j*dim + c) += JxW_mid *beta_diss()*phi_f[qp][j]*phi_f[qp][i];
         }
-        
-        
-        
+
+
+
       } // end quadratura
 
-      // elimination R^T * Ihat * R
+      // Projection - to force non-penetrarion bc
       mesh->getFacetNodesId(&*facet, facet_nodes.data());
-      getRotationMatrix(R, nodes_per_facet, facet_nodes.data(), Vec_x_1, current_time+dt);
-      getEliminationVector(zero_entries, nodes_per_facet, facet_nodes.data());
-      Elim_normal = R.transpose()*zero_entries.asDiagonal()*R;
-      
+      getProjectorMatrix(Prj, nodes_per_facet, facet_nodes.data(), Vec_x_1, current_time+dt);
+
+      Aloc_f = Prj*Aloc_f;
       MatSetValues(*JJ, mapU_f.size(), mapU_f.data(), mapU_f.size(), mapU_f.data(), Aloc_f.data(),  ADD_VALUES);
 
 
     }
 
   } // end parallel
-
 
   //// LOOP CORNERS
   //#pragma omp parallel shared(Vec_up_k,JJ,cout) default(none)
@@ -674,12 +664,10 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
     VectorXi          mapU_r(n_dofs_u_per_corner);
     VectorXi          mapP_r(n_dofs_p_per_corner);
     double            h;
-    volatile    double hh;
+    volatile double   hh;
 
-    MatrixXd            R(n_dofs_u_per_corner,n_dofs_u_per_corner);
-    VectorXd            zero_entries(n_dofs_u_per_corner);
-    MatrixXd            Elim_normal(n_dofs_u_per_corner,n_dofs_u_per_corner);
-    VectorXi            corner_nodes(nodes_per_corner);
+    MatrixXd          Prj(n_dofs_u_per_corner,n_dofs_u_per_corner);
+    VectorXi          corner_nodes(nodes_per_corner);
 
     //const int tid = omp_get_thread_num();
     //const int nthreads = omp_get_num_threads();
@@ -726,13 +714,12 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
         }
 
       }
-      
-      // elimination R^T * Ihat * R
+
+      // Projection - to force non-penetrarion bc
       mesh->getCornerNodesId(&*corner, corner_nodes.data());
-      getRotationMatrix(R, nodes_per_corner, corner_nodes.data(), Vec_x_1, current_time+dt);
-      getEliminationVector(zero_entries, nodes_per_corner, corner_nodes.data());
-      Elim_normal = R.transpose()*zero_entries.asDiagonal()*R;
-              
+      getProjectorMatrix(Prj, nodes_per_corner, corner_nodes.data(), Vec_x_1, current_time+dt);
+
+      Aloc_r = Prj*Aloc_r;
       MatSetValues(*JJ, mapU_r.size(), mapU_r.data(), mapU_r.size(), mapU_r.data(), Aloc_r.data(),  ADD_VALUES);
 
     }
@@ -740,14 +727,12 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
 
   // solid & triple tags .. force normal
   if (force_dirichlet) {
-    int nodeid;
-    int u_dofs[dim];
-    MatrixXd E(dim,dim);
-    MatrixXd R(dim,dim);
-    MatrixXd A(dim,dim);
-    E.setZero();
-    E(0,0) = 1;
-    
+    int      nodeid;
+    int      u_dofs[dim];
+    Vector   normal(dim);
+    Tensor   A(dim,dim);
+    Tensor   I(Tensor::Identity(dim,dim));
+
     point_iterator point = mesh->pointBegin();
     point_iterator point_end = mesh->pointEnd();
     for ( ; point != point_end; ++point)
@@ -756,8 +741,8 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
         continue;
       dof_handler[DH_UNKS].getVariable(VAR_U).getVertexAssociatedDofs(u_dofs, &*point);
       nodeid = mesh->getPointId(&*point);
-      getRotationMatrix(R, 1, &nodeid, Vec_x_1, current_time+dt);
-      A = R.transpose()*E*R;
+      getProjectorMatrix(A, 1, &nodeid, Vec_x_1, current_time+dt);
+      A = I - A;
       MatSetValues(*JJ, dim, u_dofs, dim, u_dofs, A.data(), ADD_VALUES);
     }
   }
@@ -769,7 +754,6 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
     ierr = MatZeroRows(*JJ, dir_entries.size(), dir_entries.data(), 1., NULL, NULL);  CHKERRQ(ierr);
   }
   Assembly(*JJ);
-
 
   //*flag = SAME_NONZERO_PATTERN;
 

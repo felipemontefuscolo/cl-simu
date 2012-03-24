@@ -70,9 +70,9 @@ void inline View(Vec &v, const char* file_name, const char* obj_name) {
 void inline ViewXPM(Mat &K, const char* name = "MATRIX") {
   std::ofstream file(name);
   int width, heigth;
-  
+
   MatGetSize(K, &heigth, &width);
-  
+
   file << "/* XPM */" << std::endl;
   file << "static char * blarg_xpm[] = {" << std::endl;
   file << "\"" <<  width << " " << heigth << " 3 1\",";
@@ -91,7 +91,7 @@ void inline ViewXPM(Mat &K, const char* name = "MATRIX") {
     }
     file << "\"," << std::endl;
   }
-  
+
   file << "\"";
   for (int j=0; j<width; j++) {
     double val;
@@ -102,9 +102,9 @@ void inline ViewXPM(Mat &K, const char* name = "MATRIX") {
   }
   file << "\"" << std::endl;
   file << "}";
-  
+
   file.close();
-  
+
 }
 
 //inline
@@ -129,11 +129,11 @@ void inline MyMatSumValues(PetscScalar* a, PetscInt *ai, PetscInt *aj, PetscInt 
 
 
   for (k=0; k<m; k++) { /* loop over rows */
-    row  = im[k];   
+    row  = im[k];
     if (row < 0) {v += n; continue;} /* SETERRQ1(PETSC_ERR_ARG_OUTOFRANGE,"Negative row: %D",row); */
     //if (row >= A->rmap->n) SETERRQ2(PETSC_ERR_ARG_OUTOFRANGE,"Row too large: row %D max %D",row,A->rmap->n-1);
     rp   = aj + ai[row]; ap = aa + ai[row];
-    //nrow = ailen[row]; 
+    //nrow = ailen[row];
     nrow = ai[row+1]-ai[row];
     for (l=0; l<n; l++) { /* loop over columns */
       if (in[l] < 0) {v++; continue;} /* SETERRQ1(PETSC_ERR_ARG_OUTOFRANGE,"Negative column: %D",in[l]); */
@@ -151,7 +151,7 @@ void inline MyMatSumValues(PetscScalar* a, PetscInt *ai, PetscInt *aj, PetscInt 
           ap[i] += *v++;
           goto finished;
         }
-      } 
+      }
       *v++ = 0.0;
       finished:;
     }

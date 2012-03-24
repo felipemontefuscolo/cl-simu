@@ -1,0 +1,282 @@
+QtiPlot 0.9.8 project file
+<scripting-lang>	muParser
+<windows>	6
+<table>
+lin_mov_TH2	9	7	23/03/12 20:45
+geometry	-1	425	604	208	
+header	dt[X]	ul2[Y]	pl2[Y]	uh1[Y]	ph1[Y]	1[Y]	2[Y]
+ColWidth	100	100	100	100	100	100	100	
+<com>
+<col nr="5">
+col("dt")*col("dt")
+</col>
+</com>
+ColType	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13
+ReadOnlyColumn	0	0	0	0	0	0	0
+HiddenColumn	0	0	0	0	0	0	0
+Comments		//	movimento	linear	P2P1			
+WindowLabel	/home/felipe/mef/fepic/cl-simu/results/couette/2d/data	0
+<data>
+0	0.25	0.000633884345157	0.006069116329065	0.003359445063976	0.01240932799238	0.0625	
+1	0.125	0.000150618220094	0.001537272021783	0.000789393270964	0.003058734415685	0.015625	
+2	0.0625	3.7181614997e-05	0.000384413236066	0.000194277220023	0.000764038835465	0.00390625	
+3	0.03125	9.261636763e-06	9.6129259125e-05	4.8334023319e-05	0.000190986341626	0.0009765625	
+4	0.015625	2.312706018e-06	2.4034008361e-05	1.2063405886e-05	4.774536876e-05	0.000244140625	
+5	0.0078125	5.77941439e-07	6.008610049e-06	3.014111381e-06	1.1936269659e-05	6.103515625e-05	
+6	0.00390625	1.44464704e-07	1.502159436e-06	7.53392397e-07	2.984062912e-06	1.52587890625e-05	
+7	0.001953125	3.6114549e-08	3.7554268e-07	1.88338957e-07	7.46022717e-07	3.814697265625e-06	
+8	0.0009765625	9.028528e-09	9.3885258e-08	4.7084143e-08	1.86504297e-07	9.536743164062e-07	
+</data>
+</table>
+<table>
+quad_mov_TH2	9	7	23/03/12 20:50
+geometry	3	637	608	241	
+header	dt[X]	ul2[Y]	pl2[Y]	uh1[Y]	ph1[Y]	linear[Y]	quadratic[Y]
+ColWidth	100	100	100	100	100	100	100	
+<com>
+<col nr="6">
+col("dt")*col("dt")
+</col>
+</com>
+ColType	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13
+ReadOnlyColumn	0	0	0	0	0	0	0
+HiddenColumn	0	0	0	0	0	0	0
+Comments		//	movimento	quadratico	P2P1			
+WindowLabel	/home/felipe/mef/fepic/cl-simu/results/couette/2d/data2	0
+<data>
+0	0.25	0.00083549032113	0.006273183709111	0.005559901054768	0.01333035903194		0.0625
+1	0.125	0.000200172918558	0.001572066060812	0.001329555624637	0.003228503680749		0.015625
+2	0.0625	4.9529356723e-05	0.000392806294768	0.000328779055055	0.000804268537614		0.00390625
+3	0.03125	1.234941449e-05	9.820144603e-05	8.1953811588e-05	0.000200915838148		0.0009765625
+4	0.015625	3.085130065e-06	2.4550398895e-05	2.0471008369e-05	5.0219895982e-05		0.000244140625
+5	0.0078125	7.71122131e-07	6.137603851e-06	5.11636722e-06	1.2554414092e-05		6.103515625e-05
+6	0.00390625	1.92767949e-07	1.534401304e-06	1.278971996e-06	3.138568703e-06		1.52587890625e-05
+7	0.001953125	4.8190915e-08	3.83602645e-07	3.19732268e-07	7.84646864e-07		3.814697265625e-06
+8	0.0009765625	1.2047634e-08	9.5900235e-08	7.9932181e-08	1.96160297e-07		9.536743164062e-07
+</data>
+</table>
+<table>
+GLS	22	5	23/03/12 21:13
+geometry	0	0	700	199	
+header	dt[X]	ul2[Y]	pl2[Y]	uh1[Y]	ph1[Y]
+ColWidth	100	100	100	100	100	
+<com>
+</com>
+ColType	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13
+ReadOnlyColumn	0	0	0	0	0
+HiddenColumn	0	0	0	0	0
+Comments		//	gls			
+WindowLabel	/home/felipe/mef/fepic/cl-simu/results/couette/2d/data	0
+<data>
+0	0.25	0.000627105878997	0.005661944252588	0.003277120178891	0.01186606454112
+1	0.125	0.000150078598177	0.001430307238625	0.000782615768908	0.002922237700472
+2	0.0625	3.7121040773e-05	0.000357678816906	0.000193451143626	0.000729963142374
+3	0.03125	9.254070356e-06	8.9440693989e-05	4.8212999646e-05	0.000182470417807
+4	0.015625	2.311668569e-06	2.2361527842e-05	1.2042096516e-05	4.5616572181e-05
+5	0.0078125	5.77774844e-07	5.59046774e-06	3.009611812e-06	1.1404081742e-05
+6	0.00390625	1.44431642e-07	1.39762241e-06	7.52323055e-07	2.851016823e-06
+7	0.001953125	3.6106809e-08	3.49405979e-07	1.88073824e-07	7.12754414e-07
+8	0.0009765625	9.026604e-09	8.7351377e-08	4.7017922e-08	1.78188224e-07
+</data>
+</table>
+<table>
+MES	24	5	23/03/12 21:17
+geometry	0	199	581	230	
+header	dt[X]	ul2[Y]	pl2[Y]	uh1[Y]	ph1[Y]
+ColWidth	100	100	100	100	100	
+<com>
+</com>
+ColType	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13
+ReadOnlyColumn	0	0	0	0	0
+HiddenColumn	0	0	0	0	0
+Comments		//	ME-S			
+WindowLabel	/home/felipe/mef/fepic/cl-simu/results/couette/2d/data2	0
+<data>
+0	0.25	0.000626507779192	0.005929324677496	0.003279596942871	0.01223339285064
+1	0.125	0.00015002205856	0.001498120513646	0.000782739790027	0.00300804183809
+2	0.0625	3.7113988584e-05	0.000374596667784	0.000193460696654	0.000751221393465
+3	0.03125	9.253162776e-06	9.366998557e-05	4.8213736007e-05	0.000187794036392
+4	0.015625	2.311547416e-06	2.341913421e-05	1.2042047198e-05	4.6958388277e-05
+5	0.0078125	5.7775723e-07	5.85525379e-06	3.009544859e-06	1.1745577584e-05
+6	0.00390625	1.44428647e-07	1.464190677e-06	7.52288214e-07	2.939574743e-06
+7	0.001953125	3.6106174e-08	3.6634447e-07	1.88059245e-07	7.36554463e-07
+8	0.0009765625	9.026442e-09	9.1778765e-08	4.70128e-08	1.8496218e-07
+</data>
+</table>
+<multiLayer>
+Gráfico1	1	1	23/03/12 21:28
+geometry	875	0	444	448	active
+WindowLabel		2
+Margins	5	5	5	5
+Spacing	5	5
+LayerCanvasSize	400	300
+Alignement	0	0
+<AlignPolicy>0</AlignPolicy>
+<CommonAxes>0</CommonAxes>
+<graph>
+ggeometry	4	5	429	387
+PlotTitle		#000000	4228
+<Antialiasing>1</Antialiasing>
+<Autoscaling>1</Autoscaling>
+<ScaleFonts>1</ScaleFonts>
+Background	#ffffff	255
+Margin	0
+Border	0	#000000
+grid	0	0	0	0	#0000ff	0	0.5	#a0a0a4	2	0.4	#0000ff	0	0.5	#a0a0a4	2	0.4	0	0	2	0	0
+EnabledAxes	1	1	1	1	
+AxesTitles	Δ<i>t</i>			 	
+AxesTitleColors	#000000	#000000	#000000	#000000	
+AxesTitleAlignment	5124	5124	4	5124
+AxesTitleDistance	2	2	2	2
+TitleFont	LMRoman12	12	50	0	0	0
+ScaleFont0	LMRoman12	12	50	0	0	0
+ScaleFont1	LMRoman12	12	50	0	0	0
+ScaleFont2	LMRoman12	12	50	0	0	0
+ScaleFont3	LMRoman12	12	50	0	0	0
+AxisFont0	LMRoman12	12	50	0	0	0
+AxisFont1	LMRoman12	12	50	0	0	0
+AxisFont2	LMRoman12	12	50	0	0	0
+AxisFont3	LMRoman12	12	50	0	0	0
+AxesColors	#000000	#000000	#000000	#000000
+AxesNumberColors	#3c3c3c	#3c3c3c	#3c3c3c	#3c3c3c
+AxesBaseline	0	0	0	0	
+CanvasBackground	#ffffff	255
+curve	GLS_dt	GLS_uh1	2	1	#008000	0	1	7	1	#008000	#008000	0	#000000	14	1	2	0	0	21	1
+curve	MES_dt	MES_uh1	2	1	#0000ff	1	1	7	13	#0000ff	#0000ff	0	#000000	14	1	2	0	0	23	1
+curve	lin_mov_TH2_dt	lin_mov_TH2_uh1	2	1	#000000	2	1	7	2	#000000	-1	0	#000000	14	1	2	0	0	8	1
+curve	quad_mov_TH2_dt	quad_mov_TH2_uh1	2	1	#ff0000	3	1	7	4	#ff0000	-1	0	#000000	14	1	2	0	0	8	1
+scale	0	1e-08	0.01	0	9	5	1	0
+scale	1	1e-08	0.01	0	8	5	1	0
+scale	2	0.0001	1	0	8	5	1	1
+scale	3	0.0001	1	0	8	5	1	1
+LabelsFormat	5	0	0	4	5	0	0	4
+AxisType	0	0	0	0	
+MajorTicks	3	0	3	0
+MinorTicks	3	0	3	0
+TicksLength	5	9
+DrawAxesBackbone	1	1	1	1	1
+AxesLineWidth	1
+LabelsRotation	0	0	0	0
+LabelsPrefix				
+LabelsSuffix				
+TickLabelsSpace	4	4	4	4
+ShowTicksPolicy	0	0	0	0
+EnabledTickLabels	1	0	1	0
+<Legend>
+<Frame>0</Frame>
+<Color>#000000</Color>
+<FrameWidth>1</FrameWidth>
+<LineStyle>0</LineStyle>
+<x>0.57659326498589</x>
+<y>2.7646514028593e-06</y>
+<right>0.0164964807409802</right>
+<bottom>2.19126048065671e-08</bottom>
+<attachTo>0</attachTo>
+<onTop>1</onTop>
+<Text>
+\l(1)GLS
+\l(2)ME-S
+\l(3)TH2 (lin)
+\l(4)TH2 (quad)
+</Text>
+<Font>LMRoman12	12	50	0	0	0</Font>
+<TextColor>#000000</TextColor>
+<Background>#ffffff</Background>
+<Alpha>0</Alpha>
+<Angle>0</Angle>
+<AutoUpdate>1</AutoUpdate>
+<TeXOutput>0</TeXOutput>
+</Legend>
+</graph>
+<LinkXAxes>0</LinkXAxes>
+<ScaleLayers>1</ScaleLayers>
+</multiLayer>
+<multiLayer>
+Gráfico2	1	1	23/03/12 21:40
+geometry	1319	0	444	448	
+WindowLabel		2
+Margins	5	5	5	5
+Spacing	5	5
+LayerCanvasSize	400	300
+Alignement	0	0
+<AlignPolicy>0</AlignPolicy>
+<CommonAxes>0</CommonAxes>
+<graph>
+ggeometry	4	5	429	387
+PlotTitle		#000000	4228
+<Antialiasing>1</Antialiasing>
+<Autoscaling>1</Autoscaling>
+<ScaleFonts>1</ScaleFonts>
+Background	#ffffff	255
+Margin	0
+Border	0	#000000
+grid	0	0	0	0	#0000ff	0	0.5	#a0a0a4	2	0.4	#0000ff	0	0.5	#a0a0a4	2	0.4	0	0	2	0	0
+EnabledAxes	1	1	1	1	
+AxesTitles	Δ<i>t</i>			 	
+AxesTitleColors	#000000	#000000	#000000	#000000	
+AxesTitleAlignment	5124	5124	5124	5124
+AxesTitleDistance	2	2	2	2
+TitleFont	LMRoman12	12	50	0	0	0
+ScaleFont0	LMRoman12	12	50	0	0	0
+ScaleFont1	LMRoman12	12	50	0	0	0
+ScaleFont2	LMRoman12	12	50	0	0	0
+ScaleFont3	LMRoman12	12	50	0	0	0
+AxisFont0	LMRoman12	12	50	0	0	0
+AxisFont1	LMRoman12	12	50	0	0	0
+AxisFont2	LMRoman12	12	50	0	0	0
+AxisFont3	LMRoman12	12	50	0	0	0
+AxesColors	#000000	#000000	#000000	#000000
+AxesNumberColors	#3c3c3c	#3c3c3c	#3c3c3c	#3c3c3c
+AxesBaseline	0	0	0	0	
+CanvasBackground	#ffffff	255
+curve	GLS_dt	GLS_pl2	2	1	#008000	0	1	7	1	#008000	#008000	0	#000000	14	1	2	0	0	21	1
+curve	MES_dt	MES_pl2	2	1	#0000ff	1	1	7	13	#0000ff	#0000ff	0	#000000	14	1	2	0	0	23	1
+curve	lin_mov_TH2_dt	lin_mov_TH2_pl2	2	1	#000000	2	1	7	2	#000000	-1	0	#000000	14	1	2	0	0	8	1
+curve	quad_mov_TH2_dt	quad_mov_TH2_pl2	2	1	#ff0000	3	1	7	4	#ff0000	-1	0	#000000	14	1	2	0	0	8	1
+scale	0	1e-08	0.01	0	8	5	1	0
+scale	1	1e-08	0.01	0	8	5	1	0
+scale	2	0.0001	1	0	8	5	1	1
+scale	3	0.0001	1	0	8	5	1	1
+LabelsFormat	5	0	0	4	5	0	0	4
+AxisType	0	0	0	0	
+MajorTicks	3	0	3	0
+MinorTicks	3	0	3	0
+TicksLength	5	9
+DrawAxesBackbone	1	1	1	1	1
+AxesLineWidth	1
+LabelsRotation	0	0	0	0
+LabelsPrefix				
+LabelsSuffix				
+TickLabelsSpace	4	4	4	4
+ShowTicksPolicy	0	0	0	0
+EnabledTickLabels	1	0	1	0
+<Legend>
+<Frame>0</Frame>
+<Color>#000000</Color>
+<FrameWidth>1</FrameWidth>
+<LineStyle>0</LineStyle>
+<x>0.56234132519035</x>
+<y>2.6512627418511e-06</y>
+<right>0.0160887290993363</right>
+<bottom>1.79502979325897e-08</bottom>
+<attachTo>0</attachTo>
+<onTop>1</onTop>
+<Text>
+\l(1)GLS
+\l(2)ME-S
+\l(3)TH2 (lin)
+\l(4)TH2 (quad)
+</Text>
+<Font>LMRoman12	12	50	0	0	0</Font>
+<TextColor>#000000</TextColor>
+<Background>#ffffff</Background>
+<Alpha>0</Alpha>
+<Angle>0</Angle>
+<AutoUpdate>1</AutoUpdate>
+<TeXOutput>0</TeXOutput>
+</Legend>
+</graph>
+<LinkXAxes>0</LinkXAxes>
+<ScaleLayers>1</ScaleLayers>
+</multiLayer>
+<open>1</open>

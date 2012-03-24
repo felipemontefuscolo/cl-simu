@@ -1,8 +1,8 @@
 //static char help[] = "Navier-Stokes.\n\n";
 
-// 
+//
 // ALE
-// 
+//
 // pho*( (Ut + (U-Umsh) · nabla)U ) + grad p = muu* div grad U + force
 //
 // LIMITAÇÕES:
@@ -10,7 +10,7 @@
 // * no maximo 1 grau de liberdade associado a uma aresta
 // * condição de dirichlet na normal só pode valer 0 .. procure por UNORMAL_AQUI
 // * elementos isoparamétricos
-// 
+//
 // OBS:
 // * a normal no ponto de contato é igual ao limite da normal pela superfície livre
 //
@@ -256,7 +256,7 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
 
 
   PetscOptionsEnd();
-  
+
   switch (function_space)
   {
     case P1P1:
@@ -280,7 +280,7 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
     case P2P1:
     {
       if(dim==2) mesh_cell_type = TRIANGLE6;
-      else       mesh_cell_type = TETRAHEDRON10; 
+      else       mesh_cell_type = TETRAHEDRON10;
       break;
     }
     case P1bP1:
@@ -333,6 +333,14 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
       //throw;
     }
     //dt = 1.e50;
+    
+    if (utheta != 1)
+    {
+      cout << "WARNING!!!\n";
+      cout << ">>> steady problem .. setting utheta to 1" << endl;
+      utheta = 1;
+    }
+    
   }
 
   return false;
@@ -556,7 +564,7 @@ PetscErrorCode AppCtx::allocPetscObjs()
           ++nnz[dof];
       }
     }
-    
+
   }
 
   //Mat Mat_Jac;
@@ -581,7 +589,7 @@ PetscErrorCode AppCtx::allocPetscObjs()
   //ierr = PCSetType(pc,PCLU);                                                     CHKERRQ(ierr);
   //ierr = PCFactorSetMatOrderingType(pc, MATORDERINGNATURAL);                         CHKERRQ(ierr);
   //ierr = KSPSetTolerances(ksp,1.e-7,PETSC_DEFAULT,PETSC_DEFAULT,PETSC_DEFAULT);  CHKERRQ(ierr);
-  //ierr = SNESSetApplicationContext(snes,this);                 
+  //ierr = SNESSetApplicationContext(snes,this);
 
   //ierr = SNESMonitorSet(snes, SNESMonitorDefault, 0, 0); CHKERRQ(ierr);
   //ierr = SNESMonitorSet(snes,Monitor,0,0);CHKERRQ(ierr);
@@ -953,16 +961,16 @@ void AppCtx::computeDirichletEntries()
   for (; point != point_end; ++point)
   {
     tag = point->getTag();
-    
+
     if (!is_in(tag,dirichlet_tags))
         continue;
-    
+
     num_dir_entries += dim;
-    
+
   }
   if (force_pressure)
     ++num_dir_entries;
-  
+
   dir_entries.resize(num_dir_entries);
 
   cout << "dir_entries size : "<< dir_entries.size() <<endl;
@@ -975,25 +983,25 @@ void AppCtx::computeDirichletEntries()
   for (; point != point_end; ++point)
   {
     tag = point->getTag();
-    
+
     if (!is_in(tag,dirichlet_tags))
         continue;
-    
+
     getNodeDofs(&*point, DH_UNKS, VAR_U, dofs.data());
-    
+
     for (int i = 0; i < dim; ++i)
     {
       dir_entries.at(k++) = dofs[i];
     }
-    
+
   }
-  
+
   if (force_pressure)
-  { 
+  {
     int idx;
     if (shape_psi_c->discontinuous())
     {
-      cell_iterator cell = mesh->cellBegin(); 
+      cell_iterator cell = mesh->cellBegin();
       dof_handler[DH_UNKS].getVariable(VAR_P).getCellAssociatedDofs(&idx, &*cell);
     }
     else
@@ -1001,7 +1009,7 @@ void AppCtx::computeDirichletEntries()
       point = mesh->pointBegin();
       while (!mesh->isVertex(&*point))
         ++point;
-        
+
       dof_handler[DH_UNKS].getVariable(VAR_P).getVertexAssociatedDofs(&idx, &*point);
     }
     dir_entries.at(k++) = idx;
@@ -1021,7 +1029,7 @@ void AppCtx::onUpdateMesh()
 PetscErrorCode AppCtx::setInitialConditions()
 {
   PetscErrorCode      ierr(0);
-  
+
   Vector    Uf(dim);
   //double    pf;
   Vector    X(dim);
@@ -1029,19 +1037,19 @@ PetscErrorCode AppCtx::setInitialConditions()
   VectorXi  dofs(dim);
   //int       dof;
   int tag;
-  
+
   VecZeroEntries(Vec_res);
   VecZeroEntries(Vec_up_0);
   VecZeroEntries(Vec_up_1);
   VecZeroEntries(Vec_v_mid);
   VecZeroEntries(Vec_x_0);
-  VecZeroEntries(Vec_x_1);  
+  VecZeroEntries(Vec_x_1);
   VecZeroEntries(Vec_normal);
 
-  
+
   copyMesh2Vec(Vec_x_0);
   copyMesh2Vec(Vec_x_1);
-  
+
   // velocidade inicial
   point_iterator point = mesh->pointBegin();
   point_iterator point_end = mesh->pointEnd();
@@ -1054,15 +1062,15 @@ PetscErrorCode AppCtx::setInitialConditions()
     Uf = u_initial(X, tag);
 
     getNodeDofs(&*point,DH_UNKS,VAR_U,dofs.data());
-    
-    VecSetValues(Vec_up_0, dim, dofs.data(), Uf.data(), INSERT_VALUES);
-    
-  } // end point loop 
 
-  
+    VecSetValues(Vec_up_0, dim, dofs.data(), Uf.data(), INSERT_VALUES);
+
+  } // end point loop
+
+
   Assembly(Vec_up_0);
   VecCopy(Vec_up_0,Vec_up_1);
-  
+
   // remember: Vec_normals follows the Vec_x_1
   double tt=0;
   moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, tt, Vec_x_1);
@@ -1073,42 +1081,43 @@ PetscErrorCode AppCtx::setInitialConditions()
   {
   //point->getCoord(X.data());
   //cout << "HAAAA : " << X.transpose() << endl;
-  } // end point loop 
+  } // end point loop
 
+  if (ale)
   for (int i = 0; i < 5; ++i)
   {
     // * SOLVE THE SYSTEM *
     if (solve_the_sys)
       ierr = SNESSolve(snes,PETSC_NULL,Vec_up_1);  CHKERRQ(ierr);
     // * SOLVE THE SYSTEM *
-  
+
     // update
     if (ale)
     {
       //double tt = time_step==0? dt : current_time;
-  
+
       moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, 0/*time*/, Vec_x_1); // Euler
       //moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, current_time, Vec_x_1); // Adams-Bashforth
       calcMeshVelocity(Vec_x_0, Vec_x_1, Vec_v_mid);
-      
+
       // initial guess for the next time step; u(n+1) = 2*u(n) - u(n-1)
       VecCopy(Vec_up_1, Vec_res);
       VecScale(Vec_res,2.);
       VecAXPY(Vec_res, -1., Vec_up_0);
       VecCopy(Vec_res, Vec_up_1); // u(n+1) = 2*u(n) - u(n-1)
-      
-    }    
+
+    }
   }
-  
+
   PetscFunctionReturn(0);
 }
 
 PetscErrorCode AppCtx::checkSnesConvergence(SNES snes, PetscInt it,PetscReal xnorm, PetscReal pnorm, PetscReal fnorm, SNESConvergedReason *reason)
 {
   PetscErrorCode ierr;
-  
+
   ierr = SNESDefaultConverged(snes,it,xnorm,pnorm,fnorm,reason,NULL); CHKERRQ(ierr);
-  
+
   // se não convergiu, não terminou ou não é um método ale, retorna
   if (*reason<=0 || !ale)
   {
@@ -1123,7 +1132,7 @@ PetscErrorCode AppCtx::checkSnesConvergence(SNES snes, PetscInt it,PetscReal xno
     }
     else
     {
-      
+
       //Vec *Vec_up_k = &Vec_up_1;
       ////SNESGetSolution(snes,Vec_up_k);
       //
@@ -1137,29 +1146,29 @@ PetscErrorCode AppCtx::checkSnesConvergence(SNES snes, PetscInt it,PetscReal xno
       //
       //*reason = SNES_CONVERGED_ITERATING;
       //++converged_times;
-      
+
       return ierr;
     }
   }
-  
-  
-/*  
-  converged 
-  SNES_CONVERGED_FNORM_ABS         =  2,  ||F|| < atol 
-  SNES_CONVERGED_FNORM_RELATIVE    =  3,  ||F|| < rtol*||F_initial|| 
-  SNES_CONVERGED_PNORM_RELATIVE    =  4,  Newton computed step size small; || delta x || < stol 
-  SNES_CONVERGED_ITS               =  5,  maximum iterations reached 
+
+
+/*
+  converged
+  SNES_CONVERGED_FNORM_ABS         =  2,  ||F|| < atol
+  SNES_CONVERGED_FNORM_RELATIVE    =  3,  ||F|| < rtol*||F_initial||
+  SNES_CONVERGED_PNORM_RELATIVE    =  4,  Newton computed step size small; || delta x || < stol
+  SNES_CONVERGED_ITS               =  5,  maximum iterations reached
   SNES_CONVERGED_TR_DELTA          =  7,
-   diverged 
-  SNES_DIVERGED_FUNCTION_DOMAIN    = -1,  the new x location passed the function is not in the domain of F 
+   diverged
+  SNES_DIVERGED_FUNCTION_DOMAIN    = -1,  the new x location passed the function is not in the domain of F
   SNES_DIVERGED_FUNCTION_COUNT     = -2,
-  SNES_DIVERGED_LINEAR_SOLVE       = -3,  the linear solve failed 
+  SNES_DIVERGED_LINEAR_SOLVE       = -3,  the linear solve failed
   SNES_DIVERGED_FNORM_NAN          = -4,
   SNES_DIVERGED_MAX_IT             = -5,
-  SNES_DIVERGED_LINE_SEARCH        = -6,  the line search failed 
-  SNES_DIVERGED_LOCAL_MIN          = -8,  || J^T b || is small, implies converged to local minimum of F() 
-  SNES_CONVERGED_ITERATING         =  0 
-*/ 
+  SNES_DIVERGED_LINE_SEARCH        = -6,  the line search failed
+  SNES_DIVERGED_LOCAL_MIN          = -8,  || J^T b || is small, implies converged to local minimum of F()
+  SNES_CONVERGED_ITERATING         =  0
+*/
 }
 
 PetscErrorCode AppCtx::solveTimeProblem()
@@ -1180,16 +1189,16 @@ PetscErrorCode AppCtx::solveTimeProblem()
   // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   // Solve nonlinear system
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    
+
   printf("initial volume: %.15lf \n", initial_volume);
   current_time = 0;
   time_step = 0;
   double Qmax=0;
   double steady_error=1;
   setInitialConditions();
-  int its;  
-  
-  
+  int its;
+
+
   // WARNING: ADAMS-BASHFORTH IS NOT SELF STARTING
   for(;;)
   {
@@ -1199,7 +1208,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
       computeError(Vec_x_0, Vec_up_0,current_time);
       break;
     }
-      
+
     if ((time_step%print_step)==0)
     {
       if (family_files)
@@ -1213,12 +1222,12 @@ PetscErrorCode AppCtx::solveTimeProblem()
         vtk_printer.addNodeScalarVtk("uy",  GetDataVelocity<1>(q_array, *this));
         if (dim==3)
           vtk_printer.addNodeScalarVtk("uz",   GetDataVelocity<2>(q_array, *this));
-          
+
         vtk_printer.addNodeScalarVtk("nx",  GetDataNormal<0>(nml_array, *this));
         vtk_printer.addNodeScalarVtk("ny",  GetDataNormal<1>(nml_array, *this));
         if (dim==3)
           vtk_printer.addNodeScalarVtk("nz",   GetDataNormal<2>(nml_array, *this));
-        
+
         if (shape_psi_c->discontinuous())
           vtk_printer.addCellScalarVtk("pressure", GetDataPressCellVersion(q_array, *this));
         else
@@ -1228,7 +1237,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
         //vtk_printer.printPointTagVtk("point_tag");
         VecRestoreArray(Vec_up_0, &q_array);
         VecRestoreArray(Vec_normal, &nml_array);
-        
+
         ierr = SNESGetIterationNumber(snes,&its);     CHKERRQ(ierr);
         cout << "num snes iterations: " << its << endl;
       }
@@ -1238,19 +1247,19 @@ PetscErrorCode AppCtx::solveTimeProblem()
       cout << "current time: " << current_time << endl;
       cout << "time step: "    << time_step  << endl;
       cout << "steady error: " << steady_error << endl;
-      
+
     }
 
     mesh->getNode(0)->getCoord(X.data());
     Xe(0) = exp(0.4*sin(pi*current_time)/pi);
     Xe(1) = 0;
     x_error += (X-Xe).norm()/maxts;
-    
+
     // * SOLVE THE SYSTEM *
     if (solve_the_sys)
       ierr = SNESSolve(snes,PETSC_NULL,Vec_up_1);        CHKERRQ(ierr);
     // * SOLVE THE SYSTEM *
-  
+
     if (plot_exact_sol)
       computeError(Vec_x_1, Vec_up_1,current_time+dt);
     current_time += dt;
@@ -1267,16 +1276,20 @@ PetscErrorCode AppCtx::solveTimeProblem()
       //moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, current_time, Vec_x_1); // Euler
       moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, current_time, Vec_x_1); // Adams-Bashforth
       calcMeshVelocity(Vec_x_0, Vec_x_1, Vec_v_mid);
-      
+
       // initial guess for the next time step; u(n+1) = 2*u(n) - u(n-1)
       VecCopy(Vec_up_1, Vec_res);
       VecScale(Vec_res,2.);
       VecAXPY(Vec_res, -1., Vec_up_0);
       VecCopy(Vec_up_1, Vec_up_0);
       VecCopy(Vec_res, Vec_up_1); // u(n+1) = 2*u(n) - u(n-1)
-      
+
     }
-    
+    else
+    {
+      VecCopy(Vec_up_1, Vec_up_0);
+    }
+
     //if (plot_exact_sol)
       //computeError(Vec_up_1,current_time+dt);
 
@@ -1285,10 +1298,10 @@ PetscErrorCode AppCtx::solveTimeProblem()
     VecCopy(Vec_up_0, Vec_res);
     VecAXPY(Vec_res,-1.0,Vec_up_1);
     steady_error = VecNorm(Vec_res, NORM_1)/(Qmax==0.?1.:Qmax);
-    
+
     printContactAngle(fprint_ca);
-    
-    
+
+
     if(time_step >= maxts) {
       cout << "\n==========================================\n";
       cout << "stop reason:\n";
@@ -1305,9 +1318,38 @@ PetscErrorCode AppCtx::solveTimeProblem()
   //
   // END TIME LOOP
   //
-  
-  
-  
+
+  if (family_files)
+  {
+    double  *q_array;
+    double  *nml_array;
+    VecGetArray(Vec_up_0, &q_array);
+    VecGetArray(Vec_normal, &nml_array);
+    vtk_printer.writeVtk();
+    vtk_printer.addNodeScalarVtk("ux",  GetDataVelocity<0>(q_array, *this));
+    vtk_printer.addNodeScalarVtk("uy",  GetDataVelocity<1>(q_array, *this));
+    if (dim==3)
+      vtk_printer.addNodeScalarVtk("uz",   GetDataVelocity<2>(q_array, *this));
+
+    vtk_printer.addNodeScalarVtk("nx",  GetDataNormal<0>(nml_array, *this));
+    vtk_printer.addNodeScalarVtk("ny",  GetDataNormal<1>(nml_array, *this));
+    if (dim==3)
+      vtk_printer.addNodeScalarVtk("nz",   GetDataNormal<2>(nml_array, *this));
+
+    if (shape_psi_c->discontinuous())
+      vtk_printer.addCellScalarVtk("pressure", GetDataPressCellVersion(q_array, *this));
+    else
+      vtk_printer.addNodeScalarVtk("pressure", GetDataPressure(q_array, *this));
+
+
+    //vtk_printer.printPointTagVtk("point_tag");
+    VecRestoreArray(Vec_up_0, &q_array);
+    VecRestoreArray(Vec_normal, &nml_array);
+
+    ierr = SNESGetIterationNumber(snes,&its);     CHKERRQ(ierr);
+    cout << "num snes iterations: " << its << endl;
+  }
+
 
   cout << endl;
 
@@ -1516,12 +1558,12 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
     cout << "# hmean            u_L2_norm         p_L2_norm         grad_u_L2_norm    grad_p_L2_norm" << endl;
     printf("%.15lf %.15lf %.15lf %.15lf %.15lf\n",hmean, u_L2_norm, p_L2_norm, grad_u_L2_norm, grad_p_L2_norm);
   }
-  
+
   Stats.add_u_L2(u_L2_norm/max(maxts,1));
   Stats.add_p_L2(p_L2_norm/max(maxts,1));
   Stats.add_grad_u_L2(grad_u_L2_norm/max(maxts,1));
   Stats.add_grad_p_L2(grad_p_L2_norm/max(maxts,1));
-  
+
 }
 
 
@@ -1531,7 +1573,7 @@ double AppCtx::getMaxVelocity()
   VectorXi   vtx_dofs_fluid(dim); // indices de onde pegar a velocidade
   double     Umax=0;
 
-    
+
   point_iterator point = mesh->pointBegin();
   point_iterator point_end = mesh->pointEnd();
   for (; point != point_end; ++point)
@@ -1548,7 +1590,7 @@ double AppCtx::getMaxVelocity()
 double AppCtx::getMeshVolume()
 {
   MatrixXd            x_coefs_c(nodes_per_cell, dim);
-  MatrixXd            x_coefs_c_trans(dim, nodes_per_cell);  
+  MatrixXd            x_coefs_c_trans(dim, nodes_per_cell);
   Tensor              F_c(dim,dim), invF_c(dim,dim), invFT_c(dim,dim);
   VectorXi            cell_nodes(nodes_per_cell);
   double              Jx;
@@ -1582,10 +1624,10 @@ void AppCtx::printContactAngle(bool _print)
 {
   if (!_print)
     return;
-  
+
   //at file:
   // current_time theta_max theta_min
-  
+
   int tag;
   double theta_max=0;
   double theta_min=pi;
@@ -1594,39 +1636,39 @@ void AppCtx::printContactAngle(bool _print)
   Vector normal_solid(dim);
   Vector normal_surf(dim);
   VectorXi vtx_dofs_mesh(dim);
-  
+
   point_iterator point = mesh->pointBegin();
   point_iterator point_end = mesh->pointEnd();
   for (; point != point_end; ++point)
   {
     tag = point->getTag();
-    
+
     if (!is_in(tag,triple_tags))
       continue;
-    
+
     point->getCoord(X.data());
     normal_solid = solid_normal(X, current_time, tag);
     dof_handler[DH_MESH].getVariable(VAR_M).getVertexDofs(vtx_dofs_mesh.data(), &*point);
-    VecGetValues(Vec_normal, dim, vtx_dofs_mesh.data(), normal_surf.data());   
-    
+    VecGetValues(Vec_normal, dim, vtx_dofs_mesh.data(), normal_surf.data());
+
     tet = asin(sqrt(1. - pow(normal_solid.dot(normal_surf),2)  ));
-    
+
     if (tet < theta_min)
       theta_min = tet;
     if (tet > theta_max)
       theta_max = tet;
   }
-  
+
   theta_min = theta_min*180./pi;
   theta_max = theta_max*180./pi;
-  
+
   cout << "theta min: " << theta_min << "\ntheta max: " << theta_max << endl;
-  
+
   ofstream File("ContactHistory", ios::app);
-  
+
   File.precision(12);
   File << current_time << " " << theta_min << " " << theta_max << endl;
-  
+
   File.close();
 }
 
@@ -1785,7 +1827,7 @@ PetscErrorCode CheckSnesConvergence(SNES snes, PetscInt it,PetscReal xnorm, Pets
 {
   AppCtx *user    = static_cast<AppCtx*>(ctx);
   user->checkSnesConvergence(snes, it, xnorm, pnorm, fnorm, reason);
-  PetscFunctionReturn(0);  
+  PetscFunctionReturn(0);
 }
 
 

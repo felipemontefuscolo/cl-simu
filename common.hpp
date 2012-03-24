@@ -29,7 +29,7 @@ enum VarNumber {
   VAR_U = 0,
   VAR_P = 1,
   VAR_L = 2,
-  
+
   // DH_MESH
   VAR_M = 0
 };
@@ -48,7 +48,7 @@ enum PairSpace {
   P1bP1     = 5,
   P2P0      = 6,
   P2bPm1    = 7
-  
+
 };
 
 const double pi  = 3.141592653589793;
@@ -249,7 +249,7 @@ public:
   {
     this->reset();
   }
-  
+
   void reset()
   {
     p_L2_norm=0;
@@ -260,9 +260,9 @@ public:
     Np=0;
     Nu=0;
     Ngp=0;
-    Ngu=0;    
+    Ngu=0;
   }
-  
+
   void add_p_L2(double x)
   {
     p_L2_norm += x;
@@ -283,35 +283,35 @@ public:
     grad_p_L2_norm += x;
     //Ngp++;
   }
-  
+
   double mean_p_L2_norm()
   {
     return p_L2_norm;
   }
-  
+
   double mean_u_L2_norm()
   {
     return u_L2_norm;
   }
-  
+
   double mean_grad_u_L2_norm()
   {
     return grad_u_L2_norm;
   }
-  
+
   double mean_grad_p_L2_norm()
   {
     return grad_p_L2_norm;
-  }  
-  
+  }
+
   double p_L2_norm;
   double u_L2_norm;
   double grad_u_L2_norm;
   double grad_p_L2_norm;
-  
-  
+
+
   int Np, Nu, Ngp, Ngu;
-  
+
 };
 
 
@@ -323,7 +323,7 @@ class AppCtx
 {
 public:
   AppCtx(int argc, char **argv, bool &help_return, bool &erro);
-  
+
   bool err_checks();
   void loadMesh();
 
@@ -362,8 +362,8 @@ public:
                           VectorXi const&/*mapU_r*/,  VectorXi const&/*mapP_r*/, // mappers
                           MatrixXd &u_coefs_r, // coefficients
                           VectorXd &FUloc);
-                          
-  
+
+
   // get points dofs even if he lie at an edge
   /// @param[out] dofs
   void getNodeDofs(Point const* point, DofHandlerNumber DH_, VarNumber VAR_, int * dofs) const
@@ -389,30 +389,26 @@ public:
     }
   }
 
-  /// get rotation matrix at given points
-  /// @param R rotation matrix
-  /// @param n_nodes number of nodes
-  /// @param Vec_x_ the mesh
-  /// @param t time
-  void getRotationMatrix(Eigen::MatrixXd &R, int n_nodes, int const* nodes, Vec const& Vec_x_, double t) const
+  template <typename Derived>
+  void getProjectorMatrix(MatrixBase<Derived> & P, int n_nodes, int const* nodes, Vec const& Vec_x_, double t) const
   {
     // check
-    if ((R.rows() != R.cols()) || (R.cols() != dim*n_nodes))
+    if ((P.rows() != P.cols()) || (P.cols() != dim*n_nodes))
     {
-      cout << "Rotation matrix: " << R.rows() << " z " << R.cols() << endl;
-      cout << "dim x n_nodes:   " << (dim*n_nodes) << endl;
+      //cout << "Projector matrix size: " << P.rows() << " x " << P.cols() << endl;
+      //cout << "dim x n_nodes:         " << (dim*n_nodes) << endl;
     }
-    R.setIdentity();
+    P.setIdentity();
+
+    Tensor I(dim,dim);
     Vector X(dim);
     Vector normal(dim);
-    Vector tan1(dim);
-    Vector tan2(dim);
     int    dofs[dim];
     int    tag;
-    int    k;
-    double aux[3];
     Point const* point;
-    
+
+    I.setIdentity();
+
     // NODES
     for (int i = 0; i < n_nodes; ++i)
     {
@@ -420,94 +416,25 @@ public:
       tag = point->getTag();
       //m = point->getPosition() - mesh->numVerticesPerCell();
       //cell = mesh->getCell(point->getIncidCell());
-      
+
       if (!is_in(tag,solid_tags) && !is_in(tag,triple_tags))
         continue;
-      
+
       dof_handler[DH_MESH].getVariable(VAR_M).getVertexAssociatedDofs(dofs, point);
       VecGetValues(Vec_x_, dim, dofs, X.data());
-      
+
       normal = -solid_normal(X,t,tag);
-      
-      R.block(i*dim,i*dim,1,dim)  = normal.transpose();
-      tan1.setZero();
-      if (dim==2)
-      {
-        tan1(0) = -normal(1);
-        tan1(1) =  normal(0);
 
-        R.block(i*dim+1,i*dim,1,dim)  = tan1.transpose();
-      }
-      else
-      if (dim==3)
-      {
-        tan2.setZero();
-        
-        aux[0] = sqr(normal(1)) + sqr(normal(2));
-        aux[1] = sqr(normal(2)) + sqr(normal(0));
-        aux[2] = sqr(normal(0)) + sqr(normal(1));
-        
-        if (aux[0] > aux[1])
-        {
-          if (aux[0] > aux[2])
-            k = 0;
-          else
-            k = 2;
-        }
-        else if (aux[1] > aux[2])
-          k = 1;
-        else
-          k = 2;
-        
-        tan1(k) = 1;
-        
-        cross(tan1, normal);
-        tan1 *= -1.0;
-        
-        tan1.normalize();
-        
-        cross(tan2, normal, tan1);
-        
-        tan2.normalize();
-        
-        R.block(i*dim+1,i*dim,1,dim)  = tan1.transpose();
-        
-        R.block(i*dim+2,i*dim,1,dim)  = tan2.transpose();
-      }
-        
-        
-        
+      P.block(i*dim,i*dim,dim,dim)  = I - normal*normal.transpose();
+
     } // end nodes
-    
-  }
-
-  // Elim.asDiagonal() : matriz que quando multiplica outra remove a componente x dos nós em solid_tags&triple_tags
-  void getEliminationVector(Eigen::VectorXd &Elim, int n_nodes, int const* nodes) const
-  {
-    // check
-    if (Elim.size() != dim*n_nodes)
-    {
-      cout << "getEliminationVector: " << Elim.size() << endl;
-      cout << "dim x n_nodes:   " << (dim*n_nodes) << endl;
-    }
-    
-    Elim.setOnes();
-    
-    int tag;
-    for (int i = 0; i < n_nodes; ++i)
-    {
-      tag = mesh->getNode(nodes[i])->getTag();
-      
-      if (is_in(tag,solid_tags) || is_in(tag,triple_tags))
-        Elim(i*dim) = 0;
-    }
   }
 
   double getMeshVolume();
   double getMaxVelocity();
   void printContactAngle(bool _print);
-  
-  
+
+
   void computeError(Vec const& Vec_x, Vec &Vec_up_1, double tt);
   void getVecNormals(Vec const* Vec_x_1, Vec & Vec_normal_);
   void smoothsMesh(Vec & Vec_normal_, Vec &Vec_x);
@@ -521,8 +448,8 @@ public:
   double getCellQuality(Vec const& Vec_x_, int cell_id) const;
   double getCellPatchQuality(Vec const& Vec_x_, int const* cells) const;
   void freePetscObjs();
-  
-  
+
+
   // global settings
   int         dim; // = space dim
   int         mesh_cell_type;   // ECellType

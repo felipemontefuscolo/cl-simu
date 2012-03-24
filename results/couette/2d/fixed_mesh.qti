@@ -1,0 +1,252 @@
+QtiPlot 0.9.8 project file
+<scripting-lang>	muParser
+<windows>	6
+<table>
+uL2	30	3	22/03/12 23:27
+geometry	0	0	356	303	
+header	1[X]	mais1[Y]	maismeio[Y]
+ColWidth	100	100	100	
+<com>
+</com>
+ColType	0;0/13	0;0/13	0;0/13
+ReadOnlyColumn	0	0	0
+HiddenColumn	0	0	0
+Comments				
+WindowLabel		0
+<data>
+0	0.25	7.7349428684e-05	7.7349428684e-05
+1	0.125	1.8641020017e-05	1.8641020017e-05
+2	0.0625	4.609322089e-06	4.609322089e-06
+3	0.03125	1.14719456e-06	1.14719456e-06
+4	0.015625	2.86345055e-07	2.86345055e-07
+</data>
+</table>
+<table>
+pL2	30	3	22/03/12 23:28
+geometry	356	0	365	301	
+header	1[X]	mais1[Y]	maismeio[Y]
+ColWidth	100	100	100	
+<com>
+</com>
+ColType	0;0/13	0;0/13	0;0/13
+ReadOnlyColumn	0	0	0
+HiddenColumn	0	0	0
+Comments				
+WindowLabel		0
+<data>
+0	0.25	0.003943497000159	0.005740102891055
+1	0.125	0.001009981685601	0.001274283809317
+2	0.0625	0.000253059521038	0.000311002568774
+3	0.03125	6.3308303981e-05	7.731703753e-05
+4	0.015625	1.5829320099e-05	1.930464589e-05
+</data>
+</table>
+<table>
+uH1	30	3	22/03/12 23:28
+geometry	-2	305	364	358	
+header	1[X]	mais1[Y]	maismeio[Y]
+ColWidth	100	100	100	
+<com>
+</com>
+ColType	0;0/13	0;0/13	0;0/13
+ReadOnlyColumn	0	0	0
+HiddenColumn	0	0	0
+Comments				
+WindowLabel		0
+<data>
+0	0.25	0.000591821755881	0.000591821755881
+1	0.125	0.000141954692105	0.000141954692105
+2	0.0625	3.5076511135e-05	3.5076511134e-05
+3	0.03125	8.730646583e-06	8.730646582e-06
+4	0.015625	2.17926697e-06	2.17926697e-06
+</data>
+</table>
+<table>
+pH1	30	4	22/03/12 23:28
+geometry	358	301	360	357	
+header	1[X]	mais1[Y]	maismeio[Y]	2[Y]
+ColWidth	100	100	100	100	
+<com>
+</com>
+ColType	0;0/13	0;0/13	0;0/13	0;0/13
+ReadOnlyColumn	0	0	0	0
+HiddenColumn	0	0	0	0
+Comments					
+WindowLabel		0
+<data>
+0	0.25	0.009279747397658	0.01220719745511	
+1	0.125	0.00234155641584	0.002831475395742	
+2	0.0625	0.000586872736024	0.000694892333342	
+3	0.03125	0.000146811360078	0.000172935281059	
+4	0.015625	3.6708673081e-05	4.31843267e-05	
+</data>
+</table>
+<multiLayer>
+window_pL2	1	1	22/03/12 23:50
+geometry	728	4	440	440	
+WindowLabel		0
+Margins	5	5	5	5
+Spacing	5	5
+LayerCanvasSize	400	300
+Alignement	0	0
+<AlignPolicy>0</AlignPolicy>
+<CommonAxes>0</CommonAxes>
+<graph>
+ggeometry	5	5	433	386
+PlotTitle		#000000	4228
+<Antialiasing>1</Antialiasing>
+<Autoscaling>1</Autoscaling>
+<ScaleFonts>1</ScaleFonts>
+Background	#ffffff	255
+Margin	0
+Border	0	#000000
+grid	0	0	0	0	#0000ff	0	0.5	#a0a0a4	2	0.4	#0000ff	0	0.5	#a0a0a4	2	0.4	0	0	2	0	0
+EnabledAxes	1	1	1	1	
+AxesTitles	Δ<i>t</i>			 	
+AxesTitleColors	#000000	#000000	#000000	#000000	
+AxesTitleAlignment	5124	5124	4	5124
+AxesTitleDistance	2	2	2	2
+TitleFont	LMRoman12	11	50	0	0	0
+ScaleFont0	LMRoman12	11	50	0	0	0
+ScaleFont1	LMRoman12	11	50	0	0	0
+ScaleFont2	LMRoman12	12	50	0	0	0
+ScaleFont3	LMRoman12	11	50	0	0	0
+AxisFont0	LMRoman12	15	50	0	0	0
+AxisFont1	LMRoman12	11	50	0	0	0
+AxisFont2	LMRoman12	15	50	0	0	0
+AxisFont3	LMRoman12	11	50	0	0	0
+AxesColors	#000000	#000000	#000000	#000000
+AxesNumberColors	#000000	#3c3c3c	#000000	#3c3c3c
+AxesBaseline	0	0	0	0	
+CanvasBackground	#ffffff	255
+curve	pL2_1	pL2_mais1	2	1	#000000	0	1	7	1	#000000	#000000	0	#000000	14	1	2	0	0	29	1
+curve	pL2_1	pL2_maismeio	2	1	#ff0000	0	1	7	2	#ff0000	#ff0000	0	#000000	14	1	2	0	0	29	1
+scale	0	1e-05	0.01	0	3	5	1	0
+scale	1	1e-05	0.01	0	8	5	1	0
+scale	2	0.01	1	0	3	5	1	1
+scale	3	0.01	1	0	8	5	1	1
+LabelsFormat	5	0	0	4	5	0	0	4
+AxisType	0	0	0	0	
+MajorTicks	3	0	3	0
+MinorTicks	3	0	3	0
+TicksLength	5	9
+DrawAxesBackbone	1	1	1	1	1
+AxesLineWidth	1
+LabelsRotation	0	0	0	0
+LabelsPrefix				
+LabelsSuffix				
+TickLabelsSpace	4	4	4	4
+ShowTicksPolicy	0	0	0	0
+EnabledTickLabels	1	0	1	0
+<Legend>
+<Frame>0</Frame>
+<Color>#000000</Color>
+<FrameWidth>1</FrameWidth>
+<LineStyle>0</LineStyle>
+<x>0.61463584763688</x>
+<y>8.5316785241728e-05</y>
+<right>0.146322682080396</right>
+<bottom>1.91483634202683e-05</bottom>
+<attachTo>0</attachTo>
+<onTop>1</onTop>
+<Text>
+\l(1)<i>n</i>+1
+\l(2)<i>n</i>+1/2
+</Text>
+<Font>LMRoman12	15	50	0	0	0</Font>
+<TextColor>#000000</TextColor>
+<Background>#ffffff</Background>
+<Alpha>0</Alpha>
+<Angle>0</Angle>
+<AutoUpdate>1</AutoUpdate>
+<TeXOutput>0</TeXOutput>
+</Legend>
+</graph>
+<LinkXAxes>0</LinkXAxes>
+<ScaleLayers>1</ScaleLayers>
+</multiLayer>
+<multiLayer>
+window_pH1	1	1	22/03/12 23:50
+geometry	1167	4	440	440	active
+WindowLabel		0
+Margins	5	5	5	5
+Spacing	5	5
+LayerCanvasSize	400	300
+Alignement	0	0
+<AlignPolicy>0</AlignPolicy>
+<CommonAxes>0</CommonAxes>
+<graph>
+ggeometry	9	4	433	386
+PlotTitle		#000000	4228
+<Antialiasing>1</Antialiasing>
+<Autoscaling>1</Autoscaling>
+<ScaleFonts>1</ScaleFonts>
+Background	#ffffff	255
+Margin	0
+Border	0	#000000
+grid	0	0	0	0	#0000ff	0	0.5	#a0a0a4	2	0.4	#0000ff	0	0.5	#a0a0a4	2	0.4	0	0	2	0	0
+EnabledAxes	1	1	1	1	
+AxesTitles	Δ<i>t</i>			 	
+AxesTitleColors	#000000	#000000	#000000	#000000	
+AxesTitleAlignment	5124	5124	4	5124
+AxesTitleDistance	2	2	2	2
+TitleFont	LMRoman12	11	50	0	0	0
+ScaleFont0	LMRoman12	11	50	0	0	0
+ScaleFont1	LMRoman12	11	50	0	0	0
+ScaleFont2	LMRoman12	12	50	0	0	0
+ScaleFont3	LMRoman12	11	50	0	0	0
+AxisFont0	LMRoman12	15	50	0	0	0
+AxisFont1	LMRoman12	11	50	0	0	0
+AxisFont2	LMRoman12	15	50	0	0	0
+AxisFont3	LMRoman12	11	50	0	0	0
+AxesColors	#000000	#000000	#000000	#000000
+AxesNumberColors	#000000	#3c3c3c	#000000	#3c3c3c
+AxesBaseline	0	0	0	0	
+CanvasBackground	#ffffff	255
+curve	pH1_1	pH1_mais1	2	1	#000000	0	1	7	1	#000000	#000000	0	#000000	14	1	2	0	0	29	1
+curve	pH1_1	pH1_maismeio	2	1	#ff0000	0	1	7	2	#ff0000	#ff0000	0	#000000	14	1	2	0	0	29	1
+scale	0	1e-05	0.1	0	4	5	1	0
+scale	1	1e-05	0.1	0	8	5	1	0
+scale	2	0.01	1	0	3	5	1	1
+scale	3	0.01	1	0	8	5	1	1
+LabelsFormat	5	0	0	4	5	0	0	4
+AxisType	0	0	0	0	
+MajorTicks	3	0	3	0
+MinorTicks	3	0	3	0
+TicksLength	5	9
+DrawAxesBackbone	1	1	1	1	1
+AxesLineWidth	1
+LabelsRotation	0	0	0	0
+LabelsPrefix				
+LabelsSuffix				
+TickLabelsSpace	4	4	4	4
+ShowTicksPolicy	0	0	0	0
+EnabledTickLabels	1	0	1	0
+<Legend>
+<Frame>0</Frame>
+<Color>#000000</Color>
+<FrameWidth>1</FrameWidth>
+<LineStyle>0</LineStyle>
+<x>0.59204909770399</x>
+<y>0.00016937141873226</y>
+<right>0.140945589542811</right>
+<bottom>2.31012970008316e-05</bottom>
+<attachTo>0</attachTo>
+<onTop>1</onTop>
+<Text>
+\l(1)<i>n</i>+1
+\l(2)<i>n</i>+1/2
+</Text>
+<Font>LMRoman12	15	50	0	0	0</Font>
+<TextColor>#000000</TextColor>
+<Background>#ffffff</Background>
+<Alpha>0</Alpha>
+<Angle>0</Angle>
+<AutoUpdate>1</AutoUpdate>
+<TeXOutput>0</TeXOutput>
+</Legend>
+</graph>
+<LinkXAxes>0</LinkXAxes>
+<ScaleLayers>1</ScaleLayers>
+</multiLayer>
+<open>1</open>

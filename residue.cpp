@@ -5,11 +5,11 @@
 // ******************************************************************************
 PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 {
-  
+
   int iter;
-  
+
   SNESGetIterationNumber(snes,&iter);
-  
+
   if (!iter)
   {
     converged_times=0;
@@ -30,12 +30,10 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
     VectorXi          mapU_c(n_dofs_u_per_cell);
     VectorXi          mapP_c(n_dofs_p_per_cell);
 
-    MatrixXd          R(n_dofs_u_per_cell,n_dofs_u_per_cell);
-    VectorXd          zero_entries(n_dofs_u_per_cell);
-    MatrixXd          Elim_normal(n_dofs_u_per_cell,n_dofs_u_per_cell);
+    MatrixXd          Prj(n_dofs_u_per_cell,n_dofs_u_per_cell);
     VectorXi          cell_nodes(nodes_per_cell);
-    
-  
+
+
     //const int tid = omp_get_thread_num();
     //const int nthreads = omp_get_num_threads();
     //const int n_cell_colors = mesh->numCellColors();
@@ -65,14 +63,12 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
         formCellFunction(cell, mapU_c, mapP_c, u_coefs_c_new, p_coefs_c, FUloc, FPloc);
 
-        // elimination R^T * Ihat * R
+        // Projection - to force non-penetrarion bc
         mesh->getCellNodesId(&*cell, cell_nodes.data());
-        getRotationMatrix(R, nodes_per_cell, cell_nodes.data(), Vec_x_1, current_time+dt);
-        getEliminationVector(zero_entries, nodes_per_cell, cell_nodes.data());
-        Elim_normal = R.transpose()*zero_entries.asDiagonal()*R;
-        
-        FUloc = Elim_normal*FUloc;
-        
+        getProjectorMatrix(Prj, nodes_per_cell, cell_nodes.data(), Vec_x_1, current_time+dt);
+
+        FUloc = Prj*FUloc;
+
         VecSetValues(Vec_fun, mapU_c.size(), mapU_c.data(), FUloc.data(), ADD_VALUES);
         VecSetValues(Vec_fun, mapP_c.size(), mapP_c.data(), FPloc.data(), ADD_VALUES);
 
@@ -92,13 +88,11 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
     MatrixXd        u_coefs_f(n_dofs_u_per_facet/dim, dim);
     VectorXd        p_coefs_f(n_dofs_p_per_facet);
-    
+
     VectorXi        mapU_f(n_dofs_u_per_facet);
     VectorXi        mapP_f(n_dofs_p_per_facet);
-    
-    MatrixXd        R(n_dofs_u_per_facet,n_dofs_u_per_facet);
-    VectorXd        zero_entries(n_dofs_u_per_facet);
-    MatrixXd        Elim_normal(n_dofs_u_per_facet,n_dofs_u_per_facet);
+
+    MatrixXd        Prj(n_dofs_u_per_facet,n_dofs_u_per_facet);
     VectorXi        facet_nodes(nodes_per_facet);
 
     bool is_neumann;
@@ -142,13 +136,11 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
         formFacetFunction(facet, mapU_f, mapP_f, u_coefs_f, p_coefs_f,FUloc);
 
-        // elimination R^T * Ihat * R
+        // Projection - to force non-penetrarion bc
         mesh->getFacetNodesId(&*facet, facet_nodes.data());
-        getRotationMatrix(R, nodes_per_facet, facet_nodes.data(), Vec_x_1, current_time+dt);
-        getEliminationVector(zero_entries, nodes_per_facet, facet_nodes.data());
-        Elim_normal = R.transpose()*zero_entries.asDiagonal()*R;
+        getProjectorMatrix(Prj, nodes_per_facet, facet_nodes.data(), Vec_x_1, current_time+dt);
 
-        FUloc = Elim_normal*FUloc;
+        FUloc = Prj*FUloc;
 
         VecSetValues(Vec_fun, mapU_f.size(), mapU_f.data(), FUloc.data(), ADD_VALUES);
 
@@ -172,9 +164,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
     VectorXi         mapU_r(n_dofs_u_per_corner);
     VectorXi         mapP_r(n_dofs_p_per_corner);
 
-    MatrixXd         R(n_dofs_u_per_corner,n_dofs_u_per_corner);
-    VectorXd         zero_entries(n_dofs_u_per_corner);
-    MatrixXd         Elim_normal(n_dofs_u_per_corner,n_dofs_u_per_corner);
+    MatrixXd         Prj(n_dofs_u_per_corner,n_dofs_u_per_corner);
     VectorXi         corner_nodes(nodes_per_corner);
 
     //const int tid = omp_get_thread_num();
@@ -202,13 +192,11 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
       formCornerFunction(corner,mapU_r,mapP_r,u_coefs_r,FUloc);
 
-      // elimination R^T * Ihat * R
+      // Projection - to force non-penetrarion bc
       mesh->getCornerNodesId(&*corner, corner_nodes.data());
-      getRotationMatrix(R, nodes_per_corner, corner_nodes.data(), Vec_x_1, current_time+dt);
-      getEliminationVector(zero_entries, nodes_per_corner, corner_nodes.data());
-      Elim_normal = R.transpose()*zero_entries.asDiagonal()*R;
+      getProjectorMatrix(Prj, nodes_per_corner, corner_nodes.data(), Vec_x_1, current_time+dt);
 
-      FUloc = Elim_normal*FUloc;
+      FUloc = Prj*FUloc;
 
       VecSetValues(Vec_fun, mapU_r.size(), mapU_r.data(), FUloc.data(), ADD_VALUES);
       //cout << FUloc.transpose() << endl;
@@ -237,30 +225,30 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
     for (; point != point_end; ++point)
     {
       tag = point->getTag();
-      
+
       if (!is_in(tag,dirichlet_tags))
         continue;
-      
+
       getNodeDofs(&*point, DH_UNKS, VAR_U, nodes_dof_fluid.data());
       getNodeDofs(&*point, DH_MESH, VAR_M, nodes_dof_mesh.data());
-      
+
       VecGetValues(Vec_up_k, dim, nodes_dof_fluid.data(), U.data());
       VecGetValues(Vec_x_1,  dim, nodes_dof_mesh.data(), X.data());
-      
+
       Ue = u_exact(X,current_time+dt,tag);
-      
+
       dU = U - Ue;
-      
+
       VecSetValues(Vec_fun, dim, nodes_dof_fluid.data(), dU.data(), INSERT_VALUES);
     }
 
   } // end parallel
 
   if (force_pressure)
-  { 
+  {
     int idx;
     double p, pe = 0;
-    
+
     idx = dir_entries.back();
     VecGetValues(Vec_up_k, 1, &idx, &p);
     VecSetValue(Vec_fun, idx, p - pe, INSERT_VALUES);
@@ -303,14 +291,15 @@ void AppCtx::formCellFunction(cell_iterator &cell,
   MatrixXd            v_coefs_c_mid_trans(dim,nodes_per_cell);  // mesh velocity; n
 
   //VectorXd            p_coefs_c_old(n_dofs_p_per_cell);    // n
-  
+  //VectorXd            p_coefs_c_mid(n_dofs_p_per_cell);    // n+theta
+
   //MatrixXd            x_coefs_c_mid(nodes_per_cell, dim);       // n+utheta
   MatrixXd            x_coefs_c_mid_trans(dim, nodes_per_cell); // n+utheta
   MatrixXd            x_coefs_c_new(nodes_per_cell, dim);       // n+1
   MatrixXd            x_coefs_c_new_trans(dim, nodes_per_cell); // n+1
   MatrixXd            x_coefs_c_old(nodes_per_cell, dim);       // n
   MatrixXd            x_coefs_c_old_trans(dim, nodes_per_cell); // n
-  
+
   Tensor              F_c_mid(dim,dim);       // n+utheta
   Tensor              invF_c_mid(dim,dim);    // n+utheta
   Tensor              invFT_c_mid(dim,dim);   // n+utheta
@@ -320,9 +309,9 @@ void AppCtx::formCellFunction(cell_iterator &cell,
   //Tensor              F_c_old(dim,dim);       // n
   //Tensor              invF_c_old(dim,dim);    // n
   //Tensor              invFT_c_old(dim,dim);   // n
-  
+
   /* All variables are in (n+utheta) by default */
-  
+
   MatrixXd            dxphi_c(n_dofs_u_per_cell/dim, dim);
   MatrixXd            dxpsi_c(n_dofs_p_per_cell, dim);
   MatrixXd            dxqsi_c(nodes_per_cell, dim);
@@ -369,7 +358,7 @@ void AppCtx::formCellFunction(cell_iterator &cell,
   Vector              Res(dim);                                     // residue
   Tensor const        I(Tensor::Identity(dim,dim));
   Vector              vec(dim);     // temp
-  Tensor              Ten(dim,dim); // temp  
+  Tensor              Ten(dim,dim); // temp
 
   VectorXi            mapM_c(dim*nodes_per_cell); // mesh velocity
 
@@ -385,12 +374,13 @@ void AppCtx::formCellFunction(cell_iterator &cell,
   VecGetValues(Vec_x_0,     mapM_c.size(), mapM_c.data(), x_coefs_c_old.data());
   VecGetValues(Vec_x_1,     mapM_c.size(), mapM_c.data(), x_coefs_c_new.data());
   VecGetValues(Vec_up_0,    mapU_c.size(), mapU_c.data(), u_coefs_c_old.data());
-  
+  //VecGetValues(Vec_up_0,    mapP_c.size(), mapP_c.data(), p_coefs_c_old.data());
+
   // get nodal coordinates of the old and new cell
   mesh->getCellNodesId(&*cell, cell_nodes.data());
   //mesh->getNodesCoords(cell_nodes.begin(), cell_nodes.end(), x_coefs_c.data());
   //x_coefs_c_trans = x_coefs_c_mid_trans;
-  
+
   v_coefs_c_mid_trans = v_coefs_c_mid.transpose();
   x_coefs_c_old_trans = x_coefs_c_old.transpose();
   x_coefs_c_new_trans = x_coefs_c_new.transpose();
@@ -399,13 +389,14 @@ void AppCtx::formCellFunction(cell_iterator &cell,
 
   u_coefs_c_mid_trans = utheta*u_coefs_c_new_trans + (1.-utheta)*u_coefs_c_old_trans;
   x_coefs_c_mid_trans = utheta*x_coefs_c_new_trans + (1.-utheta)*x_coefs_c_old_trans;
+  //p_coefs_c_mid       = utheta*p_coefs_c_new       + (1.-utheta)*p_coefs_c_old;
 
   visc = muu(tag);
   rho  = pho(Xqp,tag);
   FUloc.setZero();
   FPloc.setZero();
-  
-  
+
+
   if (behaviors & BH_bble_condens_PnPn)
   {
     iBbb.setZero();
@@ -425,12 +416,12 @@ void AppCtx::formCellFunction(cell_iterator &cell,
 
     hk2 = cell_volume / pi; // element size
     double const uconv = (u_coefs_c_old - v_coefs_c_mid).lpNorm<Infinity>();
-    
+
     tauk = 4.*visc/hk2 + 2.*rho*uconv/sqrt(hk2);
     tauk = 1./tauk;
     if (dim==3)
       tauk *= 0.1;
-    
+
     delk = 4.*visc + 2.*rho*uconv*sqrt(hk2);
 
   }
@@ -454,7 +445,7 @@ void AppCtx::formCellFunction(cell_iterator &cell,
     }
     Xc /= cell_volume;
   }
-  
+
 
   // Quadrature
   for (int qp = 0; qp < n_qpts_cell; ++qp)
@@ -462,11 +453,11 @@ void AppCtx::formCellFunction(cell_iterator &cell,
     //F_c_new = x_coefs_c_new_trans * dLqsi_c[qp];
     //inverseAndDet(F_c_new,dim,invF_c_new,J_new);
     //invFT_c_new= invF_c_new.transpose();
-    
+
     //F_c_old = x_coefs_c_old_trans * dLqsi_c[qp];
     //inverseAndDet(F_c_old,dim,invF_c_old,J_old);
     //invFT_c_old= invF_c_old.transpose();
-    
+
     F_c_mid = x_coefs_c_mid_trans * dLqsi_c[qp];
     inverseAndDet(F_c_mid,dim,invF_c_mid,J_mid);
     invFT_c_mid= invF_c_mid.transpose();
@@ -520,15 +511,15 @@ void AppCtx::formCellFunction(cell_iterator &cell,
                   visc*dxphi_c.row(i).dot(dxU.row(c) + dxU.col(c).transpose()) - //rigidez
                   Pqp_new*dxphi_c(i,c) - // pressão
                   force_at_mid(c)*phi_c[qp][i]   ); // força
-      
+
       }
-      
+
       //FUloc.segment(i*dim,dim) += JxW_mid*
       //                        (   phi_c[qp][i]*rho* (  dUdt + has_convec* dxU*Uconv_qp  ) // aceleração
       //                          + visc* ( dxU + dxU.transpose() )*dxphi_c.row(i).transpose()       //rigidez
       //                          - Pqp_new*dxphi_c.row(i).transpose() // pressão
       //                          - phi_c[qp][i]* force_at_mid   ); // força
-      
+
     }
     for (int i = 0; i < n_dofs_p_per_cell; ++i)
       FPloc(i) -= JxW_mid* dxU.trace()*psi_c[qp][i];
@@ -541,7 +532,7 @@ void AppCtx::formCellFunction(cell_iterator &cell,
     if (behaviors & (BH_bble_condens_PnPn | BH_bble_condens_CR))
     {
       dxbble = invFT_c_mid * dLbble[qp];
-    
+
       for (int c = 0; c < dim; c++)
       {
         for (int j = 0; j < n_dofs_u_per_cell/dim; j++)
@@ -583,14 +574,14 @@ void AppCtx::formCellFunction(cell_iterator &cell,
     if(behaviors & BH_GLS)
     {
       Res = rho*( dUdt +  has_convec*dxU*Uconv_qp) + dxP_new - force_at_mid;
-      
+
       for (int i = 0; i < n_dofs_u_per_cell/dim; i++)
       {
         vec = JxW_mid*(  has_convec*tauk*  rho* Uconv_qp.dot(dxphi_c.row(i)) * Res    +   delk*dxU.trace()*dxphi_c.row(i).transpose() );
-        
+
         for (int c = 0; c < dim; c++)
           FUloc(i*dim + c) += vec(c);
-          
+
       }
       for (int i = 0; i < n_dofs_p_per_cell; ++i)
         FPloc(i) -= JxW_mid *tauk* dxpsi_c.row(i).dot(Res);
@@ -609,8 +600,8 @@ void AppCtx::formCellFunction(cell_iterator &cell,
         FPx(c) -= JxW_mid* dxU.trace()*(Xqp(c) - Xc(c));
       }
     }
-    
-  
+
+
   } // fim quadratura
 
   //
@@ -620,7 +611,7 @@ void AppCtx::formCellFunction(cell_iterator &cell,
   {
     //iBbb = iBbb.inverse().eval();
     invert(iBbb,dim);
-    
+
     FUloc = FUloc - Bnb*iBbb*FUb;
     FPloc = FPloc - utheta*Gbp.transpose()*iBbb*FUb;
   }
@@ -629,10 +620,10 @@ void AppCtx::formCellFunction(cell_iterator &cell,
   {
     double const a = 1./(bble_integ*bble_integ);
     double const b = 1./bble_integ;
-    
+
     FUloc +=  a*Gnx*iBbb*FPx - b*Bnb*FPx - b*Gnx*FUb;
   }
-  
+
 
 
   //PetscFunctionReturn(0);
@@ -656,18 +647,18 @@ void AppCtx::formFacetFunction(facet_iterator &facet,
   MatrixXd            u_coefs_f_old(n_dofs_u_per_facet/dim, dim);        // n
   MatrixXd            u_coefs_f_old_trans(dim,n_dofs_u_per_facet/dim);   // n
   MatrixXd            u_coefs_f_new_trans(dim,n_dofs_u_per_facet/dim);   // n+1
-  
+
   MatrixXd            x_coefs_f_mid_trans(dim, nodes_per_facet); // n+utheta
   MatrixXd            x_coefs_f_new(nodes_per_facet, dim);       // n+1
   MatrixXd            x_coefs_f_new_trans(dim, nodes_per_facet); // n+1
   MatrixXd            x_coefs_f_old(nodes_per_facet, dim);       // n
   MatrixXd            x_coefs_f_old_trans(dim, nodes_per_facet); // n
-  
+
   Tensor              F_f_mid(dim,dim-1);       // n+utheta
   Tensor              invF_f_mid(dim-1,dim);    // n+utheta
   Tensor              fff_f_mid(dim-1,dim-1);   // n+utheta; first fundamental form
-  //Tensor              invFT_c_mid(dim,dim);   // n+utheta  
-  
+  //Tensor              invFT_c_mid(dim,dim);   // n+utheta
+
   MatrixXd            dxphi_f(n_dofs_u_per_facet/dim, dim);
   Tensor              dxU_f(dim,dim);   // grad u
   Vector              Xqp(dim);
@@ -711,12 +702,12 @@ void AppCtx::formFacetFunction(facet_iterator &facet,
   VecGetValues(Vec_x_0,     mapM_f.size(), mapM_f.data(), x_coefs_f_old.data());
   VecGetValues(Vec_x_1,     mapM_f.size(), mapM_f.data(), x_coefs_f_new.data());
   VecGetValues(Vec_up_0,    mapU_f.size(), mapU_f.data(), u_coefs_f_old.data());
-  
+
   // get nodal coordinates of the old and new cell
   mesh->getFacetNodesId(&*facet, facet_nodes.data());
   //mesh->getNodesCoords(cell_nodes.begin(), cell_nodes.end(), x_foefs_f.data());
   //x_foefs_f_trans = x_foefs_f.transpose();
-  
+
   x_coefs_f_old_trans = x_coefs_f_old.transpose();
   x_coefs_f_new_trans = x_coefs_f_new.transpose();
   u_coefs_f_old_trans = u_coefs_f_old.transpose();
@@ -750,7 +741,7 @@ void AppCtx::formFacetFunction(facet_iterator &facet,
     //traction_ = utheta*(traction(Xqp,current_time+dt,tag)) + (1.-utheta)*traction(Xqp,current_time,tag);
     traction_ = traction(Xqp,current_time + dt/2,tag);
     //traction_ = (traction(Xqp,current_time,tag) +4.*traction(Xqp,current_time+dt/2.,tag) + traction(Xqp,current_time+dt,tag))/6.;
-    
+
       for (int i = 0; i < n_dofs_u_per_facet/dim; ++i)
       {
         for (int c = 0; c < dim; ++c)
@@ -957,7 +948,7 @@ void AppCtx::formCornerFunction(corner_iterator &corner,
   }
 
 
-  
+
   for (int qp = 0; qp < n_qpts_corner; ++qp)
   {
     if (dim==3)

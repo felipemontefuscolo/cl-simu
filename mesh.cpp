@@ -143,8 +143,8 @@ void AppCtx::smoothsMesh(Vec & Vec_normal_, Vec &Vec_x_)
   double      old_quality, new_quality;
   bool        in_boundary;
   //int        id;
-  
-  
+
+
   /* suavização laplaciana */
   for (int smooth_it = 0; smooth_it < 3; ++smooth_it)
   {
@@ -185,23 +185,23 @@ void AppCtx::smoothsMesh(Vec & Vec_normal_, Vec &Vec_x_)
             Xm += tmp;
           }
           Xm /= (iVs_end-iVs);
-          
+
           dof_handler[DH_MESH].getVariable(VAR_M).getVertexDofs(vtx_dofs_umesh.data(), &*point);
           //// compute error
           VecGetValues(Vec_x_, dim, vtx_dofs_umesh.data(), tmp.data()); // old coord
           error += (tmp-Xm).norm();
           old_quality = getCellPatchQuality(Vec_x_, iCs);
-          
+
           VecSetValues(Vec_x_, dim, vtx_dofs_umesh.data(), Xm.data(), INSERT_VALUES);
-          
+
           new_quality = getCellPatchQuality(Vec_x_, iCs);
-          
+
           // se a qualidade piorou, volta no que estava antes
           if (new_quality < old_quality)
           {
             VecSetValues(Vec_x_, dim, vtx_dofs_umesh.data(), tmp.data(), INSERT_VALUES);
           }
-          
+
         }
         else
         {
@@ -216,12 +216,12 @@ void AppCtx::smoothsMesh(Vec & Vec_normal_, Vec &Vec_x_)
             VecGetValues(Vec_x_, dim, vtx_dofs_umesh.data(), tmp.data());
             ++N;
             Xm += tmp;
-            
+
           }
-          
+
           dof_handler[DH_MESH].getVariable(VAR_M).getVertexDofs(vtx_dofs_umesh.data(), &*point);
           VecGetValues(Vec_x_, dim, vtx_dofs_umesh.data(), Xi.data());
-          
+
           if (dim==3)
             Xm = (N*Xi + 2*Xm)/(3*N);
             //Xm = Xm/N;
@@ -237,7 +237,7 @@ void AppCtx::smoothsMesh(Vec & Vec_normal_, Vec &Vec_x_)
 
           // compute error
           VecGetValues(Vec_x_, dim, vtx_dofs_umesh.data(), tmp.data());
-          error += (tmp-Xi).norm(); 
+          error += (tmp-Xi).norm();
 
           old_quality = getCellPatchQuality(Vec_x_, iCs);
           VecSetValues(Vec_x_, dim, vtx_dofs_umesh.data(), Xi.data(), INSERT_VALUES);
@@ -252,8 +252,8 @@ void AppCtx::smoothsMesh(Vec & Vec_normal_, Vec &Vec_x_)
       }
 
     } // end point
-    
-    
+
+
     // MID NODES
     point = mesh->pointBegin();
     point_end = mesh->pointEnd();
@@ -289,14 +289,14 @@ void AppCtx::smoothsMesh(Vec & Vec_normal_, Vec &Vec_x_)
           mesh->getFacetNodesId(&*edge, edge_nodes.data());
         }
 
-        VecGetValues(Vec_x_, dim, edge_dofs_umesh.data(), Xm.data());    
+        VecGetValues(Vec_x_, dim, edge_dofs_umesh.data(), Xm.data());
         VecGetValues(Vec_x_, dim, edge_dofs_umesh.data()+dim, tmp.data());
         VecGetValues(Vec_x_, dim, edge_dofs_umesh.data()+2*dim, Xi.data());    // mid
 
         if (in_boundary)
         {
           Xm = (Xm+tmp+2*Xi)/4.;
-          
+
           //Xm = (Xm+tmp)/2.;
 
           dX = Xm - Xi;
@@ -308,11 +308,11 @@ void AppCtx::smoothsMesh(Vec & Vec_normal_, Vec &Vec_x_)
         {
           Xi = (Xm+tmp)/2.;
         }
-        
+
         // compute error
         VecGetValues(Vec_x_, dim, edge_dofs_umesh.data()+2*dim, tmp.data());
-        error += (tmp-Xi).norm();             
-        
+        error += (tmp-Xi).norm();
+
         VecSetValues(Vec_x_, dim, edge_dofs_umesh.data()+2*dim, Xi.data(), INSERT_VALUES);
         Assembly(Vec_x_);
 
@@ -320,18 +320,18 @@ void AppCtx::smoothsMesh(Vec & Vec_normal_, Vec &Vec_x_)
 
     } // end point
 
-    
+
     error /= mesh->numNodes();
     //if (error < 1.e-10)
     //{
     //  cout << "STOP, " << smooth_it << " iterations\n";
     //  break;
     //}
-    
-    
+
+
   } // end smooth
   Assembly(Vec_x_);
-  
+
   getVecNormals(&Vec_x_, Vec_normal_);
 }
 
@@ -388,15 +388,15 @@ void AppCtx::swapMeshWithVec(Vec & Vec_xmsh)
   for (; point != point_end; ++point)
   {
     getNodeDofs(&*point, DH_MESH, VAR_M, node_dofs_umesh.data());
-    
+
     point->getCoord(tmp.data());
     VecGetValues(Vec_xmsh, dim, node_dofs_umesh.data(), Xi.data());
-    
+
     point->setCoord(Xi.data());
     VecSetValues(Vec_xmsh, dim, node_dofs_umesh.data(), tmp.data(), INSERT_VALUES);
   }
 
-  Assembly(Vec_xmsh);  
+  Assembly(Vec_xmsh);
 }
 
 
@@ -407,7 +407,7 @@ PetscErrorCode AppCtx::calcMeshVelocity(Vec const& Vec_x_0, Vec const& Vec_x_1, 
   ierr = VecAXPY(Vec_v_mid,-1.,Vec_x_0);   CHKERRQ(ierr);
   ierr = VecScale(Vec_v_mid, 1./dt);       CHKERRQ(ierr);
   Assembly(Vec_v_mid);
-  
+
   PetscFunctionReturn(0);
 }
 
@@ -429,7 +429,7 @@ PetscErrorCode AppCtx::moveMesh(Vec const& Vec_x_0, Vec const& Vec_up_0, Vec con
   Vector      U(dim);
   Vector      U0(dim);
   Vector      U1(dim);
-  VectorXi    node_dofs_mesh(dim); 
+  VectorXi    node_dofs_mesh(dim);
   VectorXi    node_dofs_fluid(dim);
   int         tag;
   VectorXi    edge_dofs(dim);
@@ -442,7 +442,7 @@ PetscErrorCode AppCtx::moveMesh(Vec const& Vec_x_0, Vec const& Vec_up_0, Vec con
   for (; point != point_end; ++point)
   {
     tag = point->getTag();
-    
+
     getNodeDofs(&*point, DH_MESH, VAR_M, node_dofs_mesh.data());
     getNodeDofs(&*point, DH_UNKS, VAR_U, node_dofs_fluid.data());
 
@@ -454,7 +454,22 @@ PetscErrorCode AppCtx::moveMesh(Vec const& Vec_x_0, Vec const& Vec_up_0, Vec con
       Vector k2 = dt * v_exact(X0+0.5*k1,tt+0.5*dt,tag);
       Vector k3 = dt * v_exact(X0+0.5*k2,tt+0.5*dt,tag);
       Vector k4 = dt * v_exact(X0+k3,tt+dt,tag);
-      tmp = X0 + (k1 + 2.*(k2+k3) + k4)/6.; 
+      tmp =  (k1 + 2.*(k2+k3) + k4)/6.; // velocity
+      //if (!mesh->isVertex(&*point)) // APAGAR TEMP ERASE-ME ... este codigo é só para não entortar a malha
+      //{ 
+      //  int vtcs[3];
+      //  const int m = point->getPosition() - mesh->numVerticesPerCell();
+      //  Cell const* cell = mesh->getCell(point->getIncidCell());
+      //  if (dim==3)
+      //    cell->getCornerVerticesId(m, vtcs);
+      //  else
+      //    cell->getFacetVerticesId(m, vtcs);
+      //  if (mesh->inBoundary(mesh->getNode(vtcs[0])) || mesh->inBoundary(mesh->getNode(vtcs[1])))
+      //    tmp = tmp / 2.;
+      //  if (mesh->inBoundary(mesh->getNode(vtcs[0])) && mesh->inBoundary(mesh->getNode(vtcs[1])))
+      //    tmp = tmp * 0.;
+      //}
+      tmp = X0 + tmp;
       VecSetValues(Vec_x_new, dim, node_dofs_mesh.data(), tmp.data(), INSERT_VALUES);
     }
     else
@@ -482,28 +497,28 @@ double AppCtx::getCellQuality(Vec const& Vec_x_, int cell_id) const
 {
   MatrixXd  x_coefs(nodes_per_cell, dim);
   VectorXi  mapM_c(dim*nodes_per_cell); // mesh velocity
-  
+
   dof_handler[DH_MESH].getVariable(VAR_M).getCellDofs(mapM_c.data(), mesh->getCell(cell_id));
 
   VecGetValues(Vec_x_, mapM_c.size(), mapM_c.data(), x_coefs.data());
-  
+
   if (dim==2)
   {
     double l_sqr; // l0^2 + l1^2 + l2^2
-    
+
     l_sqr  = sqr(x_coefs(1,0)-x_coefs(0,0)) + sqr(x_coefs(1,1)-x_coefs(0,1));
     l_sqr += sqr(x_coefs(2,0)-x_coefs(1,0)) + sqr(x_coefs(2,1)-x_coefs(1,1));
     l_sqr += sqr(x_coefs(0,0)-x_coefs(2,0)) + sqr(x_coefs(0,1)-x_coefs(2,1));
-    
+
     double const f = 6.92820323027551; // 4*sqrt(3)
     double const area = ((x_coefs(0,0)-x_coefs(2,0))*(x_coefs(1,1)-x_coefs(2,1))-(x_coefs(1,0)-x_coefs(2,0))*(x_coefs(0,1)-x_coefs(2,1)))/2;
-    
+
     return f*area/l_sqr;
   }
   else // if dim==3
   {
     double l_rms_3; // pow( (l0^2 + l1^2 + l2^2 + l3^2 + l4^2 + l5^2 + l6^2)/6 , 1.5)
-    
+
     l_rms_3  = sqr(x_coefs(0,0)-x_coefs(1,0))   +   sqr(x_coefs(0,1)-x_coefs(1,1))   +   sqr(x_coefs(0,2)-x_coefs(1,2));
     l_rms_3 += sqr(x_coefs(0,0)-x_coefs(2,0))   +   sqr(x_coefs(0,1)-x_coefs(2,1))   +   sqr(x_coefs(0,2)-x_coefs(2,2));
     l_rms_3 += sqr(x_coefs(0,0)-x_coefs(3,0))   +   sqr(x_coefs(0,1)-x_coefs(3,1))   +   sqr(x_coefs(0,2)-x_coefs(3,2));
@@ -511,11 +526,11 @@ double AppCtx::getCellQuality(Vec const& Vec_x_, int cell_id) const
     l_rms_3 += sqr(x_coefs(1,0)-x_coefs(3,0))   +   sqr(x_coefs(1,1)-x_coefs(3,1))   +   sqr(x_coefs(1,2)-x_coefs(3,2));
     l_rms_3 += sqr(x_coefs(2,0)-x_coefs(3,0))   +   sqr(x_coefs(2,1)-x_coefs(3,1))   +   sqr(x_coefs(2,2)-x_coefs(3,2));
     l_rms_3 /= 6.;
-    
+
     l_rms_3 = pow(l_rms_3,1.5);
-    
+
     double const f = 8.48528137423857; // 6*sqrt(2)
-    
+
     double x21 = x_coefs(1,0) - x_coefs(0,0);
     double x32 = x_coefs(2,0) - x_coefs(1,0);
     double x43 = x_coefs(3,0) - x_coefs(2,0);
@@ -526,19 +541,19 @@ double AppCtx::getCellQuality(Vec const& Vec_x_, int cell_id) const
     double z23 = x_coefs(1,2) - x_coefs(2,2);
     double z34 = x_coefs(2,2) - x_coefs(3,2);
     double volume = x21*(y23*z34 - y34*z23 ) + x32*(y34*z12 - y12*z34 ) + x43*(y12*z23 - y23*z12 );
-    
+
     return f*volume/l_rms_3;
   }
-  
-  
+
+
 }
 
 /// @param Vec_x_ the mesh
-/// 
+///
 double AppCtx::getCellPatchQuality(Vec const& Vec_x_, int const* cells) const
 {
   double quality=99999999, aux;
-  
+
   for (int i = 0; ; ++i)
   {
     if (cells[i] < 0)
@@ -550,7 +565,7 @@ double AppCtx::getCellPatchQuality(Vec const& Vec_x_, int const* cells) const
   }
 
   return quality;
-  
+
 }
 
 

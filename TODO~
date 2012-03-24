@@ -1,0 +1,7 @@
+
+* opção para imprimir erro a cada passo de tempo
+  - no final, tirar uma média do erro.
+
+V^k+1 = b1*(S(x^k) - x^k)/dt + b2*u^k
+x^k+1 = x^n + dt*(tetV^k+1 + (1-tet)V^n)
+A*u^k+1 = b em Omega^k+1

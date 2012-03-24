@@ -19,8 +19,8 @@ Physical Line(2) = {2, 1, 4};
 Physical Line(1) = {3};
 Physical Surface(3) = {6};
 
-Transfinite Line {4, 2} = 9 Using Progression 1; //sugestão: 9 | 17 | 33 | 65
-Transfinite Line {1, 3} = 7 Using Progression 1; //sugestão: 7 | 13 | 25 | 49
+Transfinite Line {4, 2} = 17 Using Progression 1; //sugestão: 9 | 17 | 33 | 65
+Transfinite Line {1, 3} = 13 Using Progression 1; //sugestão: 7 | 13 | 25 | 49
 Transfinite Surface {6} Right;
 
 // h = L/(N-1);

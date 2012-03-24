@@ -1,0 +1,722 @@
+QtiPlot 0.9.8 project file
+<scripting-lang>	muParser
+<windows>	8
+<table>
+velocidadeL2	30	10	17/03/12 19:10
+geometry	-5	6	719	208	
+header	h[X]	GLS[Y]	ME[Y]	ME-S[Y]	TH2[Y]	CR[Y]	CR-S[Y]	z[X]	quadr[Y]	cubic[Y]
+ColWidth	100	100	100	100	100	100	100	100	100	100	
+<com>
+<col nr="0">
+col("h")*2
+</col>
+<col nr="8">
+0.15*(col("z")^2)
+</col>
+<col nr="9">
+(col("z")^3)*0.01
+</col>
+</com>
+ColType	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13
+ReadOnlyColumn	0	0	0	0	0	0	0	0	0	0
+HiddenColumn	0	0	0	0	0	0	0	0	0	0
+Comments											
+WindowLabel		0
+<data>
+0	1	0.09175557107904	0.08228053700532	0.08954316239157	0.005470903159669	0.00571799307303	0.006126764482183	1.5	0.3375	0.03375
+1	0.5	0.02567816108384	0.0216725108769	0.02371810419387	0.000687624762417	0.000728264312264	0.000744900940363	0.05	0.000375	1.25e-06
+2	0.25	0.006804291710937	0.005502270798782	0.006033593277858	8.6104489013e-05	9.0630972728e-05	8.8945592028e-05			
+3	0.125	0.00173533077459	0.001374249967371	0.001508903050502	1.0769992554e-05	1.1288490993e-05	1.0874170593e-05			
+</data>
+</table>
+<table>
+velocidadeH1	30	10	21/03/12 07:31
+geometry	-1	217	713	222	
+header	h[X]	GLS[Y]	ME[Y]	ME-S[Y]	TH2[Y]	CR[Y]	CR-S[Y]	z[X]	linear[Y]	quadratic[Y]
+ColWidth	100	100	100	100	100	100	100	100	100	100	
+<com>
+<col nr="8">
+1.1*col("z")
+</col>
+<col nr="9">
+0.32*col("z")*col("z")
+</col>
+</com>
+ColType	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13
+ReadOnlyColumn	0	0	0	0	0	0	0	0	0	0
+HiddenColumn	0	0	0	0	0	0	0	0	0	0
+Comments											
+WindowLabel		0
+<data>
+0	1	1.608350026685	1.522001931225	1.605940380622	0.2175009316919	0.2151787388265	0.2344410555653	1.5	1.65	0.72
+1	0.5	0.8120887578486	0.7595021767894	0.8093803028426	0.05475014968012	0.05683309161692	0.05783357224767	0.05	0.055	0.0008
+2	0.25	0.405858992209	0.3787558538559	0.4051729696215	0.01371502745868	0.01458949461657	0.01401685941159			
+3	0.125	0.2027358297389	0.1891226033259	0.2026045973075	0.003430753242172	0.003678486382521	0.003453543888109			
+</data>
+</table>
+<table>
+pressaoH1	30	10	21/03/12 07:35
+geometry	3	668	712	228	
+header	h[X]	GLS[Y]	ME[Y]	ME-S[Y]	TH2[Y]	CR[Y]	CR-S[Y]	z[X]	linear[Y]	sqrt[Y]
+ColWidth	100	100	100	100	100	100	100	100	100	100	
+<com>
+<col nr="8">
+0.3*col("z")
+</col>
+<col nr="9">
+0.5* pow(col("z"), 0.63)
+</col>
+</com>
+ColType	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13
+ReadOnlyColumn	0	0	0	0	0	0	0	0	0	0
+HiddenColumn	0	0	0	0	0	0	0	0	0	0
+Comments											
+WindowLabel		0
+<data>
+0	1	0.4409696471536	0.3813328537055	0.3876665325488	0.1373577174857	0.193350549278	1	1.5	0.45	0.6455167226969
+1	0.5	0.2568157002105	0.2154326890865	0.2162512337915	0.06724107933137	0.1054839184922	1	0.05	0.015	0.07573926862852
+2	0.25	0.156354178698	0.1390503608363	0.1391486491813	0.03352326307926	0.05562230323228	1			
+3	0.125	0.1012686399464	0.09323749586998	0.09325097513607	0.01675585056464	0.02831698033257	1			
+</data>
+</table>
+<table>
+pressaoL2	30	10	21/03/12 07:35
+geometry	-1	446	713	212	
+header	h[X]	GLS[Y]	ME[Y]	ME-S[Y]	TH2[Y]	CR[Y]	CR-S[Y]	z[X]	linear[Y]	quadr[Y]
+ColWidth	100	100	100	100	100	100	100	100	100	100	
+<com>
+<col nr="8">
+0.08*col("z")
+</col>
+<col nr="9">
+0.0055*col("z")*col("z")
+</col>
+</com>
+ColType	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13	0;0/13
+ReadOnlyColumn	0	0	0	0	0	0	0	0	0	0
+HiddenColumn	0	0	0	0	0	0	0	0	0	0
+Comments											
+WindowLabel		0
+<data>
+0	1	0.1203615908842	0.09308492015417	0.09887171967755	0.003848042415133	0.007548790174244	0.05652531643445	1.5	0.12	0.012375
+1	0.5	0.03379124700762	0.02528644853538	0.02675958425573	0.000835493431846	0.0021672604241	0.02834936747846	0.05	0.004	1.375e-05
+2	0.25	0.009145196862584	0.006603352219761	0.006966680512468	0.000203850162894	0.000595655323303	0.01418961530308			
+3	0.125	0.002465573710407	0.001717819313814	0.001805603361775	5.0753818113e-05	0.000153692693829	0.007096784246238			
+</data>
+</table>
+<multiLayer>
+kovas_uL2	1	1	21/03/12 07:59
+geometry	721	0	528	461	active
+WindowLabel		0
+Margins	5	5	5	5
+Spacing	5	5
+LayerCanvasSize	446	340
+Alignement	0	0
+<AlignPolicy>0</AlignPolicy>
+<CommonAxes>0</CommonAxes>
+<graph>
+ggeometry	6	11	512	398
+PlotTitle		#000000	4228
+<Antialiasing>1</Antialiasing>
+<Autoscaling>1</Autoscaling>
+<ScaleFonts>1</ScaleFonts>
+Background	#ffffff	255
+Margin	0
+Border	0	#000000
+grid	0	0	0	0	#0000ff	0	0.5	#a0a0a4	2	0.4	#808080	2	0.4	#a0a0a4	2	0.4	0	0	2	0	1
+EnabledAxes	1	1	1	1	
+AxesTitles	<i>h</i>			 	
+AxesTitleColors	#000000	#000000	#000000	#000000	
+AxesTitleAlignment	5124	5124	4	5124
+AxesTitleDistance	2	2	0	2
+TitleFont	LMRoman12	12	50	0	0	0
+ScaleFont0	LMRoman12	12	50	0	0	0
+ScaleFont1	LMRoman12	12	50	0	0	0
+ScaleFont2	LMRoman12	12	50	0	0	0
+ScaleFont3	LMRoman12	12	50	0	0	0
+AxisFont0	LMRoman12	12	50	0	0	0
+AxisFont1	LMRoman12	12	50	0	0	0
+AxisFont2	LMRoman12	12	50	0	0	0
+AxisFont3	LMRoman12	12	50	0	0	0
+AxesColors	#000000	#000000	#000000	#000000
+AxesNumberColors	#3c3c3c	#3c3c3c	#3c3c3c	#3c3c3c
+AxesBaseline	0	0	0	0	
+CanvasBackground	#ffffff	255
+curve	velocidadeL2_h	velocidadeL2_GLS	2	1	#000000	0	1	7	1	#000000	#000000	0	#000000	14	1	2	0	0	29	1
+curve	velocidadeL2_h	velocidadeL2_ME	2	1	#ff0000	0	1	7	2	#ff0000	#ff0000	0	#000000	14	1	2	0	0	29	1
+curve	velocidadeL2_h	velocidadeL2_ME-S	2	1	#00ff00	0	1	7	2	#00ff00	-1	0	#000000	14	1	2	0	0	29	1
+curve	velocidadeL2_h	velocidadeL2_TH2	2	1	#0000ff	0	1	7	4	#0000ff	#0000ff	0	#000000	14	1	2	0	0	29	1
+curve	velocidadeL2_h	velocidadeL2_CR	2	1	#800080	0	1	7	5	#800080	#800080	0	#000000	14	1	2	0	0	29	1
+curve	velocidadeL2_h	velocidadeL2_CR-S	2	1	#ff8000	0	1	9	13	#ff8000	#ff8000	0	#000000	14	1	2	0	0	29	1
+curve	velocidadeL2_z	velocidadeL2_quadr	2	1	#808080	1	1	7	7	#ff00ff	#ff00ff	0	#000000	14	1	2	0	0	29	1
+curve	velocidadeL2_z	velocidadeL2_cubic	2	1	#808080	1	1	7	8	#00ffff	#00ffff	0	#000000	14	1	2	0	0	29	1
+scale	0	1.25e-06	0.3	0	7	5	1	0
+scale	1	1.25e-06	0.3	0	8	5	1	0
+scale	2	0.1	1.1	0	3	5	1	1
+scale	3	0.1	1.1	0	8	5	1	1
+LabelsFormat	5	0	0	4	0	4	0	4
+AxisType	0	0	0	0	
+MajorTicks	1	0	1	0
+MinorTicks	1	0	1	0
+TicksLength	5	9
+DrawAxesBackbone	1	1	1	1	1
+AxesLineWidth	1
+LabelsRotation	0	0	0	0
+LabelsPrefix				
+LabelsSuffix				
+TickLabelsSpace	4	4	4	4
+ShowTicksPolicy	0	0	0	0
+EnabledTickLabels	1	0	1	0
+<Legend>
+<Frame>0</Frame>
+<Color>#000000</Color>
+<FrameWidth>1</FrameWidth>
+<LineStyle>0</LineStyle>
+<x>1.1059433802296</x>
+<y>0.00048357104398914</y>
+<right>0.509029440250194</right>
+<bottom>1.39393733312786e-06</bottom>
+<attachTo>0</attachTo>
+<onTop>1</onTop>
+<Text>
+(1.97) \l(1)%(1)
+(2.00) \l(2)%(2)
+(2.00) \l(3)%(3)
+(3.00) \l(4)%(4)
+(3.01) \l(5)%(5)
+(3.03) \l(6)%(6)
+</Text>
+<Font>LMRoman12	12	50	0	0	0</Font>
+<TextColor>#000000</TextColor>
+<Background>#ffffff</Background>
+<Alpha>0</Alpha>
+<Angle>0</Angle>
+<AutoUpdate>1</AutoUpdate>
+<TeXOutput>0</TeXOutput>
+</Legend>
+<Legend>
+<Frame>0</Frame>
+<Color>#000000</Color>
+<FrameWidth>1</FrameWidth>
+<LineStyle>0</LineStyle>
+<x>0.23428954472121</x>
+<y>0.029332260803073</y>
+<right>0.191939872523408</right>
+<bottom>0.00711235556984985</bottom>
+<attachTo>0</attachTo>
+<onTop>1</onTop>
+<Text>
+<i>h</i><sup>2</sup>
+</Text>
+<Font>LMRoman12	14	50	0	0	0</Font>
+<TextColor>#000000</TextColor>
+<Background>#ffffff</Background>
+<Alpha>0</Alpha>
+<Angle>0</Angle>
+<AutoUpdate>0</AutoUpdate>
+<TeXOutput>0</TeXOutput>
+</Legend>
+<Legend>
+<Frame>0</Frame>
+<Color>#000000</Color>
+<FrameWidth>1</FrameWidth>
+<LineStyle>0</LineStyle>
+<x>1.1059433802296</x>
+<y>0.0011992339838492</y>
+<right>0.766652807330687</right>
+<bottom>0.000324268741662651</bottom>
+<attachTo>0</attachTo>
+<onTop>1</onTop>
+<Text>
+(slope)
+</Text>
+<Font>LMRoman12	12	50	0	0	0</Font>
+<TextColor>#000000</TextColor>
+<Background>#ffffff</Background>
+<Alpha>0</Alpha>
+<Angle>0</Angle>
+<AutoUpdate>0</AutoUpdate>
+<TeXOutput>0</TeXOutput>
+</Legend>
+<Legend>
+<Frame>0</Frame>
+<Color>#000000</Color>
+<FrameWidth>1</FrameWidth>
+<LineStyle>0</LineStyle>
+<x>0.23428954472121</x>
+<y>0.00038886048558116</y>
+<right>0.191939872523408</right>
+<bottom>9.4289153471183e-05</bottom>
+<attachTo>0</attachTo>
+<onTop>1</onTop>
+<Text>
+<i>h</i><sup>3</sup>
+</Text>
+<Font>LMRoman12	14	50	0	0	0</Font>
+<TextColor>#000000</TextColor>
+<Background>#ffffff</Background>
+<Alpha>0</Alpha>
+<Angle>0</Angle>
+<AutoUpdate>0</AutoUpdate>
+<TeXOutput>0</TeXOutput>
+</Legend>
+</graph>
+<LinkXAxes>0</LinkXAxes>
+<ScaleLayers>1</ScaleLayers>
+</multiLayer>
+<multiLayer>
+kovas_uH1	1	1	21/03/12 08:01
+geometry	1249	0	520	461	
+WindowLabel		0
+Margins	5	5	5	5
+Spacing	5	5
+LayerCanvasSize	446	340
+Alignement	0	0
+<AlignPolicy>0</AlignPolicy>
+<CommonAxes>0</CommonAxes>
+<graph>
+ggeometry	6	0	512	409
+PlotTitle		#000000	4228
+<Antialiasing>1</Antialiasing>
+<Autoscaling>1</Autoscaling>
+<ScaleFonts>1</ScaleFonts>
+Background	#ffffff	255
+Margin	0
+Border	0	#000000
+grid	0	0	0	0	#0000ff	0	0.5	#a0a0a4	2	0.4	#808080	0	0.4	#a0a0a4	2	0.4	0	0	2	0	1
+EnabledAxes	1	1	1	1	
+AxesTitles	<i>h</i>			 	
+AxesTitleColors	#000000	#000000	#000000	#000000	
+AxesTitleAlignment	5124	5124	4	5124
+AxesTitleDistance	2	2	0	2
+TitleFont	LMRoman12	12	50	0	0	0
+ScaleFont0	LMRoman12	12	50	0	0	0
+ScaleFont1	LMRoman12	12	50	0	0	0
+ScaleFont2	LMRoman12	12	50	0	0	0
+ScaleFont3	LMRoman12	12	50	0	0	0
+AxisFont0	LMRoman12	12	50	0	0	0
+AxisFont1	LMRoman12	12	50	0	0	0
+AxisFont2	LMRoman12	12	50	0	0	0
+AxisFont3	LMRoman12	12	50	0	0	0
+AxesColors	#000000	#000000	#000000	#000000
+AxesNumberColors	#3c3c3c	#3c3c3c	#3c3c3c	#3c3c3c
+AxesBaseline	0	0	0	0	
+CanvasBackground	#ffffff	255
+curve	velocidadeH1_h	velocidadeH1_GLS	2	1	#000000	0	1	7	1	#000000	#000000	0	#000000	14	1	2	0	0	29	1
+curve	velocidadeH1_h	velocidadeH1_ME	2	1	#ff0000	0	1	7	2	#ff0000	#ff0000	0	#000000	14	1	2	0	0	29	1
+curve	velocidadeH1_h	velocidadeH1_ME-S	2	1	#00ff00	0	1	7	2	#00ff00	-1	0	#000000	14	1	2	0	0	29	1
+curve	velocidadeH1_h	velocidadeH1_TH2	2	1	#0000ff	0	1	7	4	#0000ff	#0000ff	0	#000000	14	1	2	0	0	29	1
+curve	velocidadeH1_h	velocidadeH1_CR	2	1	#800080	0	1	7	5	#800080	#800080	0	#000000	14	1	2	0	0	29	1
+curve	velocidadeH1_h	velocidadeH1_CR-S	2	1	#ff8000	0	1	9	13	#ff8000	#ff8000	0	#000000	14	1	2	0	0	29	1
+curve	velocidadeH1_z	velocidadeH1_linear	2	1	#808080	1	1	7	7	#ff00ff	#ff00ff	0	#000000	14	1	2	0	0	29	1
+curve	velocidadeH1_z	velocidadeH1_quadratic	2	1	#808080	1	1	7	8	#00ffff	#00ffff	0	#000000	14	1	2	0	0	29	1
+scale	0	0.0001	10	0	6	5	1	0
+scale	1	0.0001	10	0	8	5	1	0
+scale	2	0.1	1.1	0	3	5	1	1
+scale	3	0.1	1.1	0	4	5	1	1
+LabelsFormat	5	0	0	4	0	4	0	4
+AxisType	0	0	0	0	
+MajorTicks	1	0	1	0
+MinorTicks	1	0	1	0
+TicksLength	5	9
+DrawAxesBackbone	1	1	1	1	1
+AxesLineWidth	1
+LabelsRotation	0	0	0	0
+LabelsPrefix				
+LabelsSuffix				
+TickLabelsSpace	4	4	4	4
+ShowTicksPolicy	0	0	0	0
+EnabledTickLabels	1	0	1	0
+<Legend>
+<Frame>0</Frame>
+<Color>#000000</Color>
+<FrameWidth>1</FrameWidth>
+<LineStyle>0</LineStyle>
+<x>1.1</x>
+<y>0.028078737780653</y>
+<right>0.511779763442426</right>
+<bottom>0.000118507629946717</bottom>
+<attachTo>0</attachTo>
+<onTop>1</onTop>
+<Text>
+(1.00) \l(1)%(1)
+(1.00) \l(2)%(2)
+(1.00) \l(3)%(3)
+(2.00) \l(4)%(4)
+(1.99) \l(5)%(5)
+(2.02) \l(6)%(6)
+</Text>
+<Font>LMRoman12	12	50	0	0	0</Font>
+<TextColor>#000000</TextColor>
+<Background>#ffffff</Background>
+<Alpha>0</Alpha>
+<Angle>0</Angle>
+<AutoUpdate>1</AutoUpdate>
+<TeXOutput>0</TeXOutput>
+</Legend>
+<Legend>
+<Frame>0</Frame>
+<Color>#000000</Color>
+<FrameWidth>1</FrameWidth>
+<LineStyle>0</LineStyle>
+<x>1.1059433802296</x>
+<y>0.070243746936181</y>
+<right>0.766652807330687</right>
+<bottom>0.0206839851971149</bottom>
+<attachTo>0</attachTo>
+<onTop>1</onTop>
+<Text>
+(slope)
+</Text>
+<Font>LMRoman12	12	50	0	0	0</Font>
+<TextColor>#000000</TextColor>
+<Background>#ffffff</Background>
+<Alpha>0</Alpha>
+<Angle>0</Angle>
+<AutoUpdate>0</AutoUpdate>
+<TeXOutput>0</TeXOutput>
+</Legend>
+<Legend>
+<Frame>0</Frame>
+<Color>#000000</Color>
+<FrameWidth>1</FrameWidth>
+<LineStyle>0</LineStyle>
+<x>0.20586755645245</x>
+<y>0.29246688271362</y>
+<right>0.173261170760534</right>
+<bottom>0.0804645746307272</bottom>
+<attachTo>0</attachTo>
+<onTop>1</onTop>
+<Text>
+<i>h</i>
+</Text>
+<Font>LMRoman12	14	50	0	0	0</Font>
+<TextColor>#000000</TextColor>
+<Background>#ffffff</Background>
+<Alpha>0</Alpha>
+<Angle>0</Angle>
+<AutoUpdate>0</AutoUpdate>
+<TeXOutput>0</TeXOutput>
+</Legend>
+<Legend>
+<Frame>0</Frame>
+<Color>#000000</Color>
+<FrameWidth>1</FrameWidth>
+<LineStyle>0</LineStyle>
+<x>0.20586755645245</x>
+<y>0.045171785440524</y>
+<right>0.168655381481948</right>
+<bottom>0.0120128489894319</bottom>
+<attachTo>0</attachTo>
+<onTop>1</onTop>
+<Text>
+<i>h</i><sup>2</sup>
+</Text>
+<Font>LMRoman12	14	50	0	0	0</Font>
+<TextColor>#000000</TextColor>
+<Background>#ffffff</Background>
+<Alpha>0</Alpha>
+<Angle>0</Angle>
+<AutoUpdate>0</AutoUpdate>
+<TeXOutput>0</TeXOutput>
+</Legend>
+</graph>
+<LinkXAxes>0</LinkXAxes>
+<ScaleLayers>1</ScaleLayers>
+</multiLayer>
+<multiLayer>
+kovas_pL2	1	1	21/03/12 08:03
+geometry	720	461	529	460	
+WindowLabel		0
+Margins	5	5	5	5
+Spacing	5	5
+LayerCanvasSize	446	340
+Alignement	0	0
+<AlignPolicy>0</AlignPolicy>
+<CommonAxes>0</CommonAxes>
+<graph>
+ggeometry	6	11	512	398
+PlotTitle		#000000	4228
+<Antialiasing>1</Antialiasing>
+<Autoscaling>1</Autoscaling>
+<ScaleFonts>1</ScaleFonts>
+Background	#ffffff	255
+Margin	0
+Border	0	#000000
+grid	0	0	0	0	#0000ff	0	0.5	#a0a0a4	2	0.4	#0000ff	0	0.5	#a0a0a4	2	0.4	0	0	2	0	0
+EnabledAxes	1	1	1	1	
+AxesTitles	<i>h</i>			 	
+AxesTitleColors	#000000	#000000	#000000	#000000	
+AxesTitleAlignment	5124	5124	4	5124
+AxesTitleDistance	2	2	0	2
+TitleFont	LMRoman12	12	50	0	0	0
+ScaleFont0	LMRoman12	12	50	0	0	0
+ScaleFont1	LMRoman12	12	50	0	0	0
+ScaleFont2	LMRoman12	12	50	0	0	0
+ScaleFont3	LMRoman12	12	50	0	0	0
+AxisFont0	LMRoman12	12	50	0	0	0
+AxisFont1	LMRoman12	12	50	0	0	0
+AxisFont2	LMRoman12	12	50	0	0	0
+AxisFont3	LMRoman12	12	50	0	0	0
+AxesColors	#000000	#000000	#000000	#000000
+AxesNumberColors	#3c3c3c	#3c3c3c	#3c3c3c	#3c3c3c
+AxesBaseline	0	0	0	0	
+CanvasBackground	#ffffff	255
+curve	pressaoL2_h	pressaoL2_GLS	2	1	#000000	0	1	7	1	#000000	#000000	0	#000000	14	1	2	0	0	29	1
+curve	pressaoL2_h	pressaoL2_ME	2	1	#ff0000	0	1	7	2	#ff0000	#ff0000	0	#000000	14	1	2	0	0	29	1
+curve	pressaoL2_h	pressaoL2_ME-S	2	1	#00ff00	0	1	7	2	#00ff00	-1	0	#000000	14	1	2	0	0	29	1
+curve	pressaoL2_h	pressaoL2_TH2	2	1	#0000ff	0	1	7	4	#0000ff	#0000ff	0	#000000	14	1	2	0	0	29	1
+curve	pressaoL2_h	pressaoL2_CR	2	1	#800080	0	1	7	5	#800080	#800080	0	#000000	14	1	2	0	0	29	1
+curve	pressaoL2_h	pressaoL2_CR-S	2	1	#ff8000	0	1	9	13	#ff8000	#ff8000	0	#000000	14	1	2	0	0	29	1
+curve	pressaoL2_z	pressaoL2_linear	2	1	#808080	1	1	7	7	#ff00ff	#ff00ff	0	#000000	14	1	2	0	0	29	1
+curve	pressaoL2_z	pressaoL2_quadr	2	1	#808080	1	1	7	8	#00ffff	#00ffff	0	#000000	14	1	2	0	0	29	1
+scale	0	1e-05	0.13	0	6	5	1	0
+scale	1	1e-05	0.13	0	8	5	1	0
+scale	2	0.1	1.1	0	3	5	1	1
+scale	3	0.1	1.1	0	8	5	1	1
+LabelsFormat	5	0	0	4	0	4	0	4
+AxisType	0	0	0	0	
+MajorTicks	1	0	1	0
+MinorTicks	1	0	1	0
+TicksLength	5	9
+DrawAxesBackbone	1	1	1	1	1
+AxesLineWidth	1
+LabelsRotation	0	0	0	0
+LabelsPrefix				
+LabelsSuffix				
+TickLabelsSpace	4	4	4	4
+ShowTicksPolicy	0	0	0	0
+EnabledTickLabels	1	0	1	0
+<Legend>
+<Frame>0</Frame>
+<Color>#000000</Color>
+<FrameWidth>1</FrameWidth>
+<LineStyle>0</LineStyle>
+<x>1.1059433802296</x>
+<y>0.00085025393779961</y>
+<right>0.514544946831464</right>
+<bottom>9.45646779311479e-06</bottom>
+<attachTo>0</attachTo>
+<onTop>1</onTop>
+<Text>
+(1.89) \l(1)%(1)
+(1.94) \l(2)%(2)
+(1.95) \l(3)%(3)
+(2.01) \l(4)%(4)
+(1.95) \l(5)%(5)
+(1.00) \l(6)%(6)
+</Text>
+<Font>LMRoman12	12	50	0	0	0</Font>
+<TextColor>#000000</TextColor>
+<Background>#ffffff</Background>
+<Alpha>0</Alpha>
+<Angle>0</Angle>
+<AutoUpdate>1</AutoUpdate>
+<TeXOutput>0</TeXOutput>
+</Legend>
+<Legend>
+<Frame>0</Frame>
+<Color>#000000</Color>
+<FrameWidth>1</FrameWidth>
+<LineStyle>0</LineStyle>
+<x>1.0940885597134</x>
+<y>0.0017097665048563</y>
+<right>0.758434907941293</right>
+<bottom>0.000625255995366139</bottom>
+<attachTo>0</attachTo>
+<onTop>1</onTop>
+<Text>
+(slope)
+</Text>
+<Font>LMRoman12	12	50	0	0	0</Font>
+<TextColor>#000000</TextColor>
+<Background>#ffffff</Background>
+<Alpha>0</Alpha>
+<Angle>0</Angle>
+<AutoUpdate>0</AutoUpdate>
+<TeXOutput>0</TeXOutput>
+</Legend>
+<Legend>
+<Frame>0</Frame>
+<Color>#000000</Color>
+<FrameWidth>1</FrameWidth>
+<LineStyle>0</LineStyle>
+<x>0.12010665766397</x>
+<y>0.0002044734007876</y>
+<right>0.098396437573287</right>
+<bottom>6.8762443608538e-05</bottom>
+<attachTo>0</attachTo>
+<onTop>1</onTop>
+<Text>
+<i>h</i><sup>2</sup>
+</Text>
+<Font>LMRoman12	14	50	0	0	0</Font>
+<TextColor>#000000</TextColor>
+<Background>#ffffff</Background>
+<Alpha>0</Alpha>
+<Angle>0</Angle>
+<AutoUpdate>0</AutoUpdate>
+<TeXOutput>0</TeXOutput>
+</Legend>
+<Legend>
+<Frame>0</Frame>
+<Color>#000000</Color>
+<FrameWidth>1</FrameWidth>
+<LineStyle>0</LineStyle>
+<x>0.12882192637664</x>
+<y>0.027956925947461</y>
+<right>0.108418432550828</right>
+<bottom>0.00966806193277899</bottom>
+<attachTo>0</attachTo>
+<onTop>1</onTop>
+<Text>
+<i>h</i>
+</Text>
+<Font>LMRoman12	14	50	0	0	0</Font>
+<TextColor>#000000</TextColor>
+<Background>#ffffff</Background>
+<Alpha>0</Alpha>
+<Angle>0</Angle>
+<AutoUpdate>0</AutoUpdate>
+<TeXOutput>0</TeXOutput>
+</Legend>
+</graph>
+<LinkXAxes>0</LinkXAxes>
+<ScaleLayers>1</ScaleLayers>
+</multiLayer>
+<multiLayer>
+kovas_pH1	1	1	21/03/12 08:05
+geometry	1249	460	519	461	
+WindowLabel		0
+Margins	5	5	5	5
+Spacing	5	5
+LayerCanvasSize	446	340
+Alignement	0	0
+<AlignPolicy>0</AlignPolicy>
+<CommonAxes>0</CommonAxes>
+<graph>
+ggeometry	6	0	512	409
+PlotTitle		#000000	4228
+<Antialiasing>1</Antialiasing>
+<Autoscaling>1</Autoscaling>
+<ScaleFonts>1</ScaleFonts>
+Background	#ffffff	255
+Margin	0
+Border	0	#000000
+grid	0	0	0	0	#0000ff	0	0.5	#a0a0a4	2	0.4	#0000ff	0	0.5	#a0a0a4	2	0.4	0	0	2	0	1
+EnabledAxes	1	1	1	1	
+AxesTitles	<i>h</i>			 	
+AxesTitleColors	#000000	#000000	#000000	#000000	
+AxesTitleAlignment	5124	5124	4	5124
+AxesTitleDistance	2	2	0	2
+TitleFont	LMRoman12	12	50	0	0	0
+ScaleFont0	LMRoman12	12	50	0	0	0
+ScaleFont1	LMRoman12	12	50	0	0	0
+ScaleFont2	LMRoman12	12	50	0	0	0
+ScaleFont3	LMRoman12	12	50	0	0	0
+AxisFont0	LMRoman12	12	50	0	0	0
+AxisFont1	LMRoman12	12	50	0	0	0
+AxisFont2	LMRoman12	12	50	0	0	0
+AxisFont3	LMRoman12	12	50	0	0	0
+AxesColors	#000000	#000000	#000000	#000000
+AxesNumberColors	#3c3c3c	#3c3c3c	#3c3c3c	#3c3c3c
+AxesBaseline	0	0	0	0	
+CanvasBackground	#ffffff	255
+curve	pressaoH1_h	pressaoH1_GLS	2	1	#000000	0	1	7	1	#000000	#000000	0	#000000	14	1	2	0	0	29	1
+curve	pressaoH1_h	pressaoH1_ME	2	1	#ff0000	0	1	7	2	#ff0000	#ff0000	0	#000000	14	1	2	0	0	29	1
+curve	pressaoH1_h	pressaoH1_ME-S	2	1	#00ff00	0	1	7	2	#00ff00	-1	0	#000000	14	1	2	0	0	29	1
+curve	pressaoH1_h	pressaoH1_TH2	2	1	#0000ff	0	1	7	4	#0000ff	#0000ff	0	#000000	14	1	2	0	0	29	1
+curve	pressaoH1_h	pressaoH1_CR	2	1	#800080	0	1	7	5	#800080	#800080	0	#000000	14	1	2	0	0	29	1
+curve	pressaoH1_z	pressaoH1_linear	2	1	#808080	1	1	7	6	#ff8000	#ff8000	0	#000000	14	1	2	0	0	29	1
+scale	0	0.01	1	0	3	5	1	0
+scale	1	0.01	1	0	3	5	1	0
+scale	2	0.1	1.1	0	3	5	1	1
+scale	3	0.1	1.1	0	3	5	1	1
+LabelsFormat	5	0	0	4	0	4	0	4
+AxisType	0	0	0	0	
+MajorTicks	1	0	1	0
+MinorTicks	1	0	1	0
+TicksLength	5	9
+DrawAxesBackbone	1	1	1	1	1
+AxesLineWidth	1
+LabelsRotation	0	0	0	0
+LabelsPrefix				
+LabelsSuffix				
+TickLabelsSpace	4	4	4	4
+ShowTicksPolicy	0	0	0	0
+EnabledTickLabels	1	0	1	0
+<Legend>
+<Frame>0</Frame>
+<Color>#000000</Color>
+<FrameWidth>1</FrameWidth>
+<LineStyle>0</LineStyle>
+<x>1.1</x>
+<y>0.066982091177134</y>
+<right>0.511779763442426</right>
+<bottom>0.0105584172379443</bottom>
+<attachTo>0</attachTo>
+<onTop>1</onTop>
+<Text>
+(0.63) \l(1)%(1)
+(0.58) \l(2)%(2)
+(0.58) \l(3)%(3)
+(1.00) \l(4)%(4)
+(0.97) \l(5)%(5)
+</Text>
+<Font>LMRoman12	12	50	0	0	0</Font>
+<TextColor>#000000</TextColor>
+<Background>#ffffff</Background>
+<Alpha>0</Alpha>
+<Angle>0</Angle>
+<AutoUpdate>1</AutoUpdate>
+<TeXOutput>0</TeXOutput>
+</Legend>
+<Legend>
+<Frame>0</Frame>
+<Color>#000000</Color>
+<FrameWidth>1</FrameWidth>
+<LineStyle>0</LineStyle>
+<x>1.1</x>
+<y>0.095356660341582</y>
+<right>0.762532787066093</right>
+<bottom>0.0584738449621535</bottom>
+<attachTo>0</attachTo>
+<onTop>1</onTop>
+<Text>
+(slope)
+</Text>
+<Font>LMRoman12	12	50	0	0	0</Font>
+<TextColor>#000000</TextColor>
+<Background>#ffffff</Background>
+<Alpha>0</Alpha>
+<Angle>0</Angle>
+<AutoUpdate>0</AutoUpdate>
+<TeXOutput>0</TeXOutput>
+</Legend>
+<Legend>
+<Frame>0</Frame>
+<Color>#000000</Color>
+<FrameWidth>1</FrameWidth>
+<LineStyle>0</LineStyle>
+<x>0.19506790820597</x>
+<y>0.095356660341582</y>
+<right>0.164172027569495</right>
+<bottom>0.0569065480204744</bottom>
+<attachTo>0</attachTo>
+<onTop>1</onTop>
+<Text>
+<i>h</i>
+</Text>
+<Font>LMRoman12	14	50	0	0	0</Font>
+<TextColor>#000000</TextColor>
+<Background>#ffffff</Background>
+<Alpha>0</Alpha>
+<Angle>0</Angle>
+<AutoUpdate>0</AutoUpdate>
+<TeXOutput>0</TeXOutput>
+</Legend>
+</graph>
+<LinkXAxes>0</LinkXAxes>
+<ScaleLayers>1</ScaleLayers>
+</multiLayer>
+<open>1</open>

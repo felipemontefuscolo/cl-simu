@@ -1,5 +1,5 @@
 /* [wxMaxima batch file version 1] [ DO NOT EDIT BY HAND! ]*/
-/* [ Created with wxMaxima version 0.8.5 ] */
+/* [ Created with wxMaxima version 11.04.0 ] */
 
 /* [wxMaxima: input   start ] */
 I : matrix([1,0,0],[0,1,0],[0,0,1])$
@@ -64,6 +64,25 @@ gradu: gradvec(u);
 /* Anything Navier-Stokes Problem 3d */
 u : matrix([-exp(-y*z)],[exp(-x)],[exp(-z)])$
 p : 2*%pi*sin(x*y*z)$
+/*niu: 0$*/
+f : ratsimp(convec(u) + grad(p) - niu*nabla2(u));
+t : ((-p*I + niu*gradvec(u) + niu*transpose(gradvec(u))).matrix([0],[1],[0]));
+gradu: gradvec(u);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+g(tt) := 1+tanh(tt)*sin(9*%pi*tt);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+diff(g(t),t);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+/* manufactured ale GCL 3d */
+/* g(tt) := 1+tanh(tt)*sin(9*%pi*tt) */
+u : matrix([  a*y*cos(w*t)  ],[   a*x*cos(w*t)  ],[0] )$
+p : 0$
 /*niu: 0$*/
 f : ratsimp(convec(u) + grad(p) - niu*nabla2(u));
 t : ((-p*I + niu*gradvec(u) + niu*transpose(gradvec(u))).matrix([0],[1],[0]));
