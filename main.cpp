@@ -124,6 +124,11 @@ void AppCtx::loadDofs()
   n_dofs_p_per_cell   = dof_handler[DH_UNKS].getVariable(VAR_P).numDofsPerCell();
   n_dofs_p_per_facet  = dof_handler[DH_UNKS].getVariable(VAR_P).numDofsPerFacet();
   n_dofs_p_per_corner = dof_handler[DH_UNKS].getVariable(VAR_P).numDofsPerCorner();
+  n_dofs_v_per_cell   = dof_handler[DH_UNKS].getVariable(VAR_M).numDofsPerCell();
+  n_dofs_v_per_facet  = dof_handler[DH_UNKS].getVariable(VAR_M).numDofsPerFacet();
+  n_dofs_v_per_corner = dof_handler[DH_UNKS].getVariable(VAR_M).numDofsPerCorner();
+  
+  n_dofs_v2_per_facet = dim*shape_qsi2_f->getNumDof();
 }
 
 void AppCtx::setUpDefaultOptions()
@@ -141,7 +146,7 @@ void AppCtx::setUpDefaultOptions()
   utheta                 = 1;      // time step, theta method (momentum)
   vtheta                 = 1;      // time step, theta method (mesh velocity)
   maxts                  = 1500;   // max num of time steps
-  force_pressure         = false;  // elim null space (auto)
+  force_pressure         = PETSC_FALSE;  // elim null space (auto)
   print_to_matlab        = PETSC_FALSE;  // imprime o jacobiano e a função no formato do matlab
   force_dirichlet        = PETSC_TRUE;   // impõe cc ? (para debug)
   full_diriclet          = PETSC_TRUE;
@@ -192,6 +197,7 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
   PetscOptionsScalar("-sst", "steady state tolerance", "main.cpp", steady_tol, &steady_tol, PETSC_NULL);
   PetscOptionsBool("-print_to_matlab", "print jacobian to matlab", "main.cpp", print_to_matlab, &print_to_matlab, PETSC_NULL);
   PetscOptionsBool("-force_dirichlet", "force dirichlet bound cond", "main.cpp", force_dirichlet, &force_dirichlet, PETSC_NULL);
+  PetscOptionsBool("-force_pressure", "force_pressure", "main.cpp", force_pressure, &force_pressure, PETSC_NULL);
   PetscOptionsBool("-plot_es", "plot exact solution", "main.cpp", plot_exact_sol, &plot_exact_sol, PETSC_NULL);
   PetscOptionsBool("-family_files", "plot family output", "main.cpp", family_files, &family_files, PETSC_NULL);
   PetscOptionsBool("-has_convec", "convective term", "main.cpp", has_convec, &has_convec, PETSC_NULL);
@@ -301,6 +307,12 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
       else       mesh_cell_type = TETRAHEDRON10;
       break;
     }
+    case P1P1unstable:
+    {
+      if(dim==2) mesh_cell_type = TRIANGLE3;
+      else       mesh_cell_type = TETRAHEDRON4;
+      break;
+    }
     default:
     {
       cout << "invalid function space " << function_space << endl;
@@ -318,13 +330,13 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
   if (flg_fout)
     filename_out.assign(foutaux);
 
-  if (neumann_tags.size() + interface_tags.size() == 0 )
+  if (neumann_tags.size() + interface_tags.size() == 0 || force_pressure)
   {
     full_diriclet = PETSC_TRUE;
-    force_pressure = true;
+    force_pressure = PETSC_TRUE;
   }
   else
-    force_pressure = false;
+    force_pressure = PETSC_FALSE;
 
   if (!unsteady)
   {
@@ -404,6 +416,13 @@ bool AppCtx::createFunctionsSpace()
         pres_shape = Pm1;
       }
       break;
+    case 8: // P1P1 unstable
+      {
+        behaviors = 0;
+        velo_shape = P1;
+        pres_shape = P1;
+      }
+      break;
     default:
       {
         behaviors = BH_GLS;
@@ -426,6 +445,13 @@ bool AppCtx::createFunctionsSpace()
 
   shape_bble.reset(ShapeFunction::create(cell_type, BUBBLE));
 
+  ECellType facet_updegree_type;
+  switch (cell_type)
+  {
+    case TETRAHEDRON4: facet_updegree_type = TRIANGLE6; break;
+    default : cout << "cell type not suported\n" << endl; throw;
+  }
+  shape_qsi2_f.reset(ShapeFunction::create(facet_updegree_type));
 
   pres_pres_block = false;
   if (behaviors & (BH_bble_condens_PnPn | BH_GLS))
@@ -502,6 +528,7 @@ void AppCtx::dofsUpdate()
 
 PetscErrorCode AppCtx::allocPetscObjs()
 {
+  printf( "allocing petsc objs ... ");
 
   PetscErrorCode      ierr;
   ierr = SNESCreate(PETSC_COMM_WORLD, &snes);                   CHKERRQ(ierr);
@@ -542,6 +569,7 @@ PetscErrorCode AppCtx::allocPetscObjs()
   ierr = VecSetFromOptions(Vec_normal);                             CHKERRQ(ierr);
 
   VectorXi nnz;
+  //if(false)
   {
     std::vector<std::set<int> > table;
     dof_handler[DH_UNKS].getSparsityTable(table);
@@ -567,11 +595,15 @@ PetscErrorCode AppCtx::allocPetscObjs()
 
   }
 
+  // opções para nnz:
+  // TETRA10 = 375
+  
   //Mat Mat_Jac;
   ierr = MatCreate(PETSC_COMM_WORLD, &Mat_Jac);                                      CHKERRQ(ierr);
   ierr = MatSetSizes(Mat_Jac, PETSC_DECIDE, PETSC_DECIDE, n_unknowns, n_unknowns);   CHKERRQ(ierr);
   ierr = MatSetFromOptions(Mat_Jac);                                                 CHKERRQ(ierr);
   ierr = MatSeqAIJSetPreallocation(Mat_Jac, 0, nnz.data());                          CHKERRQ(ierr);
+  //ierr = MatSeqAIJSetPreallocation(Mat_Jac, 375, NULL);                          CHKERRQ(ierr);
   ierr = MatSetOption(Mat_Jac,MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE);                  CHKERRQ(ierr);
 
   ierr = SNESCreate(PETSC_COMM_WORLD, &snes);                  CHKERRQ(ierr);
@@ -597,11 +629,13 @@ PetscErrorCode AppCtx::allocPetscObjs()
   ierr = SNESSetFromOptions(snes); CHKERRQ(ierr);
   //ierr = SNESLineSearchSet(snes, SNESLineSearchNo, &user); CHKERRQ(ierr);
 
+  printf("done.\n");
   PetscFunctionReturn(0);
 }
 
 void AppCtx::matrixColoring()
 {
+  printf("matrix coloring ... ");
 
   VectorXi                     mapU_c(n_dofs_u_per_cell);
   VectorXi                     mapU_f(n_dofs_u_per_facet);
@@ -658,24 +692,24 @@ void AppCtx::matrixColoring()
   Assembly(Mat_Jac);
   //MatSetOption(Mat_Jac,MAT_NEW_NONZERO_LOCATIONS,PETSC_FALSE);
   //MatSetOption(Mat_Jac,MAT_NEW_NONZERO_LOCATION_ERR,PETSC_TRUE);
-
+  printf("done \n");
 }
 
 void AppCtx::printMatlabLoader()
 {
   FILE *fp = fopen("loadmat.m", "w");
-  fprintf(fp, "clear;\n"                   );
+  //fprintf(fp, "clear;\n"                   );
   fprintf(fp, "jacob;\n"                   );
   fprintf(fp, "clear zzz;\n"               );
-  fprintf(fp, "B=Mat_Jac;\n"                   );
+  fprintf(fp, "B=Jac;\n"                   );
   fprintf(fp, "B(B!=0)=1;\n"               );
   fprintf(fp, "nU = %d;\n",dof_handler[DH_UNKS].getVariable(VAR_U).numDofs() );
   fprintf(fp, "nP = %d;\n",dof_handler[DH_UNKS].getVariable(VAR_P).numDofs() );
   fprintf(fp, "nT = nU + nP;\n"            );
-  fprintf(fp, "K=Mat_Jac(1:nU,1:nU);\n"        );
-  fprintf(fp, "G=Mat_Jac(1:nU,nU+1:nT);\n"     );
-  fprintf(fp, "D=Mat_Jac(nU+1:nT,1:nU);\n"     );
-  fprintf(fp, "E=Mat_Jac(nU+1:nT,nU+1:nT);\n"  );
+  fprintf(fp, "K=Jac(1:nU,1:nU);\n"        );
+  fprintf(fp, "G=Jac(1:nU,nU+1:nT);\n"     );
+  fprintf(fp, "D=Jac(nU+1:nT,1:nU);\n"     );
+  fprintf(fp, "E=Jac(nU+1:nT,nU+1:nT);\n"  );
   fprintf(fp, "\n"                        );
   fprintf(fp, "rhs;\n"                     );
   fprintf(fp, "f=res(1:nU);\n"             );
@@ -713,6 +747,9 @@ void AppCtx::evaluateQuadraturePts()
 
   bble.resize(n_qpts_cell);
   dLbble.resize(n_qpts_cell);
+
+  qsi2_f.resize(n_qpts_facet);
+  dLqsi2_f.resize(n_qpts_facet);
 
   for (int qp = 0; qp < n_qpts_cell; ++qp)
   {
@@ -769,11 +806,14 @@ void AppCtx::evaluateQuadraturePts()
   {
     phi_f[qp].resize(n_dofs_u_per_facet/dim);
     psi_f[qp].resize(n_dofs_p_per_facet);
-    qsi_f[qp].resize(nodes_per_facet);
+    qsi_f[qp].resize(n_dofs_v_per_facet/dim);
 
     dLphi_f[qp].resize(n_dofs_u_per_facet/dim, dim-1);
     dLpsi_f[qp].resize(n_dofs_p_per_facet, dim-1);
-    dLqsi_f[qp].resize(nodes_per_facet, dim-1);
+    dLqsi_f[qp].resize(n_dofs_v_per_facet/dim, dim-1);
+
+    qsi2_f[qp].resize(n_dofs_v2_per_facet/dim);
+    dLqsi2_f[qp].resize(n_dofs_v2_per_facet/dim, dim-1);
 
     for (int n = 0; n < n_dofs_u_per_facet/dim; ++n)
     {
@@ -804,7 +844,19 @@ void AppCtx::evaluateQuadraturePts()
         dLqsi_f[qp](n, d) = shape_qsi_f->gradL(quadr_facet->point(qp), n, d);
       }
     }
+    
+    for (int n = 0; n < n_dofs_v2_per_facet/dim; ++n)
+    {
+      qsi2_f[qp][n] = shape_qsi2_f->eval(quadr_facet->point(qp), n);
+      for (int d = 0; d < dim-1; ++d)
+      {
+        /* dLqsi_f nao depende de qp no caso de funcoes lineares */
+        dLqsi2_f[qp](n, d) = shape_qsi2_f->gradL(quadr_facet->point(qp), n, d);
+      }
+    }
+    
   } // end qp
+
 
 
   // pts de quadratura no contorno do contorno
@@ -1011,6 +1063,8 @@ void AppCtx::computeDirichletEntries()
         ++point;
 
       dof_handler[DH_UNKS].getVariable(VAR_P).getVertexAssociatedDofs(&idx, &*point);
+      
+      cout << "forced pressure at node : " << (mesh->getPointId(&*point)) << endl;
     }
     dir_entries.at(k++) = idx;
   }
@@ -1109,6 +1163,9 @@ PetscErrorCode AppCtx::setInitialConditions()
     }
   }
 
+  // normals
+  getVecNormals(&Vec_x_1, Vec_normal);
+
   PetscFunctionReturn(0);
 }
 
@@ -1198,7 +1255,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
   setInitialConditions();
   int its;
 
-
+  printf("starting time loop . . . \n");
   // WARNING: ADAMS-BASHFORTH IS NOT SELF STARTING
   for(;;)
   {
@@ -1251,7 +1308,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
     }
 
     mesh->getNode(0)->getCoord(X.data());
-    Xe(0) = exp(0.4*sin(pi*current_time)/pi);
+    Xe(0) = 1.0*exp(sin(pi*current_time)/pi);
     Xe(1) = 0;
     x_error += (X-Xe).norm()/maxts;
 
@@ -1260,8 +1317,8 @@ PetscErrorCode AppCtx::solveTimeProblem()
       ierr = SNESSolve(snes,PETSC_NULL,Vec_up_1);        CHKERRQ(ierr);
     // * SOLVE THE SYSTEM *
 
-    if (plot_exact_sol)
-      computeError(Vec_x_1, Vec_up_1,current_time+dt);
+    //////if (plot_exact_sol) eh melhor depois da atualização
+    //////  computeError(Vec_x_1, Vec_up_1,current_time+dt);
     current_time += dt;
     time_step += 1;
 
@@ -1290,8 +1347,9 @@ PetscErrorCode AppCtx::solveTimeProblem()
       VecCopy(Vec_up_1, Vec_up_0);
     }
 
-    //if (plot_exact_sol)
-      //computeError(Vec_up_1,current_time+dt);
+    if (plot_exact_sol)
+      computeError(Vec_x_0, Vec_up_0,current_time);
+
 
     // compute steady error
     Qmax = VecNorm(Vec_up_1, NORM_1);
@@ -1394,7 +1452,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
   {
     cout << "\nmean errors: \n";
     cout << "# hmean            u_L2_norm         p_L2_norm         grad_u_L2_norm    grad_p_L2_norm" << endl;
-    printf( "<hmean>            %.15lf %.15lf %.15lf %.15lf\n", Stats.mean_u_L2_norm(), Stats.mean_p_L2_norm(), Stats.mean_grad_u_L2_norm(), Stats.mean_grad_p_L2_norm());
+    printf( "%.15lf %.15lf %.15lf %.15lf %.15lf\n", Stats.mean_hmean() , Stats.mean_u_L2_norm(), Stats.mean_p_L2_norm(), Stats.mean_grad_u_L2_norm(), Stats.mean_grad_p_L2_norm());
   }
 
   PetscFunctionReturn(0);
@@ -1551,19 +1609,19 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
   }
   hmean /= n_edges;
 
-  if (time_step==maxts)
-  {
-    cout << endl;
-    cout << "errors computed at last time step: "<< endl;
-    cout << "# hmean            u_L2_norm         p_L2_norm         grad_u_L2_norm    grad_p_L2_norm" << endl;
-    printf("%.15lf %.15lf %.15lf %.15lf %.15lf\n",hmean, u_L2_norm, p_L2_norm, grad_u_L2_norm, grad_p_L2_norm);
-  }
+  //if (time_step==maxts)
+  //{
+  //  cout << endl;
+  //  cout << "errors computed at last time step: "<< endl;
+  //  cout << "# hmean            u_L2_norm         p_L2_norm         grad_u_L2_norm    grad_p_L2_norm" << endl;
+  //  printf("%.15lf %.15lf %.15lf %.15lf %.15lf\n",hmean, u_L2_norm, p_L2_norm, grad_u_L2_norm, grad_p_L2_norm);
+  //}
 
   Stats.add_u_L2(u_L2_norm/max(maxts,1));
   Stats.add_p_L2(p_L2_norm/max(maxts,1));
   Stats.add_grad_u_L2(grad_u_L2_norm/max(maxts,1));
   Stats.add_grad_p_L2(grad_p_L2_norm/max(maxts,1));
-
+  Stats.add_hmean(hmean/max(maxts,1));
 }
 
 
@@ -1788,7 +1846,8 @@ int main(int argc, char **argv)
   cout << "\n# preassure unknows: " << user.dof_handler[DH_UNKS].getVariable(VAR_P).numDofs() << endl;
   user.mesh->printStatistics();
   user.mesh->timer.printTimes();
-
+  
+  printf("on update mesh\n");
   user.onUpdateMesh();
   user.solveTimeProblem();
 

@@ -47,8 +47,8 @@ enum PairSpace {
   P2P1      = 4,
   P1bP1     = 5,
   P2P0      = 6,
-  P2bPm1    = 7
-
+  P2bPm1    = 7,
+  P1P1unstable = 8
 };
 
 const double pi  = 3.141592653589793;
@@ -93,7 +93,7 @@ double beta_diss();
 double muu(int tag);
 Vector force(Vector const& X, double t, int tag);
 Vector u_exact(Vector const& X, double t, int tag);
-Vector traction(Vector const& X, double t, int tag);
+Vector traction(Vector const& X, Vector const& normal, double t, int tag);
 double pressure_exact(Vector const& X, double t, int tag);
 Vector grad_p_exact(Vector const& X, double t, int tag);
 Tensor grad_u_exact(Vector const& X, double t, int tag);
@@ -256,6 +256,7 @@ public:
     u_L2_norm=0;
     grad_u_L2_norm=0;
     grad_p_L2_norm=0;
+    hmean=0;
 
     Np=0;
     Nu=0;
@@ -283,6 +284,10 @@ public:
     grad_p_L2_norm += x;
     //Ngp++;
   }
+  void add_hmean(double x)
+  {
+    hmean += x;
+  }
 
   double mean_p_L2_norm()
   {
@@ -304,11 +309,16 @@ public:
     return grad_p_L2_norm;
   }
 
+  double mean_hmean()
+  {
+    return hmean;
+  }
+
   double p_L2_norm;
   double u_L2_norm;
   double grad_u_L2_norm;
   double grad_p_L2_norm;
-
+  double hmean;
 
   int Np, Nu, Ngp, Ngu;
 
@@ -474,7 +484,7 @@ public:
   double      utheta;
   double      vtheta;
   int         maxts;
-  bool        force_pressure;
+  PetscBool   force_pressure;
   bool        solve_the_sys;
   int         quadr_degree_cell;
   int         quadr_degree_facet;
@@ -510,6 +520,9 @@ public:
 
   shared_ptr<ShapeFunction>    shape_bble;
 
+  shared_ptr<ShapeFunction>    shape_qsi2_f; // fun aumentada da malha (facet)
+
+
   shared_ptr<Quadrature>       quadr_cell;
   shared_ptr<Quadrature>       quadr_facet;
   shared_ptr<Quadrature>       quadr_corner;
@@ -533,6 +546,9 @@ public:
   VecOfVec                     qsi_f;         // shape function evaluated at quadrature points (facet)
   VecOfVec                     qsi_r;         // shape function evaluated at quadrature points (corner)
   VectorXd                     qsi_c_at_center; // shape function evaluated at quadrature points
+
+  VecOfVec                     qsi2_f;         // polinomio de um grau a mais que qsi
+
   // velocity
   VecOfMat                     dLphi_c;       // matriz de gradiente no elemento unitário
   VecOfMat                     dLphi_f;       // matriz de gradiente no elemento unitário (facet)
@@ -551,6 +567,8 @@ public:
   VectorXd                     bble;          // bubble function evaluated at quadrature points
   VecOfVec                     dLbble;
 
+  VecOfMat                     dLqsi2_f;       // mesmo que dLqsi_f, aumentado de 1 grau (facet)
+  
   //
   //          to compute error in each cell
   // velocity
@@ -573,7 +591,11 @@ public:
   int           n_dofs_p_per_cell;
   int           n_dofs_p_per_facet;
   int           n_dofs_p_per_corner;
-
+  int           n_dofs_v_per_cell;
+  int           n_dofs_v_per_facet;
+  int           n_dofs_v_per_corner;
+  int           n_dofs_v2_per_facet;
+  
   // mesh alias
   int           n_nodes;
   int           n_cells;

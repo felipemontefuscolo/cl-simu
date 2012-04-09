@@ -176,6 +176,7 @@ void inline VecSumValues(double *f_array, int mapsize, int const* mapdata, doubl
     f_array[mapdata[i]] += data[i];
 }
 
+
 void inline Assembly(Mat &K) {
   MatAssemblyBegin(K,MAT_FINAL_ASSEMBLY);
   MatAssemblyEnd(K,MAT_FINAL_ASSEMBLY);

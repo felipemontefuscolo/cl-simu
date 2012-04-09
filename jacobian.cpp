@@ -13,6 +13,7 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
   SNESGetIterationNumber(snes, &iter);
 
 
+
   MatZeroEntries(*JJ);
 
 
@@ -202,6 +203,7 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
             tauk *= 0.1;
 
           delk = 4.*visc + 2.*rho*uconv*sqrt(hk2);
+          //delk = 0;
 
           Eloc.setZero();
           Cloc.setZero();

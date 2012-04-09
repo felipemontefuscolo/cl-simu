@@ -17,7 +17,7 @@ double gama(Vector const& X, double t, int tag);
 double muu(int tag);
 Vector force(Vector const& X, double t, int tag);
 Vector u_exact(Vector const& X, double t, int tag);
-Vector traction(Vector const& X, double t, int tag);
+Vector traction(Vector const& X, Vector const& normal, double t, int tag);
 double pressure_exact(Vector const& X, double t, int tag);
 Vector grad_p_exact(Vector const& X, double t, int tag);
 Tensor grad_u_exact(Vector const& X, double t, int tag);
@@ -43,7 +43,7 @@ inline double sign(double a) {a<0 ? -1 : 1;};
 #define PSEUDO_OSC2D   13
 #define QUASI_STOKES   14
 
-#define PROBLEM_TYPE 12
+#define PROBLEM_TYPE 4
 
 
 #if (PROBLEM_TYPE==CAVITY_2D_3D)
@@ -91,7 +91,7 @@ Vector u_exact(Vector const& X, double t, int tag)
   r(0) = 1;
     return r;
 }
-Vector traction(Vector const& X, double t, int tag)
+Vector traction(Vector const& X, Vector const& normal, double t, int tag)
 {
   Vector r(X.size());
   r.setZero();
@@ -176,7 +176,7 @@ Vector u_exact(Vector const& X, double t, int tag)
   v(1) = a*exp(a*x)*sin(2.*pi*y)/(2.*pi);
   return v;
 }
-Vector traction(Vector const& X, double t, int tag)
+Vector traction(Vector const& X, Vector const& normal, double t, int tag)
 {
   double x = X(0);
   double y = X(1);
@@ -299,7 +299,7 @@ Vector u_exact(Vector const& X, double t, int tag)
   v(1) = -y2*(1.-y)*(1.-y)*(2.*x-6.*x2+4.*x3);
   return v;
 }
-Vector traction(Vector const& X, double t, int tag)
+Vector traction(Vector const& X, Vector const& normal, double t, int tag)
 {
   double x = X(0);
   double y = X(1);
@@ -378,26 +378,27 @@ Vector v_exact(Vector const& X, double , int ) //(X,t,tag)
 #if (PROBLEM_TYPE==STATIC_BB)
 double pho(Vector const& X, int tag)
 {
-  return 0;
+  return 1.0;
 }
 double cos_theta0()
 {
-  return 0.5;
+  return 0.0;
 }
 
 double zeta(double u_norm, double angle)
 {
-  return 0*5.e-1;
+  return 0;
 }
 
 double beta_diss()
 {
-  return 0*1.e-4;
+  return 0;
 }
+
 
 double gama(Vector const& X, double t, int tag)
 {
-  return 1e+5;
+  return 1;
 }
 double muu(int tag)
 {
@@ -411,9 +412,9 @@ Vector u_exact(Vector const& X, double t, int tag)
 {
   return Vector::Zero(X.size());
 }
-Vector traction(Vector const& X, double t, int tag)
+Vector traction(Vector const& X, Vector const& normal, double t, int tag)
 {
-  return Vector::Zero(X.size());
+  return -gama(X,t,tag)*normal*(X.size()==2 ? 1 : 2);
 }
 double pressure_exact(Vector const& X, double t, int tag)
 {
@@ -449,9 +450,9 @@ Vector solid_normal(Vector const& X, double t, int tag)
 
   return N;
 }
-Vector v_exact(Vector const& , double , int ) //(X,t,tag)
+Vector v_exact(Vector const& X, double , int ) //(X,t,tag)
 {
-
+  return Vector::Zero(X.size());
 }
 #endif
 
@@ -499,7 +500,7 @@ Vector u_exact(Vector const& X, double t, int tag)
 
   return v;
 }
-Vector traction(Vector const& X, double t, int tag)
+Vector traction(Vector const& X, Vector const& normal, double t, int tag)
 {
   double x = X(0);
   double y = X(1);
@@ -622,7 +623,7 @@ Vector u_exact(Vector const& X, double t, int tag)
 
   return v;
 }
-Vector traction(Vector const& X, double t, int tag)
+Vector traction(Vector const& X, Vector const& normal, double t, int tag)
 {
   double x = X(0);
   double y = X(1);
@@ -738,7 +739,7 @@ Vector u_exact(Vector const& X, double t, int tag)
 {
   return Vector::Zero(X.size());
 }
-Vector traction(Vector const& X, double t, int tag)
+Vector traction(Vector const& X, Vector const& normal, double t, int tag)
 {
   return Vector::Zero(X.size());
 }
@@ -794,17 +795,17 @@ Vector v_exact(Vector const& , double , int ) //(X,t,tag)
 #if (PROBLEM_TYPE==RAMP2D3D)
 double pho(Vector const& X, int tag)
 {
-  return 1;
+  return 5e-6;
 }
 
 double cos_theta0()
 {
-  return -sqrt(2)/2.;
+  return sqrt(2.)/10.;
 }
 
 double zeta(double u_norm, double angle)
 {
-  return 0*1.e+5;
+  return 0*1.e-5;
 }
 
 double beta_diss()
@@ -814,18 +815,19 @@ double beta_diss()
 
 double gama(Vector const& X, double t, int tag)
 {
-  return 2;//75.*1e-3;
+  return 100.*1e-3;
 }
 double muu(int tag)
 {
-  return 1;//1e-5;
+  return 1e-5;
 }
 Vector force(Vector const& X, double t, int tag)
 {
   double x = X(0);
   double y = X(1);
   Vector f(Vector::Zero(X.size()));
-  //f(1)=-1;
+  
+  f(1)=0.15;
   //f(0)=1;
   //f /= 4*sqrt(2);
 
@@ -840,7 +842,7 @@ Vector u_exact(Vector const& X, double t, int tag)
 
   return v;
 }
-Vector traction(Vector const& X, double t, int tag)
+Vector traction(Vector const& X, Vector const& normal, double t, int tag)
 {
   double x = X(0);
   double y = X(1);
@@ -971,7 +973,7 @@ Vector u_exact(Vector const& X, double t, int tag)
 
   return v;
 }
-Vector traction(Vector const& X, double t, int tag)
+Vector traction(Vector const& X, Vector const& normal, double t, int tag)
 {
   double x = X(0);
   double y = X(1);
@@ -1098,7 +1100,7 @@ Vector u_exact(Vector const& X, double t, int tag)
 
   return v;
 }
-Vector traction(Vector const& X, double t, int tag)
+Vector traction(Vector const& X, Vector const& normal, double t, int tag)
 {
   double x = X(0);
   double y = X(1);
@@ -1219,8 +1221,10 @@ Vector force(Vector const& X, double t, int tag)
 
   //f(0) = a__*pho(X,tag)*(  -w_*sin(w_*t)*y + a__*x*cos(w_*t)*sin(w_*t));
   //f(1) = a__*pho(X,tag)*(  +w_*cos(w_*t)*x + a__*y*cos(w_*t)*sin(w_*t));
-  f(0) = a__*pho(X,tag)*(  -w_*sin(w_*t)*y + a__*x*cos(w_*t)*cos(w_*t));
-  f(1) = a__*pho(X,tag)*(  -w_*sin(w_*t)*x + a__*y*cos(w_*t)*cos(w_*t));
+  //f(0) = a__*pho(X,tag)*(  -w_*sin(w_*t)*y + a__*x*cos(w_*t)*cos(w_*t));
+  //f(1) = a__*pho(X,tag)*(  -w_*sin(w_*t)*x + a__*y*cos(w_*t)*cos(w_*t));
+  f(0) = a__*pho(X,tag)*(  w_*cos(w_*t)*y + a__*x*sin(w_*t)*sin(w_*t));
+  f(1) = a__*pho(X,tag)*(  w_*cos(w_*t)*x + a__*y*sin(w_*t)*sin(w_*t));
   
   return f;
 }
@@ -1233,8 +1237,11 @@ Vector u_exact(Vector const& X, double t, int tag)
 
   //v(0) = a__*y*cos(w_*t);
   //v(1) = a__*x*sin(w_*t);
-  v(0) = a__*y*cos(w_*t);
-  v(1) = a__*x*cos(w_*t);
+  //v(0) = a__*y*cos(w_*t);
+  //v(1) = a__*x*cos(w_*t);
+  v(0) = a__*y*sin(w_*t);
+  v(1) = a__*x*sin(w_*t);
+  
   
   return v;
 }
@@ -1265,7 +1272,7 @@ Tensor grad_u_exact(Vector const& X, double t, int tag)
   dxU(1,1) = 0;
   return dxU;
 }
-Vector traction(Vector const& X, double t, int tag)
+Vector traction(Vector const& X, Vector const& normal, double t, int tag)
 {
   Vector T(Vector::Zero(X.size()));
 
@@ -1294,8 +1301,8 @@ Vector v_exact(Vector const& X, double t, int tag) //(X,t,tag)
 {
   double const w_ = pi;
   Vector v(Vector::Zero(X.size()));
-  v(0) = -0.1*(cos(w_*t));//*(X(0)+0.5)*(X(0)-0.5)/2.;
-  v(1) = +0.1*(cos(w_*t));//*(X(1)+0.5)*(X(1)-0.5)/2.;
+  v(0) = +0.1*(cos(w_*t));//*(X(0)+0.5)*(X(0)-0.5)/2.;
+  v(1) = +0.1*(sin(w_*t));//*(X(1)+0.5)*(X(1)-0.5)/2.;
   return v * (tag!=1 && tag!=2);
 }
 
@@ -1313,7 +1320,7 @@ Vector x_exact(Vector const& X, double t, int tag)
 #if (PROBLEM_TYPE==PSEUDO_OSC2D)
 
 double const w_ = pi;
-double const a__= 0.4;
+double const a__= 1;
 
 double pho(Vector const& X, int tag)
 {
@@ -1342,6 +1349,7 @@ double muu(int tag)
 {
   return  1.;
 }
+
 Vector force(Vector const& X, double t, int tag) // original
 {
   double x = X(0);
@@ -1349,8 +1357,16 @@ Vector force(Vector const& X, double t, int tag) // original
 
   Vector f(Vector::Zero(X.size()));
 
-  f(0) = a__*pho(X,tag)*(  -w_*sin(w_*t)*x + a__*cos(w_*t)*cos(w_*t)*x);
-  f(1) = a__*pho(X,tag)*(  +w_*sin(w_*t)*y + a__*cos(w_*t)*cos(w_*t)*y);
+  // linear case
+  f(0) = a__* (  -w_*sin(w_*t)*x + a__*cos(w_*t)*cos(w_*t)*x );
+  f(1) = a__* (  +w_*sin(w_*t)*y + a__*cos(w_*t)*cos(w_*t)*y );
+
+  //// quadratic case
+  //Tensor const dxU( grad_u_exact(X,t,tag) );
+  //Vector const u(u_exact(X,t,tag));
+  //f(0) =-a__*w_*sin(w_*t)* ( x*x/2. + y*x   ) ;
+  //f(1) =+a__*w_*sin(w_*t)* ( y*y/2. + x*y   ) ;
+  //f += dxU*u;
 
   return f;
 }
@@ -1361,24 +1377,41 @@ Vector u_exact(Vector const& X, double t, int tag)
 
   Vector v(Vector::Zero(X.size()));
 
+  // linear case
   v(0) = a__*x*cos(w_*t);
   v(1) =-a__*y*cos(w_*t);
+  
+  ////quadratic case
+  //v(0) = a__*cos(w_*t)* ( x*x/2. + y*x   );
+  //v(1) =-a__*cos(w_*t)* ( y*y/2. + x*y   );
+  
   return v;
 }
 double pressure_exact(Vector const& X, double t, int tag)
 {
-  //double x = X(0);
-  //double y = X(1);
+  double x = X(0);
+  double y = X(1);
 
-  return  0*sin(w_*t);
+  //// linear case
+  return 0;
+  
+  //// quadratic
+  //return  a__*cos(w_*t)*(x - y);
 }
 Vector grad_p_exact(Vector const& X, double t, int tag)
 {
   //double x = X(0);
   //double y = X(1);
-  //Vector dxP(Vector::Zero(2));
+  Vector dxP(Vector::Zero(X.size()));
+  
+  // linear
+  // nothing
+  
+  //// quadratic
+  //dxP(0) = a__*cos(w_*t);
+  //dxP(1) = a__*cos(w_*t);
 
-  return Vector::Zero(X.size());
+  return dxP;
 }
 Tensor grad_u_exact(Vector const& X, double t, int tag)
 {
@@ -1386,18 +1419,30 @@ Tensor grad_u_exact(Vector const& X, double t, int tag)
   double y = X(1);
   Tensor dxU(Tensor::Zero(X.size(), X.size()));
 
+  // linear case
   dxU(0,0) = a__*cos(w_*t);
   dxU(0,1) = 0;
   dxU(1,0) = 0;
   dxU(1,1) =-a__*cos(w_*t);
+  
+  //// quadratic case
+  //dxU(0,0) = a__*cos(w_*t)*(x+y);
+  //dxU(0,1) = a__*cos(w_*t)*x;
+  //dxU(1,0) = a__*cos(w_*t)*(-y);
+  //dxU(1,1) = a__*cos(w_*t)*(-x-y);
+  
   return dxU;
 }
-Vector traction(Vector const& X, double t, int tag)
+Vector traction(Vector const& X, Vector const& normal, double t, int tag)
 {
   Vector T(Vector::Zero(X.size()));
 
-  T(0) = -pressure_exact(X,t,tag);
-  T(1) = muu(tag)*(cos(w_*t) + sin(w_*t));
+  Tensor dxU(X.size(),X.size());
+  Tensor I(Tensor::Identity(X.size(),X.size()));
+  dxU = grad_u_exact(X,t,tag);
+  double const p = pressure_exact(X,t,tag);
+
+  T = (-p*I + dxU+dxU.transpose())*normal;
 
   return T;
 }
@@ -1421,8 +1466,8 @@ Vector v_exact(Vector const& X, double t, int tag) //(X,t,tag)
 {
   double const w_ = pi;
   Vector v(Vector::Zero(X.size()));
-  v(0) = -0.1*(cos(w_*t));//*(X(0)+0.5)*(X(0)-0.5)/2.;
-  v(1) = +0.1*(cos(w_*t));//*(X(1)+0.5)*(X(1)-0.5)/2.;
+  v(0) = -0.0*(cos(w_*t)) - 0.0*sin(w_*t);//*(X(0)+0.5)*(X(0)-0.5)/2.;
+  v(1) = +0.0*(cos(w_*t)) + 0.0*sin(w_*t);//*(X(1)+0.5)*(X(1)-0.5)/2.;
   return v * (tag!=1 && tag!=2);
 }
 
@@ -1484,7 +1529,7 @@ Vector u_exact(Vector const& X, double t, int tag)
   v(1) = -y2*(1.-y)*(1.-y)*(2.*x-6.*x2+4.*x3);
   return v;
 }
-Vector traction(Vector const& X, double t, int tag)
+Vector traction(Vector const& X, Vector const& normal, double t, int tag)
 {
   double x = X(0);
   double y = X(1);
@@ -1559,5 +1604,4 @@ Vector v_exact(Vector const& X, double , int ) //(X,t,tag)
   return Vector::Zero(X.size());
 }
 #endif
-
 

@@ -1,55 +1,41 @@
--dim 2  				        # cell dimension (= space dimension)
--dt 0.25            # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04
--dt 0.125            # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04
--dt 0.0625            # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04
--dt 0.03125            # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04
--dt 0.015625            # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04
--dt 0.0078125            # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04
--dt 0.00390625            # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04
--dt 0.001953125            # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04
--dt 9.765625e-04
--maxts 80               # maximum number of time steps
--maxts 160               # maximum number of time steps
--maxts 320               # maximum number of time steps
--maxts 640               # maximum number of time steps
--maxts 1280               # maximum number of time steps
--maxts 2560               # maximum number of time steps
--maxts 5120               # maximum number of time steps
--maxts 10240               # maximum number of time steps
--maxts 20480               # maximum number of time steps
+-dim 3  				        # cell dimension (= space dimension)
+-dt  1e-1            # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04
+-maxts 1               # maximum number of time steps
+ 
 -renumber_dofs 0        # dofs renumbering
--print_step 10000       # print step
--has_convec 1           # convective term: true or false
+-print_step 1           # print step
+-has_convec 0           # convective term: true or false
 -unsteady   1           # steady or unsteady problem
 -boundary_smoothing 0
--force_mesh_velocity 1  # imposes the mesh velocity of boundary grid
+-force_mesh_velocity 0  # imposes the mesh velocity of boundary grid
 -fprint_ca 0            # print contact angle at file ContactHistory
--beta1 0.0              # Vmesh = bet1 * Ufluid  +  bet2 * Uelastic
--beta2 1.0
+beta1 0.0              # Vmesh = bet1 * Ufluid  +  bet2 * Uelastic
+beta2 1.0
 -plot_es 1              # plot exact solution: true or false
 -family_files 1         # plot output as 001, 002, 003, ...
 -sst -1.e-7             # steady state tol (Unew-Uold)/(Unew)
 -utheta 0.5             # time discretization theta method (momentum)
--vtheta 1.0             # time discretization theta method (mesh velocity)
+vtheta 1.0             # time discretization theta method (mesh velocity)
 -quadr_c 3              # quadrature degree (cell) // 2D: 3 para ME e TH2, 2 para GLS .... 3D
 -quadr_f 3              # quadrature degree (facet)
 -quadr_r 2              # quadrature degree (corner)
 -quadr_e 8              # quadrature degree (exact)
--ale 1                  #
+-ale 0                  #
+-force_pressure 0       # force pressure at a random point ... 0 to automatic
 
 # Petsc options
--pc_type asm                      # Preconditioner (one of) none jacobi pbjacobi bjacobi sor lu shell mg eisenstat ilu icc cholesky asm ksp composite redundant nn mat fieldsplit galerkin exotic openmp asa cp bfbt lsc redistribute tfs (PCSetType)
--sub_pc_type ilu
+-pc_type asm lu                      # Preconditioner (one of) none jacobi pbjacobi bjacobi sor lu shell mg eisenstat ilu icc cholesky asm ksp composite redundant nn mat fieldsplit galerkin exotic openmp asa cp bfbt lsc redistribute tfs (PCSetType)
+sub_pc_type ilu
 pc_factor_levels 2
 sub_pc_factor_levels 1            # <0>  ativar quando o resolutor não estiver convergindo
 pc_composite_type multiplicative  # one of multiplicative, additive, special
 pc_composite_pcs ilu,ilu
--ksp_type gmres preonly           # (one of) preonly bcgs gmres cg cgne nash stcg gltr richardson chebychev tcqmr ibcgs bcgsl cgs tfqmr cr lsqr qcg bicg fgmres minres symmlq lgmres lcd broyden gcr (KSPSetType)
+-ksp_type gmres           # (one of) preonly bcgs gmres cg cgne nash stcg gltr richardson chebychev tcqmr ibcgs bcgsl cgs tfqmr cr lsqr qcg bicg fgmres minres symmlq lgmres lcd broyden gcr (KSPSetType)
 ksp_initial_guess_nonzero 1       # não usar com precond asm+lu, alias nao usar nunca (talvez um erro da versão dev????)
 ksp_gmres_restart 300
 pc_factor_shift_type NONZERO
 pc_factor_shift_amount 1.e-10
--pc_factor_mat_ordering_type rcm    # natural nd 1wd rcm qmd rowlength flow (PCFactorSetMatOrderingType)
+pc_factor_mat_ordering_type rcm    # natural nd 1wd rcm qmd rowlength flow (PCFactorSetMatOrderingType)
 pc_factor_reuse_ordering 1
 pc_factor_nonzeros_along_diagonal 1.e-10
 pc_factor_diagonal_fill
@@ -71,7 +57,7 @@ snes_monitor_cancel 0 # cancela monitoramento
 snes_monitor stdout
 snes_converged_reason 1
 snes_stol 1.e-15  # <1e-08>: Stop if step length less than
-snes_rtol 1.e-12   # <1e-08>: Stop if decrease in function norm less than
+snes_rtol 1.e-12  # <1e-08>: Stop if decrease in function norm less than
 ksp_monitor stdout
 snes_max_it 50
 mat_no_inode 1
@@ -105,10 +91,10 @@ options: dir_tags, neum_tags, interf_tags, solid_tags, triple_tags
 
 # stokes donea dir_tags 2 neum_tags 1
 # ramp:        interf_tags 2 solid_tags 3 triple_tags 20,21
-# satic drop:  interf_tags 2
+# satic drop:  -interf_tags 2 neum_tags 2 (debug)
 # kovasznay    dir_tags 2 neum_tags 1    serve tambem para #Anything3D
 # couette      dir_tags 1,2 neum_tags 1
-# pseudo_osc   -dir_tags 1,2 neum_tags 1
+# pseudo_osc   neum_tags 2
 # sloshing     dir_tags 5 interf_tags 2 solid_tags 3,4 triple_tags 20,21
 
 ############################################################################
@@ -120,6 +106,7 @@ function_space 4 # P2P1 (or Q2Q1)
 function_space 5 # P1+P1
 function_space 6 # P2P0
 function_space 7 # P2+Pm1 full
+function_space 8 # P1P1 unstable
 
 mesh_type 8      # TRIANGLE3        = 0x8,
 mesh_type 16     # TRIANGLE6        = 0x10,
@@ -136,18 +123,17 @@ mesh_type 4096   # HEXAHEDRON27     = 0x1000,
 2nd
 fin  results/osc_drop/mesh/drop.msh
 fout results/osc_drop/mesh/drop.vtk
-fin  results/static_drop/2d/mesh/sdrop.msh
+fin  results/static_drop/2d/mesh/mdrop.msh
 fout results/static_drop/2d/mesh/sdrop.vtk
-fin  results/static_drop/3d/mesh/drop-1st-04.msh
-fin  results/static_drop/3d/mesh/drop.msh
-fout results/static_drop/3d/mesh/bla.vtk
+-fin  results/static_drop/3d/mesh/drop.msh
+-fout results/static_drop/3d/mesh/drop.vtk
 fin  results/osc_drop/mesh/drop.msh
 fout results/osc_drop/mesh/drop.vtk
 fin  results/kovasznay/mesh/kovas.msh
 fout results/kovasznay/mesh/kovas.vtk
 
--fin  results/couette/2d/mesh/couette.msh
--fout results/couette/2d/mesh/couette.vtk
+fin  results/couette/2d/mesh/couette.msh
+fout results/couette/2d/mesh/couette.vtk
 
 fin  results/pseudo_osc/mesh/drop.msh
 fout results/pseudo_osc/mesh/drop.vtk
@@ -161,7 +147,7 @@ fout results/sloshing/2d/meshs/slosh.vtk
 fin  results/anything3d/cube.msh
 fout results/anything3d/cube.vtk
 fin  results/ramp/2d/mesh/ramp.msh
-fout results/ramp/2d/mesh/ramp.vtk
+fout results/ramp/2d/mesh/teto.vtk
 fin  results/ramp/3d/mesh/ramp.msh
 fout results/ramp/3d/mesh/cretino.vtk
 fin  results/russab/2d/mesh/russa.msh
@@ -174,4 +160,15 @@ fout results/ramp/2d/mesh/ramp2nd.vtk
 
 
 
+
+dt 0.25            # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04
+dt 0.125            # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04
+dt 0.0625            # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04
+dt 0.03125            # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04
+dt 0.015625            # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04
+dt 0.0078125            # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04
+dt 0.00390625            # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04
+dt 0.001953125            # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04
+dt 9.765625e-04
+dt 4.8828125e-04
 
