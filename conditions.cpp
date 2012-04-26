@@ -402,7 +402,7 @@ double gama(Vector const& X, double t, int tag)
 }
 double muu(int tag)
 {
-  return 1;
+  return 0.001;
 }
 Vector force(Vector const& X, double t, int tag)
 {
@@ -454,6 +454,7 @@ Vector v_exact(Vector const& X, double , int ) //(X,t,tag)
 {
   return Vector::Zero(X.size());
 }
+
 #endif
 
 #if (PROBLEM_TYPE==SLOSH_2D)

@@ -54,31 +54,127 @@ void AppCtx::getVecNormals(Vec const* Vec_x_1, Vec & Vec_normal_)
       mesh->getNodesCoords(facet_nodes.begin(), facet_nodes.end(), x_coefs.data());
     x_coefs_trans = x_coefs.transpose();
 
-    // find the normal
-    for (int k = 0; k < nodes_per_facet; ++k)
+
+    if (false) // método alternativo que serve para todos os métodos (normal consistente)
     {
-      //tag_other = mesh->getNode(facet_nodes(k))->getTag();
-
-
-      F   = x_coefs_trans * dLphi_nf[k];
-
-      if (dim==2)
+      // find the normal
+      for (int k = 0; k < nodes_per_facet; ++k)
       {
-        normal(0) = +F(1,0);
-        normal(1) = -F(0,0);
-      }
-      else
-      {
-        normal = F.col(0);
-        X = F.col(1);
-        // a = a x b
-        cross(normal, X);
-      }
+        //tag_other = mesh->getNode(facet_nodes(k))->getTag();
 
-      VecSetValues(Vec_normal_, dim, map.data()+k*dim, normal.data(), ADD_VALUES);
+        F   = x_coefs_trans * dLphi_nf[k];
 
+        if (dim==2)
+        {
+          normal(0) = +F(1,0);
+          normal(1) = -F(0,0);
+        }
+        else
+        {
+          normal = cross(F.col(0),F.col(1));
+        }
+        //normal.normalize();
+        VecSetValues(Vec_normal_, dim, map.data()+k*dim, normal.data(), ADD_VALUES);
 
-    } // nodes
+      } // nodes
+            
+    }
+    else if (mesh_cell_type == TETRAHEDRON4) // facet = triangle3
+    {
+      F   = x_coefs_trans * dLphi_nf[0];
+      Vector a(F.col(0)), b(F.col(1)-F.col(0)), c(F.col(1));
+      
+      normal = cross(F.col(0), F.col(1));
+      
+      // 0
+      X = normal;
+      X /= a.dot(a) * c.dot(c);
+      VecSetValues(Vec_normal_, dim, map.data()+0*dim, X.data(), ADD_VALUES);
+      
+      // 1
+      X = normal;
+      X /= a.dot(a) * b.dot(b);
+      VecSetValues(Vec_normal_, dim, map.data()+1*dim, X.data(), ADD_VALUES);
+      
+      // 2
+      X = normal;
+      X /= b.dot(b) * c.dot(c);
+      VecSetValues(Vec_normal_, dim, map.data()+2*dim, X.data(), ADD_VALUES);
+
+    }
+    else if(mesh_cell_type == TETRAHEDRON10) // facet = triangle6
+    {
+      Vector x0(x_coefs_trans.col(0));
+      Vector x1(x_coefs_trans.col(1));
+      Vector x2(x_coefs_trans.col(2));
+      Vector x3(x_coefs_trans.col(3));
+      Vector x4(x_coefs_trans.col(4));
+      Vector x5(x_coefs_trans.col(5));
+      
+      //edges
+      double e03 = (x0-x3).squaredNorm();
+      double e05 = (x0-x5).squaredNorm();
+      double e13 = (x1-x3).squaredNorm();
+      double e14 = (x1-x4).squaredNorm();
+      double e24 = (x2-x4).squaredNorm();
+      double e25 = (x2-x5).squaredNorm();
+      double e34 = (x3-x4).squaredNorm();
+      double e35 = (x3-x5).squaredNorm();
+      double e45 = (x4-x5).squaredNorm();
+      
+      // dividi o triangulo em 4 mini-triangulos
+      
+      // node 0
+      cross(normal,x3-x0,x5-x0);
+      normal /= e03*e05;
+      VecSetValues(Vec_normal_, dim, map.data()+0*dim, normal.data(), ADD_VALUES);
+      
+      // node 1
+      cross(normal,x4-x1,x3-x1);
+      normal /= e14*e13;
+      VecSetValues(Vec_normal_, dim, map.data()+1*dim, normal.data(), ADD_VALUES);
+      
+      // node 2
+      cross(normal,x5-x2,x4-x2);
+      normal /= e25*e24;
+      VecSetValues(Vec_normal_, dim, map.data()+2*dim, normal.data(), ADD_VALUES);
+      
+      // node 3
+      normal = cross(x1-x3,x4-x3)/(e13*e34) + cross(x4-x3,x5-x3)/(e34*e35) + cross(x5-x3,x0-x3)/(e35*e03);
+      VecSetValues(Vec_normal_, dim, map.data()+3*dim, normal.data(), ADD_VALUES);
+      
+      // node 4
+      normal = cross(x2-x4,x5-x4)/(e24*e45) + cross(x5-x4,x3-x4)/(e45*e34) + cross(x3-x4,x1-x4)/(e34*e14);
+      VecSetValues(Vec_normal_, dim, map.data()+4*dim, normal.data(), ADD_VALUES);
+      
+      // node 5
+      normal = cross(x0-x5,x3-x5)/(e05*e35) + cross(x3-x5,x4-x5)/(e35*e45) + cross(x4-x5,x2-x5)/(e45*e25);
+      VecSetValues(Vec_normal_, dim, map.data()+5*dim, normal.data(), ADD_VALUES);
+    }
+    else if(mesh_cell_type == TRIANGLE3)
+    {
+      normal(0) = x_coefs_trans(1,1)-x_coefs_trans(1,0);
+      normal(1) = x_coefs_trans(0,0)-x_coefs_trans(0,1);
+      
+      normal /= (x_coefs_trans.col(0)-x_coefs_trans.col(1)).squaredNorm();
+      VecSetValues(Vec_normal_, dim, map.data()+0*dim, normal.data(), ADD_VALUES);
+      VecSetValues(Vec_normal_, dim, map.data()+1*dim, normal.data(), ADD_VALUES);
+    }
+    else if(mesh_cell_type == TRIANGLE6) // dividi a aresta em duas partes
+    {
+      normal(0) = x_coefs_trans(1,2)-x_coefs_trans(1,0);
+      normal(1) = x_coefs_trans(0,0)-x_coefs_trans(0,2);
+      normal /= (x_coefs_trans.col(0)-x_coefs_trans.col(2)).squaredNorm();
+      VecSetValues(Vec_normal_, dim, map.data()+0*dim, normal.data(), ADD_VALUES);
+      VecSetValues(Vec_normal_, dim, map.data()+2*dim, normal.data(), ADD_VALUES);
+      
+      normal(0) = x_coefs_trans(1,1)-x_coefs_trans(1,2);
+      normal(1) = x_coefs_trans(0,2)-x_coefs_trans(0,1);
+      normal /= (x_coefs_trans.col(1)-x_coefs_trans.col(2)).squaredNorm();
+      VecSetValues(Vec_normal_, dim, map.data()+1*dim, normal.data(), ADD_VALUES);
+      VecSetValues(Vec_normal_, dim, map.data()+2*dim, normal.data(), ADD_VALUES);
+    }
+    
 
   }
   Assembly(Vec_normal_);

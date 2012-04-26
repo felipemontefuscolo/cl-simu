@@ -1,0 +1,54 @@
+//gmsh
+l = 1;
+n=49; // 4 7 13 25 49 97 193 385 769 1537
+
+Function Esfera
+
+	p1 = newp; Point(p1) = {0,0,0,l};
+	p2 = newp; Point(p2) = {+r,+r,-r,l};
+	p3 = newp; Point(p3) = {-r,+r,-r,l};
+	p4 = newp; Point(p4) = {-r,-r,-r,l};
+	p5 = newp; Point(p5) = {+r,-r,-r,l};
+	c1 = newreg; Circle(c1) = {p3,p1,p2};
+	c2 = newreg; Circle(c2) = {p2,p1,p5};
+	c3 = newreg; Circle(c3) = {p5,p1,p4};
+	c4 = newreg; Circle(c4) = {p4,p1,p3};
+
+	l1 = newreg; Line Loop(l1) = {c1,c2,c3,c4};
+	s1 = newreg; Ruled Surface(newreg) = {l1};
+	Rotate { {1,0,0},{0,0,0}, Pi/2 }   { Duplicata{ Surface{s1}; } }
+	Rotate { {1,0,0},{0,0,0}, Pi }     { Duplicata{ Surface{s1}; } }
+	Rotate { {1,0,0},{0,0,0}, 3*Pi/2 } { Duplicata{ Surface{s1}; } }
+	Rotate { {0,1,0},{0,0,0}, Pi/2 }   { Duplicata { Surface{s1}; } }
+	Rotate { {0,1,0},{0,0,0}, -Pi/2 }  { Duplicata { Surface{s1}; } }
+
+
+Return
+
+r = 1/Sqrt(3);
+Call Esfera;
+
+r = 0.5/Sqrt(3);
+Call Esfera;
+
+
+Surface Loop(47) = {23, 7, 12, 17, 6, 22};
+Surface Loop(48) = {35, 40, 29, 30, 46, 45};
+
+Volume(49) = {47, 48};
+Volume(50) = {48};
+
+Physical Surface(2) = {12, 7, 22, 6, 17, 23};
+Physical Surface(3) = {30, 45, 35, 46, 40, 29};
+Physical Volume(3) = {49,50};
+
+
+
+Transfinite Line {14, 8, 9, 2, 1, 19, 3, 4, 21, 13, 16, 11} = n Using Progression 1;
+
+//fixo
+Transfinite Line {32, 37, 31, 24, 34, 39, 27, 36, 44, 26, 42, 25} = 5 Using Progression 1;
+
+Transfinite Surface "*";
+
+

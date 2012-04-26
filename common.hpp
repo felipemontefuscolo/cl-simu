@@ -213,33 +213,23 @@ void invert(TensorType & a, int dim)
 
 }
 
-
-template<class AnyVector>
-void cross(AnyVector & a, AnyVector const& b)
+inline Vector cross(Vector const& a, Vector const& b)
 {
-  double const r0 = a(1)*b(2) - a(2)*b(1);
-  double const r1 = a(2)*b(0) - a(0)*b(2);
-  double const r2 = a(0)*b(1) - a(1)*b(0);
+  Vector c(a.size());
+  
+  c(0) = a(1)*b(2) - a(2)*b(1);
+  c(1) = a(2)*b(0) - a(0)*b(2);
+  c(2) = a(0)*b(1) - a(1)*b(0);
 
-  a(0) = r0;
-  a(1) = r1;
-  a(2) = r2;
+  return c;
+}
+inline void cross(Vector & c, Vector const& a, Vector const& b)
+{
+  c(0) = a(1)*b(2) - a(2)*b(1);
+  c(1) = a(2)*b(0) - a(0)*b(2);
+  c(2) = a(0)*b(1) - a(1)*b(0);
 
 }
-template<class AnyVector>
-void cross(AnyVector & c, AnyVector const& a, AnyVector const& b)
-{
-  double const r0 = a(1)*b(2) - a(2)*b(1);
-  double const r1 = a(2)*b(0) - a(0)*b(2);
-  double const r2 = a(0)*b(1) - a(1)*b(0);
-
-  c(0) = r0;
-  c(1) = r1;
-  c(2) = r2;
-
-}
-
-
 
 
 class Statistics
@@ -288,6 +278,17 @@ public:
   {
     hmean += x;
   }
+  void add_p_inf(double x)
+  {
+    p_inf_norm += x;
+    //Np++;
+  }
+  void add_u_inf(double x)
+  {
+    u_inf_norm += x;
+    //Nu ++;
+  }
+
 
   double mean_p_L2_norm()
   {
@@ -314,10 +315,23 @@ public:
     return hmean;
   }
 
+  double mean_p_inf_norm()
+  {
+    return p_inf_norm;
+  }
+
+  double mean_u_inf_norm()
+  {
+    return u_inf_norm;
+  }
+
+
   double p_L2_norm;
   double u_L2_norm;
   double grad_u_L2_norm;
   double grad_p_L2_norm;
+  double p_inf_norm;
+  double u_inf_norm;
   double hmean;
 
   int Np, Nu, Ngp, Ngu;
@@ -520,7 +534,6 @@ public:
 
   shared_ptr<ShapeFunction>    shape_bble;
 
-  shared_ptr<ShapeFunction>    shape_qsi2_f; // fun aumentada da malha (facet)
 
 
   shared_ptr<Quadrature>       quadr_cell;
@@ -547,7 +560,6 @@ public:
   VecOfVec                     qsi_r;         // shape function evaluated at quadrature points (corner)
   VectorXd                     qsi_c_at_center; // shape function evaluated at quadrature points
 
-  VecOfVec                     qsi2_f;         // polinomio de um grau a mais que qsi
 
   // velocity
   VecOfMat                     dLphi_c;       // matriz de gradiente no elemento unitário

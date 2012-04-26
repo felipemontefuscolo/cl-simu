@@ -1,58 +1,54 @@
-// gmsh
+//gmsh
+l = 1;
+n=97; // 4 7 13 25 49 97 193 385 769 1537
+
+Function Esfera
+
+	p1 = newp; Point(p1) = {0,0,0,l};
+	p2 = newp; Point(p2) = {+r,+r,-r,l};
+	p3 = newp; Point(p3) = {-r,+r,-r,l};
+	p4 = newp; Point(p4) = {-r,-r,-r,l};
+	p5 = newp; Point(p5) = {+r,-r,-r,l};
+	c1 = newreg; Circle(c1) = {p3,p1,p2};
+	c2 = newreg; Circle(c2) = {p2,p1,p5};
+	c3 = newreg; Circle(c3) = {p5,p1,p4};
+	c4 = newreg; Circle(c4) = {p4,p1,p3};
+
+	l1 = newreg; Line Loop(l1) = {c1,c2,c3,c4};
+	s1 = newreg; Ruled Surface(newreg) = {l1};
+	Rotate { {1,0,0},{0,0,0}, Pi/2 }   { Duplicata{ Surface{s1}; } }
+	Rotate { {1,0,0},{0,0,0}, Pi }     { Duplicata{ Surface{s1}; } }
+	Rotate { {1,0,0},{0,0,0}, 3*Pi/2 } { Duplicata{ Surface{s1}; } }
+	Rotate { {0,1,0},{0,0,0}, Pi/2 }   { Duplicata { Surface{s1}; } }
+	Rotate { {0,1,0},{0,0,0}, -Pi/2 }  { Duplicata { Surface{s1}; } }
+
+
+Return
+
+r = 1/Sqrt(3);
+Call Esfera;
+
+r = 0.5/Sqrt(3);
+Call Esfera;
+
+
+Surface Loop(47) = {23, 7, 12, 17, 6, 22};
+Surface Loop(48) = {35, 40, 29, 30, 46, 45};
+
+Volume(49) = {47, 48};
+Volume(50) = {48};
+
+Physical Surface(2) = {12, 7, 22, 6, 17, 23};
+Physical Surface(3) = {30, 45, 35, 46, 40, 29};
+Physical Volume(3) = {49,50};
 
 
 
-lc = 0.5;
-R = 1;
-x_center = 0;
-y_center = 0;
-z_center = 0;
+Transfinite Line {14, 8, 9, 2, 1, 19, 3, 4, 21, 13, 16, 11} = n Using Progression 1;
 
-Point(1) = {x_center, y_center, z_center, lc};
-Point(2) = {x_center - R, y_center, z_center, lc};
-Point(4) = {x_center, y_center - R, z_center, lc};
-Point(5) = {x_center + R, y_center, z_center, lc};
-Point(8) = {x_center, y_center, z_center - R, lc};
-Point(11) = {x_center, y_center + R, z_center, lc};
-Point(14) = {x_center, y_center, z_center + R, lc};
-Circle (1) = {2, 1, 4} Plane{0, 0, 1};
-Circle (2) = {4, 1, 5} Plane{0, 0, 1};
-Circle (3) = {2, 1, 8} Plane{0, 0, 1};
-Circle (4) = {4, 1, 8} Plane{0, 0, 1};
-Circle (6) = {2, 1, 11} Plane{0, 0, 1};
-Circle (7) = {8, 1, 11} Plane{0, 0, 1};
-Circle (9) = {2, 1, 14} Plane{0, 0, 1};
-Circle (10) = {11, 1, 14} Plane{0, 0, 1};
-Circle (13) = {14, 1, 4} Plane{0, 0, 1};
-Circle (15) = {8, 1, 5} Plane{0, 0, 1};
-Circle (18) = {11, 1, 5} Plane{0, 0, 1};
-Circle (21) = {14, 1, 5} Plane{0, 0, 1};
-Line Loop (1000005) = {1, 4, -3};
-Ruled Surface (5) = {1000005};
-Line Loop (1000008) = {3, 7, -6};
-Ruled Surface (8) = {1000008};
-Line Loop (1000011) = {6, 10, -9};
-Ruled Surface (11) = {1000011};
-Line Loop (1000014) = {9, 13, -1};
-Ruled Surface (14) = {1000014};
-Line Loop (1000017) = {-15, -4, 2};
-Ruled Surface (17) = {1000017};
-Line Loop (1000020) = {-18, -7, 15};
-Ruled Surface (20) = {1000020};
-Line Loop (1000023) = {-21, -10, 18};
-Ruled Surface (23) = {1000023};
-Line Loop (1000026) = {-2, -13, 21};
-Ruled Surface (26) = {1000026};
+//fixo
+Transfinite Line {32, 37, 31, 24, 34, 39, 27, 36, 44, 26, 42, 25} = 5 Using Progression 1;
 
-Surface Loop(1000027) = {23, 26, 17, 20, 8, 5, 14, 11};
-Volume(1000028) = {1000027};
-Physical Surface(2) = {11, 23, 8, 20, 26, 14, 5, 17};
-Physical Volume(5) = {1000028};
-
-
-
-
-
-
+Transfinite Surface "*";
 
 

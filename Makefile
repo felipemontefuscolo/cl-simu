@@ -3,8 +3,8 @@ SOURCES	+= main.cpp mesh.cpp residue.cpp jacobian.cpp
 OBJECTS	+= main.o conditions.o mesh.o residue.o jacobian.o
 #PETSC_ARCH=linux-gnu-c++-debug
 PETSC_ARCH=linux-gnu-c++
-PETSC_DIR=/home/felipe/libs/petsc-3.2-p2
-#PETSC_DIR=/home/felipe/libs/petsc-dev
+#PETSC_DIR=/home/felipe/libs/petsc-3.2-p2
+PETSC_DIR=/home/felipe/libs/petsc-dev
 
 CFLAGS   = -Wall -Wextra
 FFLAGS   =

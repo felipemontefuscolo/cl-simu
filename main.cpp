@@ -128,7 +128,6 @@ void AppCtx::loadDofs()
   n_dofs_v_per_facet  = dof_handler[DH_UNKS].getVariable(VAR_M).numDofsPerFacet();
   n_dofs_v_per_corner = dof_handler[DH_UNKS].getVariable(VAR_M).numDofsPerCorner();
   
-  n_dofs_v2_per_facet = dim*shape_qsi2_f->getNumDof();
 }
 
 void AppCtx::setUpDefaultOptions()
@@ -445,14 +444,6 @@ bool AppCtx::createFunctionsSpace()
 
   shape_bble.reset(ShapeFunction::create(cell_type, BUBBLE));
 
-  ECellType facet_updegree_type;
-  switch (cell_type)
-  {
-    case TETRAHEDRON4: facet_updegree_type = TRIANGLE6; break;
-    default : cout << "cell type not suported\n" << endl; throw;
-  }
-  shape_qsi2_f.reset(ShapeFunction::create(facet_updegree_type));
-
   pres_pres_block = false;
   if (behaviors & (BH_bble_condens_PnPn | BH_GLS))
     pres_pres_block = true;
@@ -748,8 +739,6 @@ void AppCtx::evaluateQuadraturePts()
   bble.resize(n_qpts_cell);
   dLbble.resize(n_qpts_cell);
 
-  qsi2_f.resize(n_qpts_facet);
-  dLqsi2_f.resize(n_qpts_facet);
 
   for (int qp = 0; qp < n_qpts_cell; ++qp)
   {
@@ -812,8 +801,6 @@ void AppCtx::evaluateQuadraturePts()
     dLpsi_f[qp].resize(n_dofs_p_per_facet, dim-1);
     dLqsi_f[qp].resize(n_dofs_v_per_facet/dim, dim-1);
 
-    qsi2_f[qp].resize(n_dofs_v2_per_facet/dim);
-    dLqsi2_f[qp].resize(n_dofs_v2_per_facet/dim, dim-1);
 
     for (int n = 0; n < n_dofs_u_per_facet/dim; ++n)
     {
@@ -845,15 +832,7 @@ void AppCtx::evaluateQuadraturePts()
       }
     }
     
-    for (int n = 0; n < n_dofs_v2_per_facet/dim; ++n)
-    {
-      qsi2_f[qp][n] = shape_qsi2_f->eval(quadr_facet->point(qp), n);
-      for (int d = 0; d < dim-1; ++d)
-      {
-        /* dLqsi_f nao depende de qp no caso de funcoes lineares */
-        dLqsi2_f[qp](n, d) = shape_qsi2_f->gradL(quadr_facet->point(qp), n, d);
-      }
-    }
+
     
   } // end qp
 
@@ -1377,7 +1356,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
   // END TIME LOOP
   //
 
-  if (family_files)
+  // print again
   {
     double  *q_array;
     double  *nml_array;
@@ -1427,7 +1406,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
   {
   case( SNES_CONVERGED_FNORM_ABS       ): printf("SNES_CONVERGED_FNORM_ABS      /* ||F|| < atol */\n"); break;
   case( SNES_CONVERGED_FNORM_RELATIVE  ): printf("SNES_CONVERGED_FNORM_RELATIVE /* ||F|| < rtol*||F_initial|| */\n"); break;
-  case( SNES_CONVERGED_PNORM_RELATIVE  ): printf("SNES_CONVERGED_PNORM_RELATIVE /* Newton computed step size small); break; || delta x || < stol */\n"); break;
+  //case( SNES_CONVERGED_PNORM_RELATIVE  ): printf("SNES_CONVERGED_PNORM_RELATIVE /* Newton computed step size small); break; || delta x || < stol */\n"); break;
   case( SNES_CONVERGED_ITS             ): printf("SNES_CONVERGED_ITS            /* maximum iterations reached */\n"); break;
   case( SNES_CONVERGED_TR_DELTA        ): printf("SNES_CONVERGED_TR_DELTA       \n"); break;
         /* diverged */
@@ -1451,8 +1430,41 @@ PetscErrorCode AppCtx::solveTimeProblem()
   //if (unsteady)
   {
     cout << "\nmean errors: \n";
-    cout << "# hmean            u_L2_norm         p_L2_norm         grad_u_L2_norm    grad_p_L2_norm" << endl;
+    cout << "# hmean            u_L2_err         p_L2_err          grad_u_L2_err     grad_p_L2_err" << endl;
     printf( "%.15lf %.15lf %.15lf %.15lf %.15lf\n", Stats.mean_hmean() , Stats.mean_u_L2_norm(), Stats.mean_p_L2_norm(), Stats.mean_grad_u_L2_norm(), Stats.mean_grad_p_L2_norm());
+  }
+
+
+
+
+
+  // pega o erro maximo (para o teste do static drop)
+  {
+    Vector u(dim);
+    int udofs[dim];
+    double umax=0, pmax=0, p;
+    point_iterator point     = mesh->pointBegin();
+    point_iterator point_end = mesh->pointEnd();
+    for (; point != point_end; ++point)
+    {
+      getNodeDofs(&*point, DH_UNKS, VAR_U, udofs);
+      VecGetValues(Vec_up_0, dim, udofs, u.data());
+      if (u.norm() > umax)
+        umax = u.norm();
+      
+      if (mesh->isVertex(&*point))
+      {
+        getNodeDofs(&*point, DH_UNKS, VAR_P, udofs);
+        VecGetValues(Vec_up_0, 1, udofs, &p);
+        if (abs(p-dim+1)>pmax)
+          pmax = abs(p-dim+1);
+      }
+      
+    }
+    
+    cout << "temporario:" << endl;
+    cout << "umax_err          pmax_err" << endl;
+    printf( "%.15lf %.15lf\n", umax, pmax);
   }
 
   PetscFunctionReturn(0);
@@ -1576,7 +1588,9 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
       edge = mesh->getFacet(a);
       if (edge->disabled())
         continue;
-
+      if (!is_in(edge->getTag(), interface_tags))
+        continue;
+      
       mesh->getFacetNodesId(&*edge, edge_nodes.data());
 
       mesh->getNode(edge_nodes[0])->getCoord(Xa.data());
@@ -1585,7 +1599,7 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
       ++n_edges;
     }
   }
-
+  else
   if (dim==3)
   //#pragma omp parallel default(none) shared(cout,hmean)
   {
@@ -1597,6 +1611,8 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
     {
       edge = mesh->getCorner(a);
       if (edge->disabled())
+        continue;
+      if (!is_in(edge->getTag(), interface_tags))
         continue;
 
       mesh->getCornerNodesId(&*edge, edge_nodes.data());
@@ -1857,6 +1873,7 @@ int main(int argc, char **argv)
   user.freePetscObjs();
   PetscFinalize();
 
+  cout << "\a" << endl;
   return 0.;
 }
 

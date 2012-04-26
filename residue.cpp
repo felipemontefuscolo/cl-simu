@@ -663,12 +663,6 @@ void AppCtx::formFacetFunction(facet_iterator &facet,
   Tensor              fff_f_mid(dim-1,dim-1);   // n+utheta; fff = first fundamental form
   //Tensor              invFT_c_mid(dim,dim);   // n+utheta
 
-  MatrixXd            x2_coefs_f_mid_trans(dim, n_dofs_v2_per_facet/dim); // n+utheta
-  Tensor              F2_f_mid(dim,dim-1);       // n+utheta
-  Tensor              invF2_f_mid(dim-1,dim);    // n+utheta
-  Tensor              fff2_f_mid(dim-1,dim-1);   // n+utheta; fff = first fundamental form
-  double              J2_mid=0,JxW2_mid;
-  MatrixXd            dxphi2_f(n_dofs_u_per_facet/dim, dim);
 
   MatrixXd            dxphi_f(n_dofs_u_per_facet/dim, dim);
   Tensor              dxU_f(dim,dim);   // grad u
@@ -683,7 +677,6 @@ void AppCtx::formFacetFunction(facet_iterator &facet,
   MatrixXd            Aloc_f(n_dofs_u_per_facet, n_dofs_u_per_facet);
   VectorXi            facet_nodes(nodes_per_facet);
   Vector              normal(dim);
-  Vector              normal2(dim);
   Vector              noi(dim); // normal interpolada
   Vector              some_vec(dim);
   double              J_mid=0,JxW_mid;
@@ -694,9 +687,6 @@ void AppCtx::formFacetFunction(facet_iterator &facet,
   VectorXi            mapM_f(dim*nodes_per_facet);
 
   Vector              traction_(dim);
-  Tensor              Pk(dim,dim); // projection matrix at node k
-  Tensor              Id(Tensor::Identity(dim,dim));
-  Tensor              Hqp(dim,dim);
 
   // ----- computations ------
   FUloc.setZero();
@@ -739,47 +729,12 @@ void AppCtx::formFacetFunction(facet_iterator &facet,
   //visc = muu(tag);
   //rho  = pho(Xqp,tag);
 
-  x2_coefs_f_mid_trans.block(0,0,dim,n_dofs_v_per_facet/dim) = x_coefs_f_mid_trans;
-  //especifico para TETRAHEDRON4:
-  {
-    
-    Vector x0(dim), x1(dim), x2(dim), n0(dim), n1(dim), n2(dim), c0(dim), c1(dim), c2(dim);
-    Tensor P0(dim,dim), P1(dim,dim), P2(dim,dim);
-    x0 = x_coefs_f_mid_trans.col(0);
-    x1 = x_coefs_f_mid_trans.col(1);
-    x2 = x_coefs_f_mid_trans.col(2);
-    n0 = noi_coefs_f_new_trans.col(0);
-    n1 = noi_coefs_f_new_trans.col(1);
-    n2 = noi_coefs_f_new_trans.col(2);
-    P0 = Id - n0*n0.transpose();
-    P1 = Id - n1*n1.transpose();
-    P2 = Id - n2*n2.transpose();
-    c0 = (P0*(x1-x0) + P1*(x0-x1))/4. + (x0+x1)/2. - (n1-n0).dot(x1-x0)*(n1+n0)/16. - (n1+n0).dot(x1-x0)*(n1-n0)/16.;
-    c1 = (P1*(x2-x1) + P2*(x1-x2))/4. + (x1+x2)/2. - (n2-n1).dot(x2-x1)*(n2+n1)/16. - (n2+n1).dot(x2-x1)*(n2-n1)/16.;
-    c2 = (P2*(x0-x2) + P0*(x2-x0))/4. + (x2+x0)/2. - (n0-n2).dot(x0-x2)*(n0+n2)/16. - (n0+n2).dot(x0-x2)*(n0-n2)/16.;
-    //c0 = (x0+x1)/2.;
-    //c1 = (x1+x2)/2.;
-    //c2 = (x2+x0)/2.;
-    //c0 = c0/c0.norm();
-    //c1 = c1/c1.norm();
-    //c2 = c2/c2.norm();
-    x2_coefs_f_mid_trans.block(0,3,dim,1)=c0;
-    x2_coefs_f_mid_trans.block(0,4,dim,1)=c1;
-    x2_coefs_f_mid_trans.block(0,5,dim,1)=c2;
-    
-    //cout << c0.norm() << " " << c1.norm() << " " << c2.norm() << endl;
-    //cout << ((P0*(x1-x0) + P1*(x0-x1))/4. - (n1-n0).dot(x1-x0)*(n1+n0)/16. - (n1+n0).dot(x1-x0)*(n1-n0)/16.).norm() << endl;
-    //cout << sqrt(1-pow(x0.dot(n0),2)) << " " << sqrt(1-pow(x1.dot(n1),2)) << " " << sqrt(1-pow(x2.dot(n2),2)) << endl;
-    //noi_coefs_f_new_trans.col(0) = x0;
-    //noi_coefs_f_new_trans.col(1) = x1;
-    //noi_coefs_f_new_trans.col(2) = x2;
-  }
+  //noi_coefs_f_new_trans = x_coefs_f_mid_trans;
   
   for (int qp = 0; qp < n_qpts_facet; ++qp)
   {
 
     F_f_mid   = x_coefs_f_mid_trans * dLqsi_f[qp];
-    F2_f_mid  = x2_coefs_f_mid_trans * dLqsi2_f[qp];
 
     if (dim==2)
     {
@@ -789,10 +744,7 @@ void AppCtx::formFacetFunction(facet_iterator &facet,
     }
     else
     {
-      normal   = F_f_mid.col(0);
-      some_vec = F_f_mid.col(1);
-      // a = a x b
-      cross(normal, some_vec);
+      normal = cross(F_f_mid.col(0), F_f_mid.col(1));
       normal.normalize();
     }
 
@@ -808,28 +760,11 @@ void AppCtx::formFacetFunction(facet_iterator &facet,
     dxU_f   = u_coefs_f_mid_trans * dxphi_f; // n+utheta
     Uqp     = u_coefs_f_mid_trans * phi_f[qp];
     noi     = noi_coefs_f_new_trans * qsi_f[qp];
-    Hqp     = noi_coefs_f_new_trans * dxphi_f; // n+utheta
-
-    fff2_f_mid.resize(dim-1,dim-1);
-    fff2_f_mid  = F2_f_mid.transpose()*F2_f_mid;
-    J2_mid     = sqrt(fff2_f_mid.determinant());
-    invF2_f_mid = fff2_f_mid.inverse()*F2_f_mid.transpose();
-    JxW2_mid = J2_mid*weight;
-    Xqp2     = x2_coefs_f_mid_trans * qsi2_f[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
-    dxphi2_f = dLphi_f[qp] * invF2_f_mid;
-
-    {
-      normal2  = F2_f_mid.col(0);
-      some_vec = F2_f_mid.col(1);
-      // a = a x b
-      cross(normal2, some_vec);
-      normal2.normalize();
-    }
 
     if (is_neumann)
     {
-      Vector no(Xqp);
-      no.normalize();
+      //Vector no(Xqp);
+      //no.normalize();
       //traction_ = utheta*(traction(Xqp,current_time+dt,tag)) + (1.-utheta)*traction(Xqp,current_time,tag);
       traction_ = traction(Xqp, normal, current_time + dt/2,tag);
       //traction_ = (traction(Xqp,current_time,tag) +4.*traction(Xqp,current_time+dt/2.,tag) + traction(Xqp,current_time+dt,tag))/6.;
@@ -845,20 +780,15 @@ void AppCtx::formFacetFunction(facet_iterator &facet,
 
     if (is_surface)
     {
-      Vector no(Xqp);
-      no.normalize();
-      Pk = Id - no*no.transpose();
+      //Vector no(Xqp);
+      //no.normalize();
       for (int i = 0; i < n_dofs_u_per_facet/dim; ++i)
       {
         for (int c = 0; c < dim; ++c)
         {
-          FUloc(i*dim + c) += JxW_mid *gama(Xqp,current_time,tag)*(dxphi_f(i,c) + 0*(unsteady*dt) *dxU_f.row(c).dot(dxphi_f.row(i))); // correto
-          //FUloc(i*dim + c) += JxW2_mid *gama(Xqp2,current_time,tag)*(dxphi2_f(i,c) + 0*(unsteady*dt) *dxU_f.row(c).dot(dxphi_f.row(i))); // correto
-          //FUloc(i*dim + c) += JxW2_mid *2*gama(Xqp2,current_time,tag)*normal2(c)*phi_f[qp][i]; // correto
-          //for (int d = 0; d < dim; ++d)
-          //  FUloc(i*dim + c) += JxW_mid * gama(Xqp,current_time,tag)* ( (c==d?1:0) - noi(c)*noi(d))* dxphi_f(i,d) ;
-          //for (int d = 0; d < dim; ++d)
-          //    FUloc(i*dim + c) += JxW_mid * gama(Xqp,current_time,tag)* ( Pk(c,d) )* dxphi_f(i,d) ;
+          //FUloc(i*dim + c) += JxW_mid *gama(Xqp,current_time,tag)*(dxphi_f(i,c) + 0*(unsteady*dt) *dxU_f.row(c).dot(dxphi_f.row(i))); // correto
+          for (int d = 0; d < dim; ++d)
+            FUloc(i*dim + c) += JxW_mid * gama(Xqp,current_time,tag)* ( (c==d?1:0) - noi(c)*noi(d))* dxphi_f(i,d) ;
         }
       }
     }
@@ -876,9 +806,6 @@ void AppCtx::formFacetFunction(facet_iterator &facet,
 
   } // end quadratura
   
-  cout << "Hqp" << endl;
-  cout << Hqp << endl << endl;
-
   //PetscFunctionReturn(0);
   //return;
 } // end formFacetFunction
@@ -1087,8 +1014,7 @@ void AppCtx::formCornerFunction(corner_iterator &corner,
       line_normal(1)= F_r_mid(1,0);
       line_normal(2)= F_r_mid(2,0);
       line_normal *= line_normal_sign;
-      // a = a cross b
-      cross(line_normal, normal);
+      line_normal = cross(line_normal, normal);
       line_normal.normalize();
     }
 
