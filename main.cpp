@@ -1129,9 +1129,27 @@ PetscErrorCode AppCtx::setInitialConditions()
     {
       //double tt = time_step==0? dt : current_time;
 
-      moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, 0/*time*/, Vec_x_1); // Euler
+      moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, 0/*time*/, Vec_x_1); // Euler (tem que ser esse no começo)
       //moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, current_time, Vec_x_1); // Adams-Bashforth
       calcMeshVelocity(Vec_x_0, Vec_x_1, Vec_v_mid);
+
+      //compute normal for the next time step, at n+1/2
+      {
+        Vec Vec_x_mid;
+        int const xsize = VecGetSize(Vec_x_0);
+        double *xarray;
+        VecGetArray(Vec_res, &xarray);
+        VecCreateSeqWithArray(MPI_COMM_SELF, xsize, xarray, &Vec_x_mid);
+        Assembly(Vec_x_mid);
+        
+        VecCopy(Vec_x_0, Vec_x_mid);
+        VecAXPY(Vec_x_mid,1.,Vec_x_1);
+        VecScale(Vec_x_mid, 0.5);
+        getVecNormals(&Vec_x_mid, Vec_normal);
+
+        VecDestroy(&Vec_x_mid);
+        VecRestoreArray(Vec_res, &xarray);
+      }
 
       // initial guess for the next time step; u(n+1) = 2*u(n) - u(n-1)
       VecCopy(Vec_up_1, Vec_res);
@@ -1312,6 +1330,24 @@ PetscErrorCode AppCtx::solveTimeProblem()
       //moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, current_time, Vec_x_1); // Euler
       moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, current_time, Vec_x_1); // Adams-Bashforth
       calcMeshVelocity(Vec_x_0, Vec_x_1, Vec_v_mid);
+
+      //compute normal for the next time step, at n+1/2
+      {
+        Vec Vec_x_mid;
+        int const xsize = VecGetSize(Vec_x_0);
+        double *xarray;
+        VecGetArray(Vec_res, &xarray);
+        VecCreateSeqWithArray(MPI_COMM_SELF, xsize, xarray, &Vec_x_mid);
+        Assembly(Vec_x_mid);
+        
+        VecCopy(Vec_x_0, Vec_x_mid);
+        VecAXPY(Vec_x_mid,1.,Vec_x_1);
+        VecScale(Vec_x_mid, 0.5);
+        getVecNormals(&Vec_x_mid, Vec_normal);
+
+        VecDestroy(&Vec_x_mid);
+        VecRestoreArray(Vec_res, &xarray);
+      }
 
       // initial guess for the next time step; u(n+1) = 2*u(n) - u(n-1)
       VecCopy(Vec_up_1, Vec_res);
