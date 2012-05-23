@@ -4,6 +4,7 @@
 *.so
 *.d
 *.vtk
+*.msh
 main
 octave-core
 wx2cpp

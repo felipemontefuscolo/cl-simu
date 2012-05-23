@@ -1,0 +1,32 @@
+// Gmsh project created on Wed Oct 19 14:36:43 2011
+r=2;
+Point(1) = {0, 0, 0, 1.0};
+Point(2) = {r, 0, 0, 1.0};
+Point(3) = {-r, 0, 0, 1.0};
+Point(4) = {0, 0, -r, 1.0};
+
+
+Point(5) = {0, 0, r, 1.0};
+Point(6) = {0, r, 0, 1.0};
+
+
+
+Circle(1) = {5, 1, 3};
+Circle(2) = {3, 1, 4};
+Circle(3) = {4, 1, 2};
+Circle(4) = {2, 1, 5};
+
+
+
+Line Loop(17) = {2, 3, 4, 1};
+Plane Surface(18) = {17};
+Surface Loop(19) = {18, 10, 12, 14, 16};
+
+
+
+
+
+
+
+
+

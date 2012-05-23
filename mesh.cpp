@@ -242,7 +242,7 @@ void AppCtx::smoothsMesh(Vec & Vec_normal_, Vec &Vec_x_)
 
 
   /* suavização laplaciana */
-  for (int smooth_it = 0; smooth_it < 3; ++smooth_it)
+  for (int smooth_it = 0; smooth_it < 0; ++smooth_it)
   {
     error = 0;
     getVecNormals(&Vec_x_, Vec_normal_);

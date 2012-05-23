@@ -11,3 +11,7 @@ A*u^k+1 = b em Omega^k+1
 ARRUMAR: se o contorno só tem dirichlet, mas o usuário coloca alguma coisa
 no vetor de neumann tags, então o programa erroneamente não tira o espaço nulo da
 pressão.
+
+
+MELHORAR: computar o residuo e o jacobiano na mesma funcao.
+

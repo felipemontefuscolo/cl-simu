@@ -607,12 +607,16 @@ PetscErrorCode AppCtx::allocPetscObjs()
   ierr = SNESGetKSP(snes,&ksp);                                                  CHKERRQ(ierr);
   ierr = KSPGetPC(ksp,&pc);                                                      CHKERRQ(ierr);
   ierr = KSPSetOperators(ksp,Mat_Jac,Mat_Jac,SAME_NONZERO_PATTERN);                       CHKERRQ(ierr);
-  //ierr = KSPSetType(ksp,KSPPREONLY);                                           CHKERRQ(ierr);
-  //ierr = KSPSetType(ksp,KSPGMRES);                                               CHKERRQ(ierr);
-  //ierr = PCSetType(pc,PCLU);                                                     CHKERRQ(ierr);
-  //ierr = PCFactorSetMatOrderingType(pc, MATORDERINGNATURAL);                         CHKERRQ(ierr);
-  //ierr = KSPSetTolerances(ksp,1.e-7,PETSC_DEFAULT,PETSC_DEFAULT,PETSC_DEFAULT);  CHKERRQ(ierr);
-  //ierr = SNESSetApplicationContext(snes,this);
+  //~ ierr = KSPSetType(ksp,KSPPREONLY);                                           CHKERRQ(ierr);
+  //~ ierr = KSPSetType(ksp,KSPGMRES);                                               CHKERRQ(ierr);
+  //~ ierr = PCSetType(pc,PCLU);                                                     CHKERRQ(ierr);
+  //~ ierr = PCFactorSetMatOrderingType(pc, MATORDERINGNATURAL);                         CHKERRQ(ierr);
+  //~ ierr = KSPSetTolerances(ksp,1.e-7,PETSC_DEFAULT,PETSC_DEFAULT,PETSC_DEFAULT);  CHKERRQ(ierr);
+  //~ ierr = SNESSetApplicationContext(snes,this);
+
+//~ #ifdef PETSC_HAVE_MUMPS 
+  //~ PCFactorSetMatSolverPackage(pc,MATSOLVERMUMPS);
+//~ #endif
 
   //ierr = SNESMonitorSet(snes, SNESMonitorDefault, 0, 0); CHKERRQ(ierr);
   //ierr = SNESMonitorSet(snes,Monitor,0,0);CHKERRQ(ierr);
@@ -1117,49 +1121,55 @@ PetscErrorCode AppCtx::setInitialConditions()
   } // end point loop
 
   if (ale)
-  for (int i = 0; i < 5; ++i)
   {
-    // * SOLVE THE SYSTEM *
-    if (solve_the_sys)
-      ierr = SNESSolve(snes,PETSC_NULL,Vec_up_1);  CHKERRQ(ierr);
-    // * SOLVE THE SYSTEM *
-
-    // update
-    if (ale)
+    printf("Initial conditions:\n");
+    for (int i = 0; i < 5; ++i)
     {
-      //double tt = time_step==0? dt : current_time;
+      printf("\tIterations %d\n", i);
+      // * SOLVE THE SYSTEM *
+      if (solve_the_sys)
+        ierr = SNESSolve(snes,PETSC_NULL,Vec_up_1);  CHKERRQ(ierr);
+      // * SOLVE THE SYSTEM *
 
-      moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, 0/*time*/, Vec_x_1); // Euler (tem que ser esse no começo)
-      //moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, current_time, Vec_x_1); // Adams-Bashforth
-      calcMeshVelocity(Vec_x_0, Vec_x_1, Vec_v_mid);
-
-      //compute normal for the next time step, at n+1/2
+      // update
+      if (ale)
       {
-        Vec Vec_x_mid;
-        int const xsize = VecGetSize(Vec_x_0);
-        double *xarray;
-        VecGetArray(Vec_res, &xarray);
-        VecCreateSeqWithArray(MPI_COMM_SELF, xsize, xarray, &Vec_x_mid);
-        Assembly(Vec_x_mid);
-        
-        VecCopy(Vec_x_0, Vec_x_mid);
-        VecAXPY(Vec_x_mid,1.,Vec_x_1);
-        VecScale(Vec_x_mid, 0.5);
-        getVecNormals(&Vec_x_mid, Vec_normal);
+        //double tt = time_step==0? dt : current_time;
 
-        VecDestroy(&Vec_x_mid);
-        VecRestoreArray(Vec_res, &xarray);
+        moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, 0/*time*/, Vec_x_1); // Euler (tem que ser esse no começo)
+        //moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, current_time, Vec_x_1); // Adams-Bashforth
+        calcMeshVelocity(Vec_x_0, Vec_x_1, Vec_v_mid);
+
+        //compute normal for the next time step, at n+1/2
+        {
+          Vec Vec_x_mid;
+          int xsize;
+          double *xarray;
+          VecGetSize(Vec_x_0, &xsize);
+          VecGetArray(Vec_res, &xarray);
+          //prototipo no petsc-dev: VecCreateSeqWithArray(MPI_Comm comm,PetscInt bs,PetscInt n,const PetscScalar array[],Vec *V)
+          //VecCreateSeqWithArray(MPI_COMM_SELF, xsize, xarray, &Vec_x_mid);
+          VecCreateSeqWithArray(MPI_COMM_SELF, 1, xsize, xarray, &Vec_x_mid);
+          Assembly(Vec_x_mid);
+          
+          VecCopy(Vec_x_0, Vec_x_mid);
+          VecAXPY(Vec_x_mid,1.,Vec_x_1);
+          VecScale(Vec_x_mid, 0.5);
+          getVecNormals(&Vec_x_mid, Vec_normal);
+
+          VecDestroy(&Vec_x_mid);
+          VecRestoreArray(Vec_res, &xarray);
+        }
+
+        // initial guess for the next time step; u(n+1) = 2*u(n) - u(n-1)
+        VecCopy(Vec_up_1, Vec_res);
+        VecScale(Vec_res,2.);
+        VecAXPY(Vec_res, -1., Vec_up_0);
+        VecCopy(Vec_res, Vec_up_1); // u(n+1) = 2*u(n) - u(n-1)
+
       }
-
-      // initial guess for the next time step; u(n+1) = 2*u(n) - u(n-1)
-      VecCopy(Vec_up_1, Vec_res);
-      VecScale(Vec_res,2.);
-      VecAXPY(Vec_res, -1., Vec_up_0);
-      VecCopy(Vec_res, Vec_up_1); // u(n+1) = 2*u(n) - u(n-1)
-
     }
-  }
-
+  } 
   // normals
   getVecNormals(&Vec_x_1, Vec_normal);
 
@@ -1334,10 +1344,13 @@ PetscErrorCode AppCtx::solveTimeProblem()
       //compute normal for the next time step, at n+1/2
       {
         Vec Vec_x_mid;
-        int const xsize = VecGetSize(Vec_x_0);
+        int xsize;
         double *xarray;
+        VecGetSize(Vec_x_0, &xsize);
         VecGetArray(Vec_res, &xarray);
-        VecCreateSeqWithArray(MPI_COMM_SELF, xsize, xarray, &Vec_x_mid);
+        //prototipo no petsc-dev: VecCreateSeqWithArray(MPI_Comm comm,PetscInt bs,PetscInt n,const PetscScalar array[],Vec *V)
+        //VecCreateSeqWithArray(MPI_COMM_SELF, xsize, xarray, &Vec_x_mid);
+        VecCreateSeqWithArray(MPI_COMM_SELF, 1,xsize, xarray, &Vec_x_mid);
         Assembly(Vec_x_mid);
         
         VecCopy(Vec_x_0, Vec_x_mid);
@@ -1367,10 +1380,12 @@ PetscErrorCode AppCtx::solveTimeProblem()
 
 
     // compute steady error
-    Qmax = VecNorm(Vec_up_1, NORM_1);
+    VecNorm(Vec_up_1, NORM_1, &Qmax);
     VecCopy(Vec_up_0, Vec_res);
     VecAXPY(Vec_res,-1.0,Vec_up_1);
-    steady_error = VecNorm(Vec_res, NORM_1)/(Qmax==0.?1.:Qmax);
+    //steady_error = VecNorm(Vec_res, NORM_1)/(Qmax==0.?1.:Qmax);
+    VecNorm(Vec_res, NORM_1, &steady_error);
+    steady_error /= (Qmax==0.?1.:Qmax);
 
     printContactAngle(fprint_ca);
 
@@ -1872,7 +1887,7 @@ extern PetscErrorCode Monitor(SNES,PetscInt,PetscReal,void *);
 int main(int argc, char **argv)
 {
 
-  PetscInitialize(&argc,&argv);
+  PetscInitialize(&argc,&argv,PETSC_NULL,PETSC_NULL);
 
   bool help_return;
   bool erro;

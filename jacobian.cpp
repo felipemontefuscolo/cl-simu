@@ -546,15 +546,17 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
     bool               is_surface;
     bool               is_solid;
     bool               is_neumann;
-    VectorXi           facet_nodes(nodes_per_facet);
     double             J_mid;
     double             weight;
     double             JxW_mid;
-    MatrixXd           x_coefs_f(nodes_per_facet, dim);                // coordenadas nodais da célula
-    MatrixXd           x_coefs_f_trans(dim, nodes_per_facet);
+    MatrixXd           x_coefs_f_old(nodes_per_facet, dim);                // coordenadas nodais
+    MatrixXd           x_coefs_f_new(nodes_per_facet, dim);                // coordenadas nodais
+    MatrixXd           x_coefs_f_new_trans(dim, nodes_per_facet);
+    MatrixXd           x_coefs_f_old_trans(dim, nodes_per_facet);
+    MatrixXd           x_coefs_f_mid_trans(dim, nodes_per_facet);
     Vector             normal(dim);
-    Tensor             F_f(dim,dim-1);
-    Tensor             invF_f(dim-1,dim);
+    Tensor             F_f_mid(dim,dim-1);
+    Tensor             invF_f_mid(dim-1,dim);
     MatrixXd           dxphi_f(n_dofs_u_per_facet/dim, dim);
     Vector             Xqp(dim);
     MatrixXd           Aloc_f(n_dofs_u_per_facet, n_dofs_u_per_facet);
@@ -563,9 +565,10 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
 
     VectorXi           mapU_f(n_dofs_u_per_facet);
     VectorXi           mapP_f(n_dofs_p_per_facet);
+    VectorXi           mapM_f(dim*nodes_per_facet);
 
     MatrixXd           Prj(n_dofs_u_per_facet,n_dofs_u_per_facet);
-    //VectorXi            facet_nodes(nodes_per_facet);
+    VectorXi           facet_nodes(nodes_per_facet);
 
     // LOOP NAS FACES DO CONTORNO
     facet_iterator facet = mesh->facetBegin();
@@ -584,11 +587,13 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
 
       dof_handler[DH_UNKS].getVariable(VAR_U).getFacetDofs(mapU_f.data(), &*facet);
       dof_handler[DH_UNKS].getVariable(VAR_P).getFacetDofs(mapP_f.data(), &*facet);
+      dof_handler[DH_MESH].getVariable(VAR_M).getFacetDofs(mapM_f.data(), &*facet);
 
-      mesh->getFacetNodesId(&*facet, facet_nodes.data());
-      mesh->getNodesCoords(facet_nodes.begin(), facet_nodes.end(), x_coefs_f.data());
-      x_coefs_f_trans = x_coefs_f.transpose();
-
+      VecGetValues(Vec_x_0,     mapM_f.size(), mapM_f.data(), x_coefs_f_old.data());
+      VecGetValues(Vec_x_1,     mapM_f.size(), mapM_f.data(), x_coefs_f_new.data());      
+      x_coefs_f_old_trans = x_coefs_f_old.transpose();
+      x_coefs_f_new_trans = x_coefs_f_new.transpose();
+      x_coefs_f_mid_trans = utheta*x_coefs_f_new_trans + (1.-utheta)*x_coefs_f_old_trans;
 
       ///*  Pega os valores das variáveis nos graus de liberdade */
       //VecGetValues(Vec_up_k, mapUb.size(), mapUb.data(), halfU_trans.data());
@@ -600,19 +605,18 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
 
       for (int qp = 0; qp < n_qpts_facet; ++qp)
       {
-        F_f   = x_coefs_f_trans * dLqsi_f[qp];
+        F_f_mid   = x_coefs_f_mid_trans * dLqsi_f[qp];
 
         tmp.resize(dim-1,dim-1);
-        tmp = F_f.transpose()*F_f;
+        tmp = F_f_mid.transpose()*F_f_mid;
         J_mid = sqrt(tmp.determinant());
-        tmp = tmp.inverse();
-        invF_f = tmp*F_f.transpose();
+        invF_f_mid = tmp.inverse()*F_f_mid.transpose();
 
 
         weight = quadr_facet->weight(qp);
         JxW_mid = J_mid * weight;
-        Xqp  = x_coefs_f_trans * qsi_f[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
-        dxphi_f = dLphi_f[qp] * invF_f;
+        Xqp  = x_coefs_f_mid_trans * qsi_f[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
+        dxphi_f = dLphi_f[qp] * invF_f_mid;
 
         if (false)
         if (is_surface) // semi-implicit term
@@ -628,7 +632,8 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
           for (int i = 0; i < n_dofs_u_per_facet/dim; ++i)
             for (int j = 0; j < n_dofs_u_per_facet/dim; ++j)
               for (int c = 0; c < dim; ++c)
-                Aloc_f(i*dim + c, j*dim + c) += JxW_mid *beta_diss()*phi_f[qp][j]*phi_f[qp][i];
+                Aloc_f(i*dim + c, j*dim + c) += utheta*JxW_mid *beta_diss()*phi_f[qp][j]*phi_f[qp][i];
+                //Aloc_f(i*dim + c, j*dim + c) += x_coefs_f_old_trans.norm()*utheta*beta_diss()*phi_f[qp][j]*phi_f[qp][i];
         }
 
 
@@ -728,7 +733,8 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
   } // end parallel
 
   // solid & triple tags .. force normal
-  if (force_dirichlet) {
+  if (force_dirichlet)
+  {
     int      nodeid;
     int      u_dofs[dim];
     Vector   normal(dim);
@@ -752,19 +758,29 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
   Assembly(*JJ);
 
   // impondo as condições de contorno
-  if (force_dirichlet) {
+  if (force_dirichlet)
+  {
     ierr = MatZeroRows(*JJ, dir_entries.size(), dir_entries.data(), 1., NULL, NULL);  CHKERRQ(ierr);
   }
   Assembly(*JJ);
 
   //*flag = SAME_NONZERO_PATTERN;
 
-  if (print_to_matlab) {
+  if (print_to_matlab)
+  {
     static bool ja_foi=false;
     if (!ja_foi) {View(*JJ,"jacob.m","Jac"); cout << "imprimiu matlab" << dir_entries.size() <<  endl;}
     ja_foi = true;
   }
   PetscFunctionReturn(0);
+
+
+  for (int i = 0; i < n_unknowns; ++i)
+  {
+    double const a = 10000000;
+    MatSetValues(*JJ, 1, &i, 1, &i, &a,  INSERT_VALUES);
+  }
+  Assembly(*JJ);
 
 
 } // end form jacobian

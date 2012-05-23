@@ -43,7 +43,7 @@ inline double sign(double a) {a<0 ? -1 : 1;};
 #define PSEUDO_OSC2D   13
 #define QUASI_STOKES   14
 
-#define PROBLEM_TYPE 4
+#define PROBLEM_TYPE 8
 
 
 #if (PROBLEM_TYPE==CAVITY_2D_3D)
@@ -796,31 +796,31 @@ Vector v_exact(Vector const& , double , int ) //(X,t,tag)
 #if (PROBLEM_TYPE==RAMP2D3D)
 double pho(Vector const& X, int tag)
 {
-  return 5e-6;
+  return 1.e-8;
 }
 
 double cos_theta0()
 {
-  return sqrt(2.)/10.;
+  return sqrt(2.)/2.;
 }
 
 double zeta(double u_norm, double angle)
 {
-  return 0*1.e-5;
+  return 0*1.e+2;
 }
 
 double beta_diss()
 {
-  return 0*1.e-0;
+  return 1.e-5;
 }
 
 double gama(Vector const& X, double t, int tag)
 {
-  return 100.*1e-3;
+  return 0.075;
 }
 double muu(int tag)
 {
-  return 1e-5;
+  return 1.e-5;
 }
 Vector force(Vector const& X, double t, int tag)
 {
@@ -828,7 +828,7 @@ Vector force(Vector const& X, double t, int tag)
   double y = X(1);
   Vector f(Vector::Zero(X.size()));
   
-  f(1)=0.15;
+  //f(1)=4;
   //f(0)=1;
   //f /= 4*sqrt(2);
 
@@ -917,7 +917,7 @@ Vector u_initial(Vector const& X, int tag)
 }
 double p_initial(Vector const& X, int tag)
 {
-  return 2;
+  return X.size()-1;
 }
 
 Vector v_exact(Vector const& X, double , int ) //(X,t,tag)

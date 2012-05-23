@@ -485,11 +485,18 @@ void AppCtx::formCellFunction(cell_iterator &cell,
     weight = quadr_cell->weight(qp);
     JxW_mid = J_mid*weight;
 
+    //~ if (mesh->getCellId(&*cell) == 0)
+    //~ {
+      //~ printf("cHEcKKKKKKKKKKK!!\n");
+      //~ cout << "x coefs mid:" << endl;
+      //~ cout << x_coefs_c_mid_trans.transpose() << endl;
+    //~ }
     if (J_mid < 1.e-10)
     {
       //#pragma omp critical
       //if (tid==0)
       {
+        printf("in formCellFunction:\n");
         std::cout << "erro: jacobiana da integral não invertível: ";
         std::cout << "J_mid = " << J_mid << endl;
         cout << "trans matrix:\n" << F_c_mid << endl;
@@ -800,6 +807,7 @@ void AppCtx::formFacetFunction(facet_iterator &facet,
         for (int c = 0; c < dim; ++c)
         {
           FUloc(i*dim + c) += JxW_mid *beta_diss()*Uqp(c)*phi_f[qp][i];
+          //FUloc(i*dim + c) += x_coefs_f_old_trans.norm()*beta_diss()*Uqp(c)*phi_f[qp][i];
         }
       }
     }
