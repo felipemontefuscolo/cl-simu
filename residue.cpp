@@ -19,7 +19,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
   // LOOP NAS CÉLULAS
   VecZeroEntries(Vec_fun);
-  //#pragma omp parallel default(none) shared(Vec_up_k,Vec_fun,cout)
+  #pragma omp parallel default(none) shared(Vec_up_k,Vec_fun,cout)
   {
     VectorXd          FUloc(n_dofs_u_per_cell);
     VectorXd          FPloc(n_dofs_p_per_cell);
@@ -34,48 +34,42 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
     VectorXi          cell_nodes(nodes_per_cell);
 
 
-    //const int tid = omp_get_thread_num();
-    //const int nthreads = omp_get_num_threads();
+    const int tid = omp_get_thread_num();
+    const int nthreads = omp_get_num_threads();
     //const int n_cell_colors = mesh->numCellColors();
 
-    //cell_iterator cell;
-    //cell_iterator cell_end;
+    cell_iterator cell = mesh->cellBegin(tid,nthreads);
+    cell_iterator cell_end = mesh->cellEnd(tid,nthreads);
 
-    //for (int color = 0; color < n_cell_colors; ++color)
-    //{
-      //cell = mesh->cellBegin(EColor(color),tid,nthreads);
-      //cell_end = mesh->cellEnd(EColor(color),tid,nthreads);
+    //cell_iterator cell = mesh->cellBegin();
+    //cell_iterator cell_end = mesh->cellEnd();
+    for (; cell != cell_end; ++cell)
+    {
 
-      cell_iterator cell = mesh->cellBegin();
-      cell_iterator cell_end = mesh->cellEnd();
-      for (; cell != cell_end; ++cell)
+      // mapeamento do local para o global:
+      //
+      dof_handler[DH_UNKS].getVariable(VAR_U).getCellDofs(mapU_c.data(), &*cell);
+      dof_handler[DH_UNKS].getVariable(VAR_P).getCellDofs(mapP_c.data(), &*cell);
+
+      /*  Pega os valores das variáveis nos graus de liberdade */
+      VecGetValues(Vec_up_k , mapU_c.size(), mapU_c.data(), u_coefs_c_new.data());
+      VecGetValues(Vec_up_k , mapP_c.size(), mapP_c.data(), p_coefs_c.data());
+
+
+      formCellFunction(cell, mapU_c, mapP_c, u_coefs_c_new, p_coefs_c, FUloc, FPloc);
+
+      // Projection - to force non-penetrarion bc
+      mesh->getCellNodesId(&*cell, cell_nodes.data());
+      getProjectorMatrix(Prj, nodes_per_cell, cell_nodes.data(), Vec_x_1, current_time+dt);
+
+      FUloc = Prj*FUloc;
+
+      #pragma omp critical
       {
-
-        // mapeamento do local para o global:
-        //
-        dof_handler[DH_UNKS].getVariable(VAR_U).getCellDofs(mapU_c.data(), &*cell);
-        dof_handler[DH_UNKS].getVariable(VAR_P).getCellDofs(mapP_c.data(), &*cell);
-
-        /*  Pega os valores das variáveis nos graus de liberdade */
-        VecGetValues(Vec_up_k , mapU_c.size(), mapU_c.data(), u_coefs_c_new.data());
-        VecGetValues(Vec_up_k , mapP_c.size(), mapP_c.data(), p_coefs_c.data());
-
-
-        formCellFunction(cell, mapU_c, mapP_c, u_coefs_c_new, p_coefs_c, FUloc, FPloc);
-
-        // Projection - to force non-penetrarion bc
-        mesh->getCellNodesId(&*cell, cell_nodes.data());
-        getProjectorMatrix(Prj, nodes_per_cell, cell_nodes.data(), Vec_x_1, current_time+dt);
-
-        FUloc = Prj*FUloc;
-
         VecSetValues(Vec_fun, mapU_c.size(), mapU_c.data(), FUloc.data(), ADD_VALUES);
         VecSetValues(Vec_fun, mapP_c.size(), mapP_c.data(), FPloc.data(), ADD_VALUES);
-
       }
-
-      //#pragma omp barrier
-    //}
+    }
 
 
   }
@@ -795,7 +789,8 @@ void AppCtx::formFacetFunction(facet_iterator &facet,
         {
           //FUloc(i*dim + c) += JxW_mid *gama(Xqp,current_time,tag)*(dxphi_f(i,c) + 0*(unsteady*dt) *dxU_f.row(c).dot(dxphi_f.row(i))); // correto
           for (int d = 0; d < dim; ++d)
-            FUloc(i*dim + c) += JxW_mid * gama(Xqp,current_time,tag)* ( (c==d?1:0) - noi(c)*noi(d))* dxphi_f(i,d) ;
+            FUloc(i*dim + c) += JxW_mid * gama(Xqp,current_time,tag)* ( (c==d?1:0) - noi(c)*noi(d) )* dxphi_f(i,d) ;
+          //FUloc(i*dim + c) += JxW_mid * gama(Xqp,current_time,tag)* ( unsteady*dt *dxU_f.row(c).dot(dxphi_f.row(i)));
         }
       }
     }
@@ -999,15 +994,18 @@ void AppCtx::formCornerFunction(corner_iterator &corner,
     {
       F_r_mid   = x_coefs_r_mid_trans * dLqsi_r[qp];
       J_mid = F_r_mid.norm();
+      weight  = quadr_corner->weight(qp);
+      JxW_mid = J_mid*weight;      
     }
     else
     {
       J_mid = 1;
+      weight  = 1;
+      JxW_mid = 1;
     }
     //invF_r_mid = F_r_mid.transpose()/(J_mid*J_mid);
 
-    weight  = quadr_corner->weight(qp);
-    JxW_mid = J_mid*weight;
+
     Xqp = x_coefs_r_mid_trans * qsi_r[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
     //dxphi_r = dLphi_r[qp] * invF_r_mid;
     //dxU_r   = u_coefs_r_mid_trans * dxphi_r; // n+utheta
@@ -1028,11 +1026,11 @@ void AppCtx::formCornerFunction(corner_iterator &corner,
 
     for (int i = 0; i < n_dofs_u_per_corner/dim; ++i)
     {
-      //for (int j = 0; j < dim; ++j)
-      //{
-        //FUloc(i*dim + j) += JxW_mid*(-gama_mid*cos_theta0() + zeta(0,0)*line_normal.dot(Uqp))*line_normal(j)*phi_r[qp][i];
-      //}
-      FUloc.segment(i*dim, dim) += JxW_mid* phi_r[qp][i] * (-gama_mid*cos_theta0() + zeta(0,0)*line_normal.dot(Uqp))*line_normal;
+      for (int j = 0; j < dim; ++j)
+      {
+        FUloc(i*dim + j) += JxW_mid*(-gama_mid*cos_theta0() + zeta(0,0)*line_normal.dot(Uqp))*line_normal(j)*phi_r[qp][i];
+      }
+      //FUloc.segment(i*dim, dim) += JxW_mid* phi_r[qp][i] * (-gama_mid*cos_theta0() + zeta(0,0)*line_normal.dot(Uqp))*line_normal;
     }
 
 

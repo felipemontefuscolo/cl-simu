@@ -1,10 +1,9 @@
-clear;
 jacob;
 clear zzz;
 B=Jac;
 B(B!=0)=1;
-nU = 8;
-nP = 4;
+nU = 1394;
+nP = 189;
 nT = nU + nP;
 K=Jac(1:nU,1:nU);
 G=Jac(1:nU,nU+1:nT);

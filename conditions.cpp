@@ -796,7 +796,7 @@ Vector v_exact(Vector const& , double , int ) //(X,t,tag)
 #if (PROBLEM_TYPE==RAMP2D3D)
 double pho(Vector const& X, int tag)
 {
-  return 1.e-8;
+  return 0*1.e-10;
 }
 
 double cos_theta0()
@@ -806,7 +806,7 @@ double cos_theta0()
 
 double zeta(double u_norm, double angle)
 {
-  return 0*1.e+2;
+  return 0*1.e+0;
 }
 
 double beta_diss()
@@ -849,7 +849,7 @@ Vector traction(Vector const& X, Vector const& normal, double t, int tag)
   double y = X(1);
   Vector T(Vector::Zero(X.size()));
 
-  T = -X;
+  //T = -X;
 
   return T;
 }

@@ -48,7 +48,8 @@ enum PairSpace {
   P1bP1     = 5,
   P2P0      = 6,
   P2bPm1    = 7,
-  P1P1unstable = 8
+  P1P1unstable = 8,
+  P2bP1    = 9
 };
 
 const double pi  = 3.141592653589793;

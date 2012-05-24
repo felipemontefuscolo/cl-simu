@@ -624,7 +624,7 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
           for (int i = 0; i < n_dofs_u_per_facet/dim; ++i)
             for (int j = 0; j < n_dofs_u_per_facet/dim; ++j)
               for (int c = 0; c < dim; ++c)
-                Aloc_f(i*dim + c, j*dim + c) += JxW_mid* (unsteady*dt) *gama(Xqp,current_time,tag)*dxphi_f.row(i).dot(dxphi_f.row(j));
+                Aloc_f(i*dim + c, j*dim + c) += utheta*JxW_mid* (unsteady*dt) *gama(Xqp,current_time,tag)*dxphi_f.row(i).dot(dxphi_f.row(j));
         }
 
         if (is_solid) // dissipation
@@ -747,11 +747,20 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
     {
       if (!is_in(point->getTag(),solid_tags) && !is_in(point->getTag(),triple_tags))
         continue;
-      dof_handler[DH_UNKS].getVariable(VAR_U).getVertexAssociatedDofs(u_dofs, &*point);
+      //dof_handler[DH_UNKS].getVariable(VAR_U).getVertexAssociatedDofs(u_dofs, &*point);
+      getNodeDofs(&*point, DH_UNKS, VAR_U, u_dofs);
+      
       nodeid = mesh->getPointId(&*point);
       getProjectorMatrix(A, 1, &nodeid, Vec_x_1, current_time+dt);
       A = I - A;
       MatSetValues(*JJ, dim, u_dofs, dim, u_dofs, A.data(), ADD_VALUES);
+      //if (nodeid==23)
+      //{
+      //  cout << "OLHA AQUI FDPPPPPPPPPPP\n";
+      //  for (int j = 0; j < dim; ++j)
+      //    cout << u_dofs[j] << " ";
+      //  cout << endl;
+      //}
     }
   }
 
@@ -775,12 +784,12 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
   PetscFunctionReturn(0);
 
 
-  for (int i = 0; i < n_unknowns; ++i)
-  {
-    double const a = 10000000;
-    MatSetValues(*JJ, 1, &i, 1, &i, &a,  INSERT_VALUES);
-  }
-  Assembly(*JJ);
+  //for (int i = 0; i < n_unknowns; ++i)
+  //{
+  //  double const a = 10000000;
+  //  MatSetValues(*JJ, 1, &i, 1, &i, &a,  INSERT_VALUES);
+  //}
+  //Assembly(*JJ);
 
 
 } // end form jacobian

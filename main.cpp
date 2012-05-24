@@ -312,6 +312,12 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
       else       mesh_cell_type = TETRAHEDRON4;
       break;
     }
+    case P2bP1:
+    {
+      if(dim==2) mesh_cell_type = TRIANGLE6;
+      else       mesh_cell_type = TETRAHEDRON10;
+      break;
+    }    
     default:
     {
       cout << "invalid function space " << function_space << endl;
@@ -422,6 +428,13 @@ bool AppCtx::createFunctionsSpace()
         pres_shape = P1;
       }
       break;
+    case 9: // P2bP1 bubble condensation
+      {
+        behaviors = BH_bble_condens_PnPn;
+        velo_shape = is_simplex ? P2 : Q2;
+        pres_shape = is_simplex ? P1 : Q1;
+      }
+      break;      
     default:
       {
         behaviors = BH_GLS;
