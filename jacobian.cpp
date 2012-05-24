@@ -570,6 +570,13 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
     MatrixXd           Prj(n_dofs_u_per_facet,n_dofs_u_per_facet);
     VectorXi           facet_nodes(nodes_per_facet);
 
+
+    //~ const int tid = omp_get_thread_num();
+    //~ const int nthreads = omp_get_num_threads();
+//~ 
+    //~ facet_iterator facet = mesh->facetBegin(tid,nthreads);
+    //~ facet_iterator facet_end = mesh->facetEnd(tid,nthreads);
+
     // LOOP NAS FACES DO CONTORNO
     facet_iterator facet = mesh->facetBegin();
     facet_iterator facet_end = mesh->facetEnd();
@@ -645,7 +652,10 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
       getProjectorMatrix(Prj, nodes_per_facet, facet_nodes.data(), Vec_x_1, current_time+dt);
 
       Aloc_f = Prj*Aloc_f;
-      MatSetValues(*JJ, mapU_f.size(), mapU_f.data(), mapU_f.size(), mapU_f.data(), Aloc_f.data(),  ADD_VALUES);
+      //~ #pragma omp critical
+      {
+        MatSetValues(*JJ, mapU_f.size(), mapU_f.data(), mapU_f.size(), mapU_f.data(), Aloc_f.data(),  ADD_VALUES);
+      }
 
 
     }

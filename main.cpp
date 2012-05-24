@@ -1352,6 +1352,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
 
       //moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, current_time, Vec_x_1); // Euler
       moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, current_time, Vec_x_1); // Adams-Bashforth
+      //moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 0.5, current_time, Vec_x_1); // Alguma-coisa
       calcMeshVelocity(Vec_x_0, Vec_x_1, Vec_v_mid);
 
       //compute normal for the next time step, at n+1/2
@@ -1775,6 +1776,8 @@ void AppCtx::printContactAngle(bool _print)
   Vector normal_surf(dim);
   VectorXi vtx_dofs_mesh(dim);
 
+  Point* plc = NULL;
+
   point_iterator point = mesh->pointBegin();
   point_iterator point_end = mesh->pointEnd();
   for (; point != point_end; ++point)
@@ -1795,6 +1798,9 @@ void AppCtx::printContactAngle(bool _print)
       theta_min = tet;
     if (tet > theta_max)
       theta_max = tet;
+    
+    if (X(0)>0)
+      plc = &*point;
   }
 
   theta_min = theta_min*180./pi;
@@ -1804,8 +1810,10 @@ void AppCtx::printContactAngle(bool _print)
 
   ofstream File("ContactHistory", ios::app);
 
+  if (plc!=NULL)
+    plc->getCoord(X.data());
   File.precision(12);
-  File << current_time << " " << theta_min << " " << theta_max << endl;
+  File << current_time << " " << theta_min << " " << theta_max << " " << X(0) << endl;
 
   File.close();
 }

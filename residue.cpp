@@ -75,7 +75,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
   }
 
   // LOOP NAS FACES DO CONTORNO
-  //#pragma omp parallel default(none) shared(Vec_up_k,Vec_fun,cout)
+  //~ #pragma omp parallel default(none) shared(Vec_up_k,Vec_fun,cout)
   {
     VectorXd        FUloc(n_dofs_u_per_facet);
     //VectorXd          FPloc(n_dofs_p_per_facet); // don't need it
@@ -94,55 +94,50 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
     bool is_solid;
     int tag;
 
-    //const int tid = omp_get_thread_num();
-    //const int nthreads = omp_get_num_threads();
-    //const int n_facet_colors = mesh->numFacetColors();
+    //~ const int tid = omp_get_thread_num();
+    //~ const int nthreads = omp_get_num_threads();
+//~ 
+    //~ facet_iterator facet = mesh->facetBegin(tid,nthreads);
+    //~ facet_iterator facet_end = mesh->facetEnd(tid,nthreads);
 
-    //facet_iterator facet;
-    //facet_iterator facet_end;
+    // LOOP NAS FACES DO CONTORNO
+    facet_iterator facet = mesh->facetBegin();
+    facet_iterator facet_end = mesh->facetEnd();
+    if (neumann_tags.size() != 0 || interface_tags.size() != 0 || solid_tags.size() != 0)
+    for (; facet != facet_end; ++facet)
+    {
+      tag = facet->getTag();
+      is_neumann = is_in(tag, neumann_tags);
+      is_surface = is_in(tag, interface_tags);
+      is_solid   = is_in(tag, solid_tags);
 
-    //for (int color = 0; color < n_facet_colors; ++color)
-    //{
-      //facet = mesh->facetBegin(EColor(color),tid,nthreads);
-     //facet_end = mesh->facetEnd(EColor(color),tid,nthreads);
+      if ((!is_neumann) && (!is_surface) && (!is_solid))
+      //PetscFunctionReturn(0);
+        continue;
 
-      // LOOP NAS FACES DO CONTORNO
-      facet_iterator facet = mesh->facetBegin();
-      facet_iterator facet_end = mesh->facetEnd();
-      if (neumann_tags.size() != 0 || interface_tags.size() != 0 || solid_tags.size() != 0)
-      for (; facet != facet_end; ++facet)
+      // mapeamento do local para o global:
+      //
+      dof_handler[DH_UNKS].getVariable(VAR_U).getFacetDofs(mapU_f.data(), &*facet);
+      dof_handler[DH_UNKS].getVariable(VAR_P).getFacetDofs(mapP_f.data(), &*facet);
+
+      VecGetValues(Vec_up_k , mapU_f.size(), mapU_f.data(), u_coefs_f.data());
+
+      formFacetFunction(facet, mapU_f, mapP_f, u_coefs_f, p_coefs_f,FUloc);
+
+      // Projection - to force non-penetrarion bc
+      mesh->getFacetNodesId(&*facet, facet_nodes.data());
+      getProjectorMatrix(Prj, nodes_per_facet, facet_nodes.data(), Vec_x_1, current_time+dt);
+
+      FUloc = Prj*FUloc;
+
+      //~ #pragma omp critical
       {
-        tag = facet->getTag();
-        is_neumann = is_in(tag, neumann_tags);
-        is_surface = is_in(tag, interface_tags);
-        is_solid   = is_in(tag, solid_tags);
-
-        if ((!is_neumann) && (!is_surface) && (!is_solid))
-        //PetscFunctionReturn(0);
-          continue;
-
-        // mapeamento do local para o global:
-        //
-        dof_handler[DH_UNKS].getVariable(VAR_U).getFacetDofs(mapU_f.data(), &*facet);
-        dof_handler[DH_UNKS].getVariable(VAR_P).getFacetDofs(mapP_f.data(), &*facet);
-
-        VecGetValues(Vec_up_k , mapU_f.size(), mapU_f.data(), u_coefs_f.data());
-
-        formFacetFunction(facet, mapU_f, mapP_f, u_coefs_f, p_coefs_f,FUloc);
-
-        // Projection - to force non-penetrarion bc
-        mesh->getFacetNodesId(&*facet, facet_nodes.data());
-        getProjectorMatrix(Prj, nodes_per_facet, facet_nodes.data(), Vec_x_1, current_time+dt);
-
-        FUloc = Prj*FUloc;
-
         VecSetValues(Vec_fun, mapU_f.size(), mapU_f.data(), FUloc.data(), ADD_VALUES);
-
       }
 
-      //#pragma omp barrier
-    //} // end color
+    }
 
+  
   } // end parallel
 
 
@@ -1024,11 +1019,12 @@ void AppCtx::formCornerFunction(corner_iterator &corner,
       line_normal.normalize();
     }
 
+    double const Uqp_norm = abs(line_normal.dot(Uqp));
     for (int i = 0; i < n_dofs_u_per_corner/dim; ++i)
     {
       for (int j = 0; j < dim; ++j)
       {
-        FUloc(i*dim + j) += JxW_mid*(-gama_mid*cos_theta0() + zeta(0,0)*line_normal.dot(Uqp))*line_normal(j)*phi_r[qp][i];
+        FUloc(i*dim + j) += JxW_mid*(-gama_mid*cos_theta0() + zeta(Uqp_norm,0)*line_normal.dot(Uqp))*line_normal(j)*phi_r[qp][i];
       }
       //FUloc.segment(i*dim, dim) += JxW_mid* phi_r[qp][i] * (-gama_mid*cos_theta0() + zeta(0,0)*line_normal.dot(Uqp))*line_normal;
     }

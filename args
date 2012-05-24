@@ -1,9 +1,9 @@
 -dim 2  				        # cell dimension (= space dimension)
--dt  2.e-8            # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04
--maxts 40               # maximum number of time steps
+-dt  4.e-7            # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04
+-maxts 100               # maximum number of time steps
 -renumber_dofs 0        # dofs renumbering
 -print_step 1           # print step
--has_convec 0           # convective term: true or false
+-has_convec 1           # convective term: true or false CONSIDERE COLOCAR utheta=1 se desativar isto.
 -unsteady   1           # steady or unsteady problem
 -boundary_smoothing 0
 -force_mesh_velocity 0  # imposes the mesh velocity of boundary grid
@@ -13,10 +13,10 @@ beta2 1.0
 -plot_es 0              # plot exact solution: true or false
 -family_files 1         # plot output as 001, 002, 003, ...
 -sst -1.e-7             # steady state tol (Unew-Uold)/(Unew)
--utheta 0.5             # time discretization theta method (momentum)
+-utheta 1.             # time discretization theta method (momentum)
 vtheta 1.0             # time discretization theta method (mesh velocity)
--quadr_c 3              # quadrature degree (cell) // 2D: 3 para ME e TH2, 2 para GLS .... 3D
--quadr_f 3              # quadrature degree (facet)
+-quadr_c 2              # quadrature degree (cell) // 2D: 3 para ME e TH2, 2 para GLS .... 3D
+-quadr_f 2              # quadrature degree (facet)
 -quadr_r 2              # quadrature degree (corner)
 -quadr_e 8              # quadrature degree (exact)
 -ale 1                  #
@@ -37,7 +37,7 @@ ksp_gmres_restart 300
 pc_factor_shift_type NONZERO
 pc_factor_shift_amount 1.e-10
 pc_factor_mat_ordering_type natural    # natural nd 1wd rcm qmd rowlength flow (PCFactorSetMatOrderingType)
-pc_factor_reuse_ordering 1
+-pc_factor_reuse_ordering 1
 pc_factor_nonzeros_along_diagonal 1.e-10
 pc_factor_diagonal_fill
 
@@ -51,7 +51,7 @@ log_trace stdout
 malloc_debug 1
 snes_fd 0
 -snes_ls basic      # line search: basic, cubic, quadratic
-snes_type ksponly test   # Nonlinear solver method (one of) ls tr test picard ksponly vi ngmres sorqn
+-snes_type ksponly test   # Nonlinear solver method (one of) ls tr test picard ksponly vi ngmres sorqn
 snes_picard_alpha 1.2
 snes_test_display 1 # compare f.e. jacobian with f.d. jacobian
 snes_monitor_cancel 0 # cancela monitoramento
@@ -91,7 +91,7 @@ sloshing (5;0;2;3,4;20,21)
 ramp ( ; ;2;3;20,21)
 
 stokes donea dir_tags 2 neum_tags 1
-ramp:        -interf_tags 2 -solid_tags 3 -triple_tags 20,21 -dir_tags 23
+ramp:        -interf_tags 2 -solid_tags 3 -triple_tags 20,21
 satic drop:  interf_tags 2 neum_tags 2 (debug)
 kovasznay    dir_tags 2 neum_tags 1    serve tambem para #Anything3D
 couette      dir_tags 1,2 neum_tags 1
@@ -100,7 +100,7 @@ sloshing     dir_tags 5 interf_tags 2 solid_tags 3,4 triple_tags 20,21
 
 ############################################################################
 
-function_space 1 # P1P1 (or Q1Q1) GLS stabilization
+-function_space 1 # P1P1 (or Q1Q1) GLS stabilization
 function_space 2 # P1+P1 with bubble condensation
 function_space 3 # P2+Pm1 with bubble condensation and pressure gradient elimination
 function_space 4 # P2P1 (or Q2Q1)
@@ -108,7 +108,7 @@ function_space 5 # P1+P1
 function_space 6 # P2P0
 function_space 7 # P2+Pm1 full
 function_space 8 # P1P1 unstable
--function_space 9 # P2+P1 with bubble condensation
+function_space 9 # P2+P1 with bubble condensation
 
 mesh_type 8      # TRIANGLE3        = 0x8,
 mesh_type 16     # TRIANGLE6        = 0x10,

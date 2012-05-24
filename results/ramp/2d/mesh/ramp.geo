@@ -31,9 +31,9 @@ Plane Surface(9) = {7};
 
 
 
-Transfinite Line {2, 1} = 70/2 Using Progression 1.02; //baixo FINE MESH 750
-Transfinite Line {4, 3} = 197/2 Using Progression 1; // cima
-Transfinite Line {5} = 42/2 Using Progression 1; // meio
+Transfinite Line {2, 1} = 70/1 Using Progression 1.02; //baixo FINE MESH 750
+Transfinite Line {4, 3} = 197/1 Using Progression 1; // cima
+Transfinite Line {5} = 42/1 Using Progression 1; // meio
 
 
 
