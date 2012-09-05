@@ -1,4 +1,5 @@
 #define EIGEN_NO_AUTOMATIC_RESIZING
+#define EIGEN_DONT_PARALLELIZE
 #include <Fepic/Mesh>
 #include <Fepic/Quadrature>
 #include <Fepic/DofHandler>
@@ -643,8 +644,13 @@ public:
 
 
 
+// tricks to avoid compiler error about OPENMP
+#if (!FEP_HAS_OPENMP)
 
+static int omp_get_thread_num() {return 0;};
+static int omp_get_num_threads(){return 1;};
 
+#endif
 
 
 

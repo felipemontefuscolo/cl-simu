@@ -19,7 +19,9 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
   // LOOP NAS CÉLULAS
   VecZeroEntries(Vec_fun);
+#if (FEP_HAS_OPENMP)
   #pragma omp parallel default(none) shared(Vec_up_k,Vec_fun,cout)
+#endif
   {
     VectorXd          FUloc(n_dofs_u_per_cell);
     VectorXd          FPloc(n_dofs_p_per_cell);
@@ -36,7 +38,6 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
     const int tid = omp_get_thread_num();
     const int nthreads = omp_get_num_threads();
-    //const int n_cell_colors = mesh->numCellColors();
 
     cell_iterator cell = mesh->cellBegin(tid,nthreads);
     cell_iterator cell_end = mesh->cellEnd(tid,nthreads);
@@ -63,8 +64,9 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       getProjectorMatrix(Prj, nodes_per_cell, cell_nodes.data(), Vec_x_1, current_time+dt);
 
       FUloc = Prj*FUloc;
-
+#if (FEP_HAS_OPENMP)
       #pragma omp critical
+#endif
       {
         VecSetValues(Vec_fun, mapU_c.size(), mapU_c.data(), FUloc.data(), ADD_VALUES);
         VecSetValues(Vec_fun, mapP_c.size(), mapP_c.data(), FPloc.data(), ADD_VALUES);

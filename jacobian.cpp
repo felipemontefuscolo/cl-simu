@@ -19,7 +19,9 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
 
   //  LOOP NOS ELEMENTOS
   //
+#if (FEP_HAS_OPENMP)
   #pragma omp parallel default(none) shared(JJ,Vec_up_k,cout)
+#endif
   {
 
     /* local data */
@@ -519,7 +521,9 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
 
         Aloc = Prj*Aloc;
         Gloc = Prj*Gloc;
+#if (FEP_HAS_OPENMP)
         #pragma omp critical
+#endif
         {
           MatSetValues(*JJ, mapU_c.size(), mapU_c.data(), mapU_c.size(), mapU_c.data(), Aloc.data(),  ADD_VALUES);
           MatSetValues(*JJ, mapU_c.size(), mapU_c.data(), mapP_c.size(), mapP_c.data(), Gloc.data(),  ADD_VALUES);

@@ -1,6 +1,6 @@
 -dim 2  				        # cell dimension (= space dimension)
 -dt  4.e-7            # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04
--maxts 100               # maximum number of time steps
+-maxts 10               # maximum number of time steps
 -renumber_dofs 0        # dofs renumbering
 -print_step 1           # print step
 -has_convec 1           # convective term: true or false CONSIDERE COLOCAR utheta=1 se desativar isto.
@@ -149,7 +149,7 @@ fout results/sloshing/2d/meshs/slosh.vtk
 fin  results/anything3d/cube.msh
 fout results/anything3d/cube.vtk
 -fin  results/ramp/2d/mesh/ramp.msh
--fout results/ramp/2d/mesh/dyna.vtk
+-fout results/ramp/2d/mesh/ramp.vtk
 fin  results/ramp/3d/mesh/ramp.msh
 fout results/ramp/3d/mesh/cretino.vtk
 fin  results/russab/2d/mesh/russa.msh

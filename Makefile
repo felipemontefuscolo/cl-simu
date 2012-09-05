@@ -28,7 +28,7 @@ main: ${OBJECTS} chkopts
 	-${CLINKER} -o $(EXE) $(OBJECTS) ${PETSC_KSP_LIB}
 
 conditions.o: conditions.cpp
-	g++ -c -I${FEPIC_DIR} conditions.cpp -o conditions.o
+	g++ -c $(FEP_INCLUDE) conditions.cpp -o conditions.o
 
 #jacobian.o: jacobian.cpp
 #	g++ -c -Wall -Wextra -I${FEPIC_DIR} jacobian.cpp -o jacobian.o
