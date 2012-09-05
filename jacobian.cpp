@@ -694,12 +694,22 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
     //const int nthreads = omp_get_num_threads();
 
     // LOOP NAS ARESTAS DA LINHA TRIPLICE
-    corner_iterator corner = mesh->cornerBegin();
-    corner_iterator corner_end = mesh->cornerEnd();
+    CellElement *corner;
 
     if (triple_tags.size() != 0)
-    for (; corner != corner_end; ++corner)
+    for (int _r = 0; _r < n_corners_total; ++_r)
     {
+      if (dim==2)
+      {
+        corner = mesh->getNode(_r);
+        if (!mesh->isVertex(corner))
+          continue;
+      }
+      else
+        corner = mesh->getCorner(_r);
+      if (corner->disabled())
+        continue;
+    
       tag = corner->getTag();
       is_triple = is_in(tag,triple_tags);
       if (!is_triple)

@@ -384,7 +384,7 @@ public:
                          MatrixXd &u_coefs_f,  VectorXd &/*p_coefs_f*/, // coefficients
                          VectorXd &FUloc); // output: local residue
   // form the residue of the contact line
-  void formCornerFunction(corner_iterator &corner,
+  void formCornerFunction(CellElement *corner,
                           VectorXi const&/*mapU_r*/,  VectorXi const&/*mapP_r*/, // mappers
                           MatrixXd &u_coefs_r, // coefficients
                           VectorXd &FUloc);

@@ -164,11 +164,22 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
 
     // LOOP NAS ARESTAS DA LINHA TRIPLICE
-    corner_iterator corner = mesh->cornerBegin();
-    corner_iterator corner_end = mesh->cornerEnd();
+    CellElement * corner;
+    
     if (triple_tags.size() != 0)
-    for (; corner != corner_end; ++corner)
+    for (int _r = 0; _r < n_corners_total; ++_r)
     {
+      if (dim==2)
+      {
+        corner = mesh->getNode(_r);
+        if (!mesh->isVertex(corner))
+          continue;
+      }
+      else
+        corner = mesh->getCorner(_r);
+      if (corner->disabled())
+        continue;
+    
       tag = corner->getTag();
       is_triple = is_in(tag,triple_tags);
       if (!is_triple)
@@ -813,7 +824,7 @@ void AppCtx::formFacetFunction(facet_iterator &facet,
 
 // ***********
 // form the residue of the contact line (2D)
-void AppCtx::formCornerFunction(corner_iterator &corner,
+void AppCtx::formCornerFunction(CellElement *corner,
                         VectorXi const& mapU_r,  VectorXi const&/*mapP_r*/, // mappers
                         MatrixXd &u_coefs_r_new, // coefficients
                         VectorXd &FUloc)
@@ -890,7 +901,7 @@ void AppCtx::formCornerFunction(corner_iterator &corner,
   {
     // encontrando o ponto da superfície sólido. com ele, é calculado uma normal
     // que corrigi o sinal de line_normal
-    iCs_end = mesh->edgeStar(&*corner, iCs, eiCs);
+    iCs_end = mesh->edgeStar(corner, iCs, eiCs);
     if (iCs_end == iCs)
     {
       printf("ERROR!: no icell found\n");
@@ -920,7 +931,7 @@ void AppCtx::formCornerFunction(corner_iterator &corner,
     if (gen_error)
     {
       printf("ERROR!: solid point not found\n");
-      cout << "corner id: " << (mesh->getCornerId(&*corner)) << endl;
+      cout << "corner id: " << (mesh->getCell(corner->getIncidCell())->getCornerId(corner->getPosition())) << endl;
       cout << "first icell : " << (*iCs) << endl;
       throw;
     }
