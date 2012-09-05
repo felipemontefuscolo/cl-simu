@@ -829,7 +829,7 @@ void AppCtx::formCornerFunction(CellElement *corner,
                         MatrixXd &u_coefs_r_new, // coefficients
                         VectorXd &FUloc)
 {
-
+  int const           sdim = this->dim;
   bool                gen_error = false;
   int                 tag;
   bool                is_triple;
@@ -897,7 +897,7 @@ void AppCtx::formCornerFunction(CellElement *corner,
   //visc = muu(tag);
   //rho  = pho(Xqp,tag);
 
-  if (dim==3)
+  if (sdim==3)
   {
     // encontrando o ponto da superfície sólido. com ele, é calculado uma normal
     // que corrigi o sinal de line_normal
@@ -998,7 +998,7 @@ void AppCtx::formCornerFunction(CellElement *corner,
 
   for (int qp = 0; qp < n_qpts_corner; ++qp)
   {
-    if (dim==3)
+    if (sdim==3)
     {
       F_r_mid   = x_coefs_r_mid_trans * dLqsi_r[qp];
       J_mid = F_r_mid.norm();
@@ -1021,7 +1021,7 @@ void AppCtx::formCornerFunction(CellElement *corner,
 
     gama_mid = gama(Xqp, current_time+dt/2., tag);
 
-    if (dim==3)
+    if (sdim==3)
     {
       normal  = solid_normal(Xqp, current_time, tag);
       line_normal(0)= F_r_mid(0,0);

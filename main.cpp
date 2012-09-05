@@ -576,7 +576,7 @@ PetscErrorCode AppCtx::allocPetscObjs()
   //if(false)
   {
     std::vector<std::set<int> > table;
-    dof_handler[DH_UNKS].getSparsityTable(table);
+    dof_handler[DH_UNKS].getSparsityTable(table); // TODO: melhorar desempenho, função mt lenta
 
     nnz.resize(n_unknowns);
 
@@ -596,6 +596,7 @@ PetscErrorCode AppCtx::allocPetscObjs()
           ++nnz[dof];
       }
     }
+    
 
   }
 
@@ -606,9 +607,10 @@ PetscErrorCode AppCtx::allocPetscObjs()
   ierr = MatCreate(PETSC_COMM_WORLD, &Mat_Jac);                                      CHKERRQ(ierr);
   ierr = MatSetSizes(Mat_Jac, PETSC_DECIDE, PETSC_DECIDE, n_unknowns, n_unknowns);   CHKERRQ(ierr);
   ierr = MatSetFromOptions(Mat_Jac);                                                 CHKERRQ(ierr);
-  ierr = MatSeqAIJSetPreallocation(Mat_Jac, 0, nnz.data());                          CHKERRQ(ierr);
-  //ierr = MatSeqAIJSetPreallocation(Mat_Jac, 375, NULL);                          CHKERRQ(ierr);
-  ierr = MatSetOption(Mat_Jac,MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE);                  CHKERRQ(ierr);
+  //ierr = MatSeqAIJSetPreallocation(Mat_Jac, 0, nnz.data());                          CHKERRQ(ierr);
+  ierr = MatSeqAIJSetPreallocation(Mat_Jac,  (int)(1.3*nnz.maxCoeff()), NULL);                          CHKERRQ(ierr);
+  //ierr = MatSetOption(Mat_Jac,MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE);                  CHKERRQ(ierr);
+  ierr = MatSetOption(Mat_Jac,MAT_NEW_NONZERO_ALLOCATION_ERR,PETSC_FALSE); CHKERRQ(ierr);
 
   ierr = SNESCreate(PETSC_COMM_WORLD, &snes);                  CHKERRQ(ierr);
   ierr = SNESSetFunction(snes, Vec_res, FormFunction, this);      CHKERRQ(ierr);
@@ -1402,6 +1404,21 @@ PetscErrorCode AppCtx::solveTimeProblem()
     steady_error /= (Qmax==0.?1.:Qmax);
 
     printContactAngle(fprint_ca);
+
+    // MESH FLIPPING
+    if (dim==2)
+    {
+      Facet *f;
+      // Delaunay
+      for (int i = 0; i < n_facets_total; ++i)
+      {
+        f = mesh->getFacet(i);
+        if (!MeshTools::inCircle2d(f, &*mesh))
+        {
+          MeshTools::flipTri(f, &*mesh, true);
+        }
+      }
+    }
 
 
     if(time_step >= maxts) {
