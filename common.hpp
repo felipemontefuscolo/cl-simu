@@ -500,6 +500,7 @@ public:
   double      utheta;
   double      vtheta;
   int         maxts;
+  double     finaltime;
   PetscBool   force_pressure;
   bool        solve_the_sys;
   int         quadr_degree_cell;

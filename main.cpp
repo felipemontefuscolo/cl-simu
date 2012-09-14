@@ -144,7 +144,8 @@ void AppCtx::setUpDefaultOptions()
   steady_tol             = 1.e-6;
   utheta                 = 1;      // time step, theta method (momentum)
   vtheta                 = 1;      // time step, theta method (mesh velocity)
-  maxts                  = 1500;   // max num of time steps
+  maxts                  = 10;   // max num of time steps
+  finaltime              = -1;
   force_pressure         = PETSC_FALSE;  // elim null space (auto)
   print_to_matlab        = PETSC_FALSE;  // imprime o jacobiano e a função no formato do matlab
   force_dirichlet        = PETSC_TRUE;   // impõe cc ? (para debug)
@@ -212,10 +213,16 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
   PetscOptionsInt("-print_step", "print_step", "main.cpp", print_step, &print_step, PETSC_NULL);
   PetscOptionsScalar("-beta1", "par vel do fluido", "main.cpp", beta1, &beta1, PETSC_NULL);
   PetscOptionsScalar("-beta2", "par vel elastica", "main.cpp", beta2, &beta2, PETSC_NULL);
+  PetscOptionsScalar("-finaltime", "the simulation ends at this time.", "main.cpp", finaltime, &finaltime, PETSC_NULL);
   PetscOptionsBool("-ale", "mesh movement", "main.cpp", ale, &ale, PETSC_NULL);
   PetscOptionsGetString(PETSC_NULL,"-fin",finaux,PETSC_MAX_PATH_LEN-1,&flg_fin);
   PetscOptionsGetString(PETSC_NULL,"-fout",foutaux,PETSC_MAX_PATH_LEN-1,&flg_fout);
   PetscOptionsHasName(PETSC_NULL,"-help",&ask_help);
+
+  if (finaltime < 0)
+    finaltime = maxts*dt;
+  else
+    maxts = static_cast<int> (finaltime/dt);
 
   // get boundary conditions tags (dirichlet)
   dirichlet_tags.resize(16);
