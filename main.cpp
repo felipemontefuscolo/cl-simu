@@ -1651,6 +1651,7 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
 
   } // end elementos
 
+
   u_L2_norm      = sqrt(u_L2_norm     );
   p_L2_norm      = sqrt(p_L2_norm     );
   grad_u_L2_norm = sqrt(grad_u_L2_norm);
@@ -1832,13 +1833,231 @@ void AppCtx::printContactAngle(bool _print)
 
   cout << "theta min: " << theta_min << "\ntheta max: " << theta_max << endl;
 
+
+  // also print some energies
+  double field_energy   = 0;
+  double kinetic_energy = 0;
+  double viscous_power  = 0;
+  double surface_energy = 0;
+  double solid_power    = 0;
+  double volume         = 0;
+  
+  // Field energy, Kinetic energy, Viscous power
+  {
+    MatrixXd            u_coefs_c(n_dofs_u_per_cell/dim, dim);
+    MatrixXd            u_coefs_c_trans(dim,n_dofs_u_per_cell/dim);
+    VectorXd            p_coefs_c(n_dofs_p_per_cell);
+    MatrixXd            x_coefs_c(nodes_per_cell, dim);
+    MatrixXd            x_coefs_c_trans(dim, nodes_per_cell);
+    Tensor              F_c(dim,dim), invF_c(dim,dim), invFT_c(dim,dim);
+    MatrixXd            dxphi_c(n_dofs_u_per_cell/dim, dim);
+    MatrixXd            dxpsi_c(n_dofs_p_per_cell, dim);
+    MatrixXd            dxqsi_c(nodes_per_cell, dim);
+    Tensor              dxU(dim,dim); // grad u
+    Vector              dxP(dim);     // grad p
+    Vector              Xqp(dim);
+    Vector              Uqp(dim);
+
+    double              Pqp;
+    VectorXi            cell_nodes(nodes_per_cell);
+    double              Jx, JxW;
+    double              weight;
+    int                 tag;
+
+    VectorXi            mapU_c(n_dofs_u_per_cell);
+    VectorXi            mapU_r(n_dofs_u_per_corner);
+    VectorXi            mapP_c(n_dofs_p_per_cell);
+    VectorXi            mapP_r(n_dofs_p_per_corner);
+    VectorXi            mapM_c(dim*nodes_per_cell);
+    VectorXi            mapM_r(dim*nodes_per_corner);
+
+
+    cell_iterator cell = mesh->cellBegin();
+    cell_iterator cell_end = mesh->cellEnd();
+    for (; cell != cell_end; ++cell)
+    {
+      tag = cell->getTag();
+
+      // mapeamento do local para o global:
+      //
+      dof_handler[DH_UNKS].getVariable(VAR_U).getCellDofs(mapU_c.data(), &*cell);
+      dof_handler[DH_UNKS].getVariable(VAR_P).getCellDofs(mapP_c.data(), &*cell);
+      dof_handler[DH_MESH].getVariable(VAR_M).getCellDofs(mapM_c.data(), &*cell);
+
+      /*  Pega os valores das variáveis nos graus de liberdade */
+      VecGetValues(Vec_up_0, mapU_c.size(), mapU_c.data(), u_coefs_c.data());
+      VecGetValues(Vec_up_0, mapP_c.size(), mapP_c.data(), p_coefs_c.data());
+      VecGetValues(Vec_x_0,  mapM_c.size(), mapM_c.data(), x_coefs_c.data());
+
+      u_coefs_c_trans = u_coefs_c.transpose();
+
+      //mesh->getCellNodesId(&*cell, cell_nodes.data());
+      //mesh->getNodesCoords(cell_nodes.begin(), cell_nodes.end(), x_coefs_c.data());
+      x_coefs_c_trans = x_coefs_c.transpose();
+
+      for (int qp = 0; qp < n_qpts_cell; ++qp)
+      {
+        F_c    = x_coefs_c_trans * dLqsi_c[qp];
+        Jx     = F_c.determinant();
+        invF_c = F_c.inverse();
+        invFT_c= invF_c.transpose();
+
+        dxphi_c = dLphi_c[qp] * invF_c;
+        dxpsi_c = dLpsi_c[qp] * invF_c;
+        dxqsi_c = dLqsi_c[qp] * invF_c;
+
+        dxP  = dxpsi_c.transpose() * p_coefs_c;
+        dxU  = u_coefs_c_trans * dxphi_c;       // n+utheta
+
+        Xqp  = x_coefs_c_trans * qsi_c[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
+        Uqp  = u_coefs_c_trans * phi_c[qp];
+        Pqp  = p_coefs_c.dot(psi_c[qp]);
+
+        weight = quadr_cell->weight(qp);
+        JxW = Jx*weight;
+        
+        field_energy   += force(Xqp,current_time,tag).dot(Xqp) * JxW;
+        kinetic_energy += 0.5* pho(Xqp,tag) * Uqp.squaredNorm() * JxW;
+        viscous_power  += 0.5* muu(tag)* (dxU + dxU.transpose()).squaredNorm() * JxW;
+        volume         += JxW;
+        
+      } // fim quadratura
+
+    } // end elementos
+    
+  }
+  
+
+  // Surface energy
+  {
+    MatrixXd            u_coefs_f(n_dofs_u_per_facet/dim, dim);
+    MatrixXd            u_coefs_f_trans(dim,n_dofs_u_per_facet/dim);
+    VectorXd            p_coefs_f(n_dofs_p_per_facet);
+    MatrixXd            x_coefs_f(nodes_per_facet, dim);
+    MatrixXd            x_coefs_f_trans(dim, nodes_per_facet);
+    Tensor             F_f(dim,dim-1);       // 
+    Tensor             invF_f(dim-1,dim);    // 
+    Tensor             fff_f(dim-1,dim-1);   //  fff = first fundamental form
+    MatrixXd            dxphi_f(n_dofs_u_per_facet/dim, dim);
+    MatrixXd            dxqsi_f(nodes_per_facet, dim);
+    Vector             Xqp(dim);
+    Vector             Uqp(dim);
+
+    VectorXi            facet_nodes(nodes_per_facet);
+    double              Jx, JxW;
+    double              weight;
+    int                 tag;
+    bool                is_neumann;
+    bool                is_surface;
+    bool                is_solid;
+
+    VectorXi            mapU_f(n_dofs_u_per_facet);
+    VectorXi            mapP_f(n_dofs_p_per_facet);
+    VectorXi            mapM_f(dim*nodes_per_facet);
+
+
+    facet_iterator facet = mesh->facetBegin();
+    facet_iterator facet_end = mesh->facetEnd();
+    for (; facet != facet_end; ++facet)
+    {
+      tag = facet->getTag();
+
+      is_neumann = (neumann_tags.end() != std::find(neumann_tags.begin(), neumann_tags.end(), tag));
+      is_surface = (interface_tags.end() != std::find(interface_tags.begin(), interface_tags.end(), tag));
+      is_solid = (solid_tags.end() != std::find(solid_tags.begin(), solid_tags.end(), tag));
+
+      if ((!is_neumann) && (!is_surface) && (!is_solid))
+        //PetscFunctionReturn(0);
+        continue;
+
+      // mapeamento do local para o global:
+      //
+      dof_handler[DH_UNKS].getVariable(VAR_U).getFacetDofs(mapU_f.data(), &*facet);
+      dof_handler[DH_UNKS].getVariable(VAR_P).getFacetDofs(mapP_f.data(), &*facet);
+      dof_handler[DH_MESH].getVariable(VAR_M).getFacetDofs(mapM_f.data(), &*facet);
+
+      /*  Pega os valores das variáveis nos graus de liberdade */
+      VecGetValues(Vec_up_0, mapU_f.size(), mapU_f.data(), u_coefs_f.data());
+      VecGetValues(Vec_up_0, mapP_f.size(), mapP_f.data(), p_coefs_f.data());
+      VecGetValues(Vec_x_0,  mapM_f.size(), mapM_f.data(), x_coefs_f.data());
+
+      u_coefs_f_trans = u_coefs_f.transpose();
+
+      //mesh->getFacetNodesId(&*facet, facet_nodes.data());
+      //mesh->getNodesCoords(facet_nodes.begin(), facet_nodes.end(), x_coefs_f.data());
+      x_coefs_f_trans = x_coefs_f.transpose();
+
+      for (int qp = 0; qp < n_qpts_facet; ++qp)
+      {
+        F_f    = x_coefs_f_trans * dLqsi_f[qp];
+        fff_f.resize(dim-1,dim-1);
+        fff_f  = F_f.transpose()*F_f;
+        Jx     = sqrt(fff_f.determinant());
+        invF_f = fff_f.inverse()*F_f.transpose();
+
+        dxphi_f = dLphi_f[qp] * invF_f;
+        dxqsi_f = dLqsi_f[qp] * invF_f;
+
+        Xqp  = x_coefs_f_trans * qsi_f[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
+        Uqp  = u_coefs_f_trans * phi_f[qp];
+
+        weight = quadr_facet->weight(qp);
+        JxW = Jx*weight;
+        
+
+        //if (is_neumann)
+        //{
+        //  //Vector no(Xqp);
+        //  //no.normalize();
+        //  //traction_ = utheta*(traction(Xqp,current_time+dt,tag)) + (1.-utheta)*traction(Xqp,current_time,tag);
+        //  traction_ = traction(Xqp, normal, current_time + dt/2,tag);
+        //  //traction_ = (traction(Xqp,current_time,tag) +4.*traction(Xqp,current_time+dt/2.,tag) + traction(Xqp,current_time+dt,tag))/6.;
+        //
+        //  for (int i = 0; i < n_dofs_u_per_facet/dim; ++i)
+        //  {
+        //    for (int c = 0; c < dim; ++c)
+        //    {
+        //      FUloc(i*dim + c) -= JxW_mid * traction_(c) * phi_f[qp][i] ; // força
+        //    }
+        //  }
+        //}
+        //
+        if (is_surface)
+        {
+          surface_energy += JxW * gama(Xqp,current_time,tag);
+        }
+
+        if (is_solid)
+        {
+          // obs gama_s = - gama*cos(theta)
+          surface_energy -= JxW * gama(Xqp,current_time,tag) * cos_theta0();
+          solid_power +=  JxW * beta_diss() * Uqp.squaredNorm();
+        }
+
+
+      } // fim quadratura
+
+    } // end elementos
+    
+  }
+  
+
   ofstream File("ContactHistory", ios::app);
 
   if (plc!=NULL)
     plc->getCoord(X.data());
   File.precision(12);
-  File << current_time << " " << theta_min << " " << theta_max << " " << sqrt(X(0)*X(0) + X(1)*X(1)) << endl;
-
+  File << current_time << " "
+       << theta_min << " "
+       << theta_max << " "
+       << sqrt(X(0)*X(0) + X(1)*X(1)) <<" "
+       << viscous_power << " "
+       << kinetic_energy << " "
+       << field_energy << " "
+       << surface_energy << " "
+       << solid_power << " "
+       << endl;
+  
   File.close();
 }
 
