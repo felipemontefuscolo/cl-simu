@@ -19,8 +19,8 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
 
   //  LOOP NOS ELEMENTOS
   //
-#if (FEP_HAS_OPENMP)
-  #pragma omp parallel default(none) shared(JJ,Vec_up_k,cout)
+#ifdef FEP_HAS_OPENMP
+  FEP_PRAGMA_OMP(parallel default(none) shared(JJ,Vec_up_k,cout))
 #endif
   {
 
@@ -266,7 +266,7 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
           JxW_mid = J_mid * weight;
           if (J_mid < 1.e-10)
           {
-            ////#pragma omp critical
+            ////FEP_PRAGMA_OMP(critical)
             {
               std::cout << "erro: jacobiana da integral não invertível: ";
               std::cout << "J_mid = " << J_mid << endl;
@@ -521,8 +521,8 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
 
         Aloc = Prj*Aloc;
         Gloc = Prj*Gloc;
-#if (FEP_HAS_OPENMP)
-        #pragma omp critical
+#ifdef FEP_HAS_OPENMP
+        FEP_PRAGMA_OMP(critical)
 #endif
         {
           MatSetValues(*JJ, mapU_c.size(), mapU_c.data(), mapU_c.size(), mapU_c.data(), Aloc.data(),  ADD_VALUES);
@@ -535,7 +535,7 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
         }
       }
 
-      //#pragma omp barrier
+      //FEP_PRAGMA_OMP(barrier)
     //} // endl color
 
 
@@ -543,7 +543,7 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
   } // end parallel
 
   // LOOP NAS FACETS
-  //#pragma omp parallel default(none)  shared(JJ,Vec_up_k,cout)
+  //FEP_PRAGMA_OMP(parallel default(none)  shared(JJ,Vec_up_k,cout))
   {
 
     int                tag;
@@ -656,7 +656,7 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
       getProjectorMatrix(Prj, nodes_per_facet, facet_nodes.data(), Vec_x_1, current_time+dt);
 
       Aloc_f = Prj*Aloc_f;
-      //~ #pragma omp critical
+      //~ FEP_PRAGMA_OMP(critical)
       {
         MatSetValues(*JJ, mapU_f.size(), mapU_f.data(), mapU_f.size(), mapU_f.data(), Aloc_f.data(),  ADD_VALUES);
       }
@@ -667,7 +667,7 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
   } // end parallel
 
   //// LOOP CORNERS
-  //#pragma omp parallel shared(Vec_up_k,JJ,cout) default(none)
+  //FEP_PRAGMA_OMP(parallel shared(Vec_up_k,JJ,cout) default(none))
   //if (false)
   {
     Real const eps = std::numeric_limits<Real>::epsilon();

@@ -645,7 +645,7 @@ public:
 
 
 // tricks to avoid compiler error about OPENMP
-#if (!FEP_HAS_OPENMP)
+#ifndef FEP_HAS_OPENMP
 
 static int omp_get_thread_num() {return 0;};
 static int omp_get_num_threads(){return 1;};

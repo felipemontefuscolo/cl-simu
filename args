@@ -1,5 +1,5 @@
 -dim 2  				        # cell dimension (= space dimension)
--dt  4.e-7            # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04
+-dt  4.e-8            # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04
 -maxts 100               # maximum number of time steps
 -renumber_dofs 0        # dofs renumbering
 -print_step 1           # print step

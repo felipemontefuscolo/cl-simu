@@ -19,8 +19,8 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
   // LOOP NAS CÉLULAS
   VecZeroEntries(Vec_fun);
-#if (FEP_HAS_OPENMP)
-  #pragma omp parallel default(none) shared(Vec_up_k,Vec_fun,cout)
+#ifdef FEP_HAS_OPENMP
+  FEP_PRAGMA_OMP(parallel default(none) shared(Vec_up_k,Vec_fun,cout))
 #endif
   {
     VectorXd          FUloc(n_dofs_u_per_cell);
@@ -64,8 +64,8 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       getProjectorMatrix(Prj, nodes_per_cell, cell_nodes.data(), Vec_x_1, current_time+dt);
 
       FUloc = Prj*FUloc;
-#if (FEP_HAS_OPENMP)
-      #pragma omp critical
+#ifdef FEP_HAS_OPENMP
+      FEP_PRAGMA_OMP(critical)
 #endif
       {
         VecSetValues(Vec_fun, mapU_c.size(), mapU_c.data(), FUloc.data(), ADD_VALUES);
@@ -77,7 +77,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
   }
 
   // LOOP NAS FACES DO CONTORNO
-  //~ #pragma omp parallel default(none) shared(Vec_up_k,Vec_fun,cout)
+  //~ FEP_PRAGMA_OMP(parallel default(none) shared(Vec_up_k,Vec_fun,cout))
   {
     VectorXd        FUloc(n_dofs_u_per_facet);
     //VectorXd          FPloc(n_dofs_p_per_facet); // don't need it
@@ -132,7 +132,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
       FUloc = Prj*FUloc;
 
-      //~ #pragma omp critical
+      //~ FEP_PRAGMA_OMP(critical)
       {
         VecSetValues(Vec_fun, mapU_f.size(), mapU_f.data(), FUloc.data(), ADD_VALUES);
       }
@@ -144,7 +144,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
 
   // LINHA DE CONTATO
-  //#pragma omp parallel shared(Vec_up_k,Vec_fun,cout) default(none)
+  //FEP_PRAGMA_OMP(parallel shared(Vec_up_k,Vec_fun,cout) default(none))
   {
     int              tag;
     bool             is_triple;
@@ -212,7 +212,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
   Assembly(Vec_fun);
 
-  //#pragma omp parallel default(none) shared(Vec_up_k,Vec_fun,cout)
+  //FEP_PRAGMA_OMP(parallel default(none) shared(Vec_up_k,Vec_fun,cout))
   {
     int       tag;
     Vector    X(dim);
@@ -495,7 +495,7 @@ void AppCtx::formCellFunction(cell_iterator &cell,
     //~ }
     if (J_mid < 1.e-10)
     {
-      //#pragma omp critical
+      //FEP_PRAGMA_OMP(critical)
       //if (tid==0)
       {
         printf("in formCellFunction:\n");
@@ -972,7 +972,7 @@ void AppCtx::formCornerFunction(CellElement *corner,
     }
     if (iVs_it == iVs_end)
     {
-      //#pragma omp critical
+      //FEP_PRAGMA_OMP(critical)
       {
         printf("ERRO: ponto na linha tríplice não tem um vértice vizinho no sólido");
         throw;
@@ -1045,7 +1045,7 @@ void AppCtx::formCornerFunction(CellElement *corner,
 
   } // end quadratura
 
-  ////#pragma omp critical
+  ////FEP_PRAGMA_OMP(critical)
   //{
   //cout << "line_normal " << line_normal.size() << endl;
   //cout << "---------------------------------" << endl;

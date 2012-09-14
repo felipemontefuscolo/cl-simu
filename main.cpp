@@ -580,7 +580,7 @@ PetscErrorCode AppCtx::allocPetscObjs()
 
     nnz.resize(n_unknowns);
 
-    //#pragma omp parallel for
+    //FEP_PRAGMA_OMP(parallel for)
     for (int i = 0; i < n_unknowns; ++i)
       nnz[i] = table[i].size();
 
@@ -588,7 +588,7 @@ PetscErrorCode AppCtx::allocPetscObjs()
     if (!pres_pres_block)
     {
       int const n_p_dofs_total = dof_handler[DH_UNKS].getVariable(VAR_P).totalSize();
-      //#pragma omp parallel for
+      //FEP_PRAGMA_OMP(parallel for)
       for (int i = 0; i < n_p_dofs_total; ++i)
       {
         int const dof = dof_handler[DH_UNKS].getVariable(VAR_P).data()[i];
@@ -1659,12 +1659,12 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
   int n_edges=0;
 
   if (dim==2)
-  //#pragma omp parallel default(none) shared(hmean)
+  //FEP_PRAGMA_OMP(parallel default(none) shared(hmean))
   {
     const int n_edges_total = mesh->numFacetsTotal();
     Facet const* edge(NULL);
 
-    //#pragma omp for nowait
+    //FEP_PRAGMA_OMP(for nowait)
     for (int a = 0; a < n_edges_total; ++a)
     {
       edge = mesh->getFacet(a);
@@ -1683,12 +1683,12 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
   }
   else
   if (dim==3)
-  //#pragma omp parallel default(none) shared(cout,hmean)
+  //FEP_PRAGMA_OMP(parallel default(none) shared(cout,hmean))
   {
     const int n_edges_total = mesh->numCornersTotal();
     Corner const* edge(NULL);
 
-    //#pragma omp for nowait
+    //FEP_PRAGMA_OMP(for nowait)
     for (int a = 0; a < n_edges_total; ++a)
     {
       edge = mesh->getCorner(a);
@@ -1830,7 +1830,7 @@ void AppCtx::printContactAngle(bool _print)
   if (plc!=NULL)
     plc->getCoord(X.data());
   File.precision(12);
-  File << current_time << " " << theta_min << " " << theta_max << " " << X(0) << endl;
+  File << current_time << " " << theta_min << " " << theta_max << " " << sqrt(X(0)*X(0) + X(1)*X(1)) << endl;
 
   File.close();
 }
