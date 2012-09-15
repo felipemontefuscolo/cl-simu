@@ -177,7 +177,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       }
       else
         corner = mesh->getCorner(_r);
-      if (corner->disabled())
+      if (corner->isDisabled())
         continue;
     
       tag = corner->getTag();
@@ -920,7 +920,7 @@ void AppCtx::formCornerFunction(CellElement *corner,
         if (is_in(tag_aux, solid_tags) && !is_in(tag_aux, triple_tags))
         {
           gen_error = false;
-          pp->getCoord(solid_point.data());
+          pp->getCoord(solid_point.data(), dim);
           break;
         }
       }
@@ -937,8 +937,8 @@ void AppCtx::formCornerFunction(CellElement *corner,
     }
 
 
-    mesh->getNode(corner_nodes(0))->getCoord(point_a.data());
-    mesh->getNode(corner_nodes(1))->getCoord(point_b.data());
+    mesh->getNode(corner_nodes(0))->getCoord(point_a.data(),dim);
+    mesh->getNode(corner_nodes(1))->getCoord(point_b.data(),dim);
 
     // se (a-c) cross (b-c) dot solid_normal > 0, então line_normal_sign = 1, se não, =-1
     Xqp = (point_a+point_b)/2.;
@@ -978,11 +978,11 @@ void AppCtx::formCornerFunction(CellElement *corner,
         throw;
       }
     }
-    point->getCoord(Xqp.data());
+    point->getCoord(Xqp.data(),dim);
 
     normal = solid_normal(Xqp, current_time, tag);
 
-    sol_point->getCoord(aux.data());
+    sol_point->getCoord(aux.data(),dim);
 
 
     // choose a line_normal candidate

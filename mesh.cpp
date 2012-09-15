@@ -202,7 +202,7 @@ void AppCtx::getVecNormals(Vec const* Vec_x_1, Vec & Vec_normal_)
       if (virtual_mesh)
         VecGetValues(*Vec_x_1, dim, map.data(), X.data());
       else
-        point->getCoord(X.data());
+        point->getCoord(X.data(),dim);
       normal = -solid_normal(X,current_time,tag);
 
       VecSetValues(Vec_normal_, dim, map.data(), normal.data(), INSERT_VALUES);
@@ -444,7 +444,7 @@ void AppCtx::copyMesh2Vec(Vec & Vec_xmsh)
   for (; point != point_end; ++point)
   {
     getNodeDofs(&*point, DH_MESH, VAR_M, node_dofs_mesh.data());
-    point->getCoord(Xi.data());
+    point->getCoord(Xi.data(),dim);
     VecSetValues(Vec_xmsh, dim, node_dofs_mesh.data(), Xi.data(), INSERT_VALUES);
   }
   Assembly(Vec_xmsh);
@@ -464,7 +464,7 @@ void AppCtx::copyVec2Mesh(Vec const& Vec_xmsh)
   {
     getNodeDofs(&*point, DH_MESH, VAR_M, node_dofs_mesh.data());
     VecGetValues(Vec_xmsh, dim, node_dofs_mesh.data(), Xi.data());
-    point->setCoord(Xi.data());
+    point->setCoord(Xi.data(),dim);
   }
 }
 
@@ -485,10 +485,10 @@ void AppCtx::swapMeshWithVec(Vec & Vec_xmsh)
   {
     getNodeDofs(&*point, DH_MESH, VAR_M, node_dofs_umesh.data());
 
-    point->getCoord(tmp.data());
+    point->getCoord(tmp.data(),dim);
     VecGetValues(Vec_xmsh, dim, node_dofs_umesh.data(), Xi.data());
 
-    point->setCoord(Xi.data());
+    point->setCoord(Xi.data(),dim);
     VecSetValues(Vec_xmsh, dim, node_dofs_umesh.data(), tmp.data(), INSERT_VALUES);
   }
 

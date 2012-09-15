@@ -707,7 +707,7 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
       }
       else
         corner = mesh->getCorner(_r);
-      if (corner->disabled())
+      if (corner->isDisabled())
         continue;
     
       tag = corner->getTag();

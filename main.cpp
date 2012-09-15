@@ -1116,7 +1116,7 @@ PetscErrorCode AppCtx::setInitialConditions()
   {
     tag = point->getTag();
 
-    point->getCoord(X.data());
+    point->getCoord(X.data(),dim);
 
     Uf = u_initial(X, tag);
 
@@ -1336,7 +1336,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
 
     }
 
-    mesh->getNode(0)->getCoord(X.data());
+    mesh->getNode(0)->getCoord(X.data(), dim);
     Xe(0) = 1.0*exp(sin(pi*current_time)/pi);
     Xe(1) = 0;
     x_error += (X-Xe).norm()/maxts;
@@ -1495,7 +1495,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
   {
   case( SNES_CONVERGED_FNORM_ABS       ): printf("SNES_CONVERGED_FNORM_ABS      /* ||F|| < atol */\n"); break;
   case( SNES_CONVERGED_FNORM_RELATIVE  ): printf("SNES_CONVERGED_FNORM_RELATIVE /* ||F|| < rtol*||F_initial|| */\n"); break;
-  //case( SNES_CONVERGED_PNORM_RELATIVE  ): printf("SNES_CONVERGED_PNORM_RELATIVE /* Newton computed step size small); break; || delta x || < stol */\n"); break;
+  case( SNES_CONVERGED_SNORM_RELATIVE  ): printf("SNES_CONVERGED_PNORM_RELATIVE /* Newton computed step size small); break; || delta x || < stol */\n"); break;
   case( SNES_CONVERGED_ITS             ): printf("SNES_CONVERGED_ITS            /* maximum iterations reached */\n"); break;
   case( SNES_CONVERGED_TR_DELTA        ): printf("SNES_CONVERGED_TR_DELTA       \n"); break;
         /* diverged */
@@ -1507,7 +1507,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
   case( SNES_DIVERGED_LINE_SEARCH      ): printf("SNES_DIVERGED_LINE_SEARCH     /* the line search failed */ \n"); break;
   case( SNES_DIVERGED_LOCAL_MIN        ): printf("SNES_DIVERGED_LOCAL_MIN       /* || J^T b || is small, implies converged to local minimum of F() */\n"); break;
   case( SNES_CONVERGED_ITERATING       ): printf("SNES_CONVERGED_ITERATING      \n"); break;
-  //case( SNES_DIVERGED_INNER            ): printf("SNES_DIVERGED_INNER           \n"); break;
+  case( SNES_DIVERGED_INNER            ): printf("SNES_DIVERGED_INNER           \n"); break;
   }
 
   if (solve_the_sys)
@@ -1676,15 +1676,15 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
     for (int a = 0; a < n_edges_total; ++a)
     {
       edge = mesh->getFacet(a);
-      if (edge->disabled())
+      if (edge->isDisabled())
         continue;
       if (!is_in(edge->getTag(), interface_tags))
         continue;
       
       mesh->getFacetNodesId(&*edge, edge_nodes.data());
 
-      mesh->getNode(edge_nodes[0])->getCoord(Xa.data());
-      mesh->getNode(edge_nodes[1])->getCoord(Xb.data());
+      mesh->getNode(edge_nodes[0])->getCoord(Xa.data(),dim);
+      mesh->getNode(edge_nodes[1])->getCoord(Xb.data(),dim);
       hmean += (Xa-Xb).norm();
       ++n_edges;
     }
@@ -1700,15 +1700,15 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
     for (int a = 0; a < n_edges_total; ++a)
     {
       edge = mesh->getCorner(a);
-      if (edge->disabled())
+      if (edge->isDisabled())
         continue;
       if (!is_in(edge->getTag(), interface_tags))
         continue;
 
       mesh->getCornerNodesId(&*edge, edge_nodes.data());
 
-      mesh->getNode(edge_nodes[0])->getCoord(Xa.data());
-      mesh->getNode(edge_nodes[1])->getCoord(Xb.data());
+      mesh->getNode(edge_nodes[0])->getCoord(Xa.data(),dim);
+      mesh->getNode(edge_nodes[1])->getCoord(Xb.data(),dim);
       hmean += (Xa-Xb).norm();
       ++n_edges;
     }
@@ -1812,7 +1812,7 @@ void AppCtx::printContactAngle(bool _print)
     if (!is_in(tag,triple_tags))
       continue;
 
-    point->getCoord(X.data());
+    point->getCoord(X.data(), dim);
     normal_solid = solid_normal(X, current_time, tag);
     dof_handler[DH_MESH].getVariable(VAR_M).getVertexDofs(vtx_dofs_mesh.data(), &*point);
     VecGetValues(Vec_normal, dim, vtx_dofs_mesh.data(), normal_surf.data());
@@ -1858,7 +1858,7 @@ void AppCtx::printContactAngle(bool _print)
     Vector              Xqp(dim);
     Vector              Uqp(dim);
 
-    double              Pqp;
+//    double              Pqp;
     VectorXi            cell_nodes(nodes_per_cell);
     double              Jx, JxW;
     double              weight;
@@ -1911,7 +1911,7 @@ void AppCtx::printContactAngle(bool _print)
 
         Xqp  = x_coefs_c_trans * qsi_c[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
         Uqp  = u_coefs_c_trans * phi_c[qp];
-        Pqp  = p_coefs_c.dot(psi_c[qp]);
+        //Pqp  = p_coefs_c.dot(psi_c[qp]);
 
         weight = quadr_cell->weight(qp);
         JxW = Jx*weight;
@@ -2045,7 +2045,7 @@ void AppCtx::printContactAngle(bool _print)
   ofstream File("ContactHistory", ios::app);
 
   if (plc!=NULL)
-    plc->getCoord(X.data());
+  plc->getCoord(X.data(), dim);
   File.precision(12);
   File << current_time << " "
        << theta_min << " "
