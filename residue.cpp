@@ -171,12 +171,12 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
     {
       if (dim==2)
       {
-        corner = mesh->getNode(_r);
+        corner = mesh->getNodePtr(_r);
         if (!mesh->isVertex(corner))
           continue;
       }
       else
-        corner = mesh->getCorner(_r);
+        corner = mesh->getCornerPtr(_r);
       if (corner->isDisabled())
         continue;
     
@@ -910,11 +910,11 @@ void AppCtx::formCornerFunction(CellElement *corner,
     gen_error = true;
     for (iCs_it = iCs; iCs_it != iCs_end ; ++iCs_it)
     {
-      fluid_cell = mesh->getCell(*iCs_it);
+      fluid_cell = mesh->getCellPtr(*iCs_it);
 
       for (int kk = 0; kk < mesh->numVerticesPerCell(); ++kk)
       {
-        Point const* pp      = mesh->getNode(fluid_cell->getNodeId(kk) );
+        Point const* pp      = mesh->getNodePtr(fluid_cell->getNodeId(kk) );
         const int    tag_aux = pp->getTag();
 
         if (is_in(tag_aux, solid_tags) && !is_in(tag_aux, triple_tags))
@@ -931,14 +931,14 @@ void AppCtx::formCornerFunction(CellElement *corner,
     if (gen_error)
     {
       printf("ERROR!: solid point not found\n");
-      cout << "corner id: " << (mesh->getCell(corner->getIncidCell())->getCornerId(corner->getPosition())) << endl;
+      cout << "corner id: " << (mesh->getCellPtr(corner->getIncidCell())->getCornerId(corner->getPosition())) << endl;
       cout << "first icell : " << (*iCs) << endl;
       throw;
     }
 
 
-    mesh->getNode(corner_nodes(0))->getCoord(point_a.data(),dim);
-    mesh->getNode(corner_nodes(1))->getCoord(point_b.data(),dim);
+    mesh->getNodePtr(corner_nodes(0))->getCoord(point_a.data(),dim);
+    mesh->getNodePtr(corner_nodes(1))->getCoord(point_b.data(),dim);
 
     // se (a-c) cross (b-c) dot solid_normal > 0, então line_normal_sign = 1, se não, =-1
     Xqp = (point_a+point_b)/2.;
@@ -955,7 +955,7 @@ void AppCtx::formCornerFunction(CellElement *corner,
   }
   else // dim==2
   {
-    Point * point = mesh->getNode(corner_nodes[0]);
+    Point * point = mesh->getNodePtr(corner_nodes[0]);
     Point * sol_point;
     int iVs[FEPIC_MAX_ICELLS];
     int *iVs_end, *iVs_it;
@@ -966,7 +966,7 @@ void AppCtx::formCornerFunction(CellElement *corner,
     // se esse nó está na linha, então existe um vértice vizinho que está no sólido
     for (iVs_it = iVs; iVs_it != iVs_end ; ++iVs_it)
     {
-      sol_point = mesh->getNode(*iVs_it);
+      sol_point = mesh->getNodePtr(*iVs_it);
       if ( is_in(sol_point->getTag(), solid_tags) )
         break;
     }

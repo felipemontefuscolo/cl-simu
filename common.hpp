@@ -401,16 +401,16 @@ public:
     else
     {
       const int m = point->getPosition() - mesh->numVerticesPerCell();
-      Cell const* cell = mesh->getCell(point->getIncidCell());
+      Cell const* cell = mesh->getCellPtr(point->getIncidCell());
       if (dim==3)
       {
         const int edge_id = cell->getCornerId(m);
-        dof_handler[DH_].getVariable(VAR_).getCornerAssociatedDofs(dofs, mesh->getCorner(edge_id));
+        dof_handler[DH_].getVariable(VAR_).getCornerAssociatedDofs(dofs, mesh->getCornerPtr(edge_id));
       }
       else
       {
         const int edge_id = cell->getFacetId(m);
-        dof_handler[DH_].getVariable(VAR_).getFacetAssociatedDofs(dofs, mesh->getFacet(edge_id));
+        dof_handler[DH_].getVariable(VAR_).getFacetAssociatedDofs(dofs, mesh->getFacetPtr(edge_id));
       }
     }
   }
@@ -438,10 +438,10 @@ public:
     // NODES
     for (int i = 0; i < n_nodes; ++i)
     {
-      point = mesh->getNode(nodes[i]);
+      point = mesh->getNodePtr(nodes[i]);
       tag = point->getTag();
       //m = point->getPosition() - mesh->numVerticesPerCell();
-      //cell = mesh->getCell(point->getIncidCell());
+      //cell = mesh->getCellPtr(point->getIncidCell());
 
       if (!is_in(tag,solid_tags) && !is_in(tag,triple_tags))
         continue;

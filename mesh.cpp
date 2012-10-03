@@ -60,7 +60,7 @@ void AppCtx::getVecNormals(Vec const* Vec_x_1, Vec & Vec_normal_)
       // find the normal
       for (int k = 0; k < nodes_per_facet; ++k)
       {
-        //tag_other = mesh->getNode(facet_nodes(k))->getTag();
+        //tag_other = mesh->getNodePtr(facet_nodes(k))->getTag();
 
         F   = x_coefs_trans * dLphi_nf[k];
 
@@ -276,7 +276,7 @@ void AppCtx::smoothsMesh(Vec & Vec_normal_, Vec &Vec_x_)
         {
           for (int *it = iVs; it != iVs_end ; ++it)
           {
-            dof_handler[DH_MESH].getVariable(VAR_M).getVertexDofs(vtx_dofs_umesh.data(), mesh->getNode(*it));
+            dof_handler[DH_MESH].getVariable(VAR_M).getVertexDofs(vtx_dofs_umesh.data(), mesh->getNodePtr(*it));
             VecGetValues(Vec_x_, dim, vtx_dofs_umesh.data(), tmp.data());
             Xm += tmp;
           }
@@ -304,10 +304,10 @@ void AppCtx::smoothsMesh(Vec & Vec_normal_, Vec &Vec_x_)
           int N=0;
           for (int *it = iVs; it != iVs_end ; ++it)
           {
-            Point const* viz_pt = mesh->getNode(*it);
+            Point const* viz_pt = mesh->getNodePtr(*it);
             if (viz_pt->getTag()!=tag && !is_in( viz_pt->getTag(), triple_tags ))
               continue;
-            dof_handler[DH_MESH].getVariable(VAR_M).getVertexDofs(vtx_dofs_umesh.data(), mesh->getNode(*it));
+            dof_handler[DH_MESH].getVariable(VAR_M).getVertexDofs(vtx_dofs_umesh.data(), mesh->getNodePtr(*it));
             // debug
             VecGetValues(Vec_x_, dim, vtx_dofs_umesh.data(), tmp.data());
             ++N;
@@ -369,17 +369,17 @@ void AppCtx::smoothsMesh(Vec & Vec_normal_, Vec &Vec_x_)
       {
 
         const int m = point->getPosition() - mesh->numVerticesPerCell();
-        Cell const* icell = mesh->getCell(point->getIncidCell());
+        Cell const* icell = mesh->getCellPtr(point->getIncidCell());
         if (dim==3)
         {
-          Corner *edge = mesh->getCorner(icell->getCornerId(m));
+          Corner *edge = mesh->getCornerPtr(icell->getCornerId(m));
           dof_handler[DH_MESH].getVariable(VAR_M).getCornerDofs(edge_dofs_umesh.data(), &*edge);
           dof_handler[DH_UNKS].getVariable(VAR_U).getCornerDofs(edge_dofs_fluid.data(), &*edge);
           mesh->getCornerNodesId(&*edge, edge_nodes.data());
         }
         else // dim=2
         {
-          Facet *edge = mesh->getFacet(icell->getFacetId(m));
+          Facet *edge = mesh->getFacetPtr(icell->getFacetId(m));
           dof_handler[DH_MESH].getVariable(VAR_M).getFacetDofs(edge_dofs_umesh.data(), &*edge);
           dof_handler[DH_UNKS].getVariable(VAR_U).getFacetDofs(edge_dofs_fluid.data(), &*edge);
           mesh->getFacetNodesId(&*edge, edge_nodes.data());
@@ -555,14 +555,14 @@ PetscErrorCode AppCtx::moveMesh(Vec const& Vec_x_0, Vec const& Vec_up_0, Vec con
       //{ 
       //  int vtcs[3];
       //  const int m = point->getPosition() - mesh->numVerticesPerCell();
-      //  Cell const* cell = mesh->getCell(point->getIncidCell());
+      //  Cell const* cell = mesh->getCellPtr(point->getIncidCell());
       //  if (dim==3)
       //    cell->getCornerVerticesId(m, vtcs);
       //  else
       //    cell->getFacetVerticesId(m, vtcs);
-      //  if (mesh->inBoundary(mesh->getNode(vtcs[0])) || mesh->inBoundary(mesh->getNode(vtcs[1])))
+      //  if (mesh->inBoundary(mesh->getNodePtr(vtcs[0])) || mesh->inBoundary(mesh->getNodePtr(vtcs[1])))
       //    tmp = tmp / 2.;
-      //  if (mesh->inBoundary(mesh->getNode(vtcs[0])) && mesh->inBoundary(mesh->getNode(vtcs[1])))
+      //  if (mesh->inBoundary(mesh->getNodePtr(vtcs[0])) && mesh->inBoundary(mesh->getNodePtr(vtcs[1])))
       //    tmp = tmp * 0.;
       //}
       tmp = X0 + tmp;
@@ -594,7 +594,7 @@ double AppCtx::getCellQuality(Vec const& Vec_x_, int cell_id) const
   MatrixXd  x_coefs(nodes_per_cell, dim);
   VectorXi  mapM_c(dim*nodes_per_cell); // mesh velocity
 
-  dof_handler[DH_MESH].getVariable(VAR_M).getCellDofs(mapM_c.data(), mesh->getCell(cell_id));
+  dof_handler[DH_MESH].getVariable(VAR_M).getCellDofs(mapM_c.data(), mesh->getCellPtr(cell_id));
 
   VecGetValues(Vec_x_, mapM_c.size(), mapM_c.data(), x_coefs.data());
 

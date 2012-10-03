@@ -975,7 +975,7 @@ void AppCtx::evaluateQuadraturePts()
   if (dim==2)
   {
     std::vector<double> parametric_pts;
-    parametric_pts = genLineParametricPts(  orderForCtype(ECellType(mesh_cell_type))  );
+    parametric_pts = genLineParametricPts(  ctypeDegree(ECellType(mesh_cell_type))  );
 
     dLphi_nf.resize(parametric_pts.size());
 
@@ -991,7 +991,7 @@ void AppCtx::evaluateQuadraturePts()
   if(dim==3)
   {
     std::vector<Eigen::Vector2d> parametric_pts;
-    parametric_pts = genTriParametricPts(  orderForCtype(ECellType(mesh_cell_type))  );
+    parametric_pts = genTriParametricPts(  ctypeDegree(ECellType(mesh_cell_type))  );
 
     dLphi_nf.resize(parametric_pts.size());
 
@@ -1336,7 +1336,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
 
     }
 
-    mesh->getNode(0)->getCoord(X.data(), dim);
+    mesh->getNodePtr(0)->getCoord(X.data(), dim);
     Xe(0) = 1.0*exp(sin(pi*current_time)/pi);
     Xe(1) = 0;
     x_error += (X-Xe).norm()/maxts;
@@ -1419,10 +1419,10 @@ PetscErrorCode AppCtx::solveTimeProblem()
       // Delaunay
       for (int i = 0; i < n_facets_total; ++i)
       {
-        f = mesh->getFacet(i);
-        if (!MeshTools::inCircle2d(f, &*mesh))
+        f = mesh->getFacetPtr(i);
+        if (!MeshToolsTri::inCircle2d(f, &*mesh))
         {
-          MeshTools::flipTri(f, &*mesh, true);
+          MeshToolsTri::flipEdge(f, &*mesh, true);
         }
       }
     }
@@ -1675,7 +1675,7 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
     //FEP_PRAGMA_OMP(for nowait)
     for (int a = 0; a < n_edges_total; ++a)
     {
-      edge = mesh->getFacet(a);
+      edge = mesh->getFacetPtr(a);
       if (edge->isDisabled())
         continue;
       if (!is_in(edge->getTag(), interface_tags))
@@ -1683,8 +1683,8 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
       
       mesh->getFacetNodesId(&*edge, edge_nodes.data());
 
-      mesh->getNode(edge_nodes[0])->getCoord(Xa.data(),dim);
-      mesh->getNode(edge_nodes[1])->getCoord(Xb.data(),dim);
+      mesh->getNodePtr(edge_nodes[0])->getCoord(Xa.data(),dim);
+      mesh->getNodePtr(edge_nodes[1])->getCoord(Xb.data(),dim);
       hmean += (Xa-Xb).norm();
       ++n_edges;
     }
@@ -1699,7 +1699,7 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
     //FEP_PRAGMA_OMP(for nowait)
     for (int a = 0; a < n_edges_total; ++a)
     {
-      edge = mesh->getCorner(a);
+      edge = mesh->getCornerPtr(a);
       if (edge->isDisabled())
         continue;
       if (!is_in(edge->getTag(), interface_tags))
@@ -1707,8 +1707,8 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
 
       mesh->getCornerNodesId(&*edge, edge_nodes.data());
 
-      mesh->getNode(edge_nodes[0])->getCoord(Xa.data(),dim);
-      mesh->getNode(edge_nodes[1])->getCoord(Xb.data(),dim);
+      mesh->getNodePtr(edge_nodes[0])->getCoord(Xa.data(),dim);
+      mesh->getNodePtr(edge_nodes[1])->getCoord(Xb.data(),dim);
       hmean += (Xa-Xb).norm();
       ++n_edges;
     }
@@ -2080,7 +2080,7 @@ void AppCtx::freePetscObjs()
 template<int Coord>
 double GetDataVelocity<Coord>::get_data_r(int nodeid) const
 {
-  Point const* point = user.mesh->getNode(nodeid);
+  Point const* point = user.mesh->getNodePtr(nodeid);
   double U;
   VectorXi dofs(user.dim);
 
@@ -2093,22 +2093,22 @@ double GetDataVelocity<Coord>::get_data_r(int nodeid) const
 
 double GetDataPressure::get_data_r(int nodeid) const
 {
-  Point const*const point = user.mesh->getNode(nodeid);
+  Point const*const point = user.mesh->getNodePtr(nodeid);
   if (!user.mesh->isVertex(point))
   {
     int dofs[3];
     // position of the node at edge
     const int m = point->getPosition() - user.mesh->numVerticesPerCell();
-    Cell const*const cell = user.mesh->getCell(point->getIncidCell());
+    Cell const*const cell = user.mesh->getCellPtr(point->getIncidCell());
     if (user.dim==3)
     {
       const int edge_id = cell->getCornerId(m);
-      user.dof_handler[DH_UNKS].getVariable(VAR_P).getCornerDofs(dofs, user.mesh->getCorner(edge_id));
+      user.dof_handler[DH_UNKS].getVariable(VAR_P).getCornerDofs(dofs, user.mesh->getCornerPtr(edge_id));
     }
     else
     {
       const int edge_id = cell->getFacetId(m);
-      user.dof_handler[DH_UNKS].getVariable(VAR_P).getFacetDofs(dofs, user.mesh->getFacet(edge_id));
+      user.dof_handler[DH_UNKS].getVariable(VAR_P).getFacetDofs(dofs, user.mesh->getFacetPtr(edge_id));
     }
     return (q_array[dofs[0]] + q_array[dofs[1]])/2.;
   }
@@ -2121,14 +2121,14 @@ double GetDataPressCellVersion::get_data_r(int cellid) const
 {
   // assume que só há 1 grau de liberdade na célula
   int dof[user.dof_handler[DH_UNKS].getVariable(VAR_P).numDofsPerCell()];
-  user.dof_handler[DH_UNKS].getVariable(VAR_P).getCellDofs(dof, user.mesh->getCell(cellid));
+  user.dof_handler[DH_UNKS].getVariable(VAR_P).getCellDofs(dof, user.mesh->getCellPtr(cellid));
   return q_array[dof[0]];
 }
 
 template<int Coord>
 double GetDataNormal<Coord>::get_data_r(int nodeid) const
 {
-  Point const* point = user.mesh->getNode(nodeid);
+  Point const* point = user.mesh->getNodePtr(nodeid);
   double N;
   VectorXi dofs(user.dim);
 

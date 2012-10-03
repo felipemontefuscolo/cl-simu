@@ -701,12 +701,12 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
     {
       if (dim==2)
       {
-        corner = mesh->getNode(_r);
+        corner = mesh->getNodePtr(_r);
         if (!mesh->isVertex(corner))
           continue;
       }
       else
-        corner = mesh->getCorner(_r);
+        corner = mesh->getCornerPtr(_r);
       if (corner->isDisabled())
         continue;
     
