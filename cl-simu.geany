@@ -1,4 +1,3 @@
-
 [indentation]
 indent_width=2
 indent_type=0
@@ -17,16 +16,25 @@ long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=2
-FILE_NAME_0=14854;C++;0;16;0;1;0;/home/felipe/mef/fepic/cl-simu/conditions.cpp;0;2
-FILE_NAME_1=29549;C++;0;16;0;1;0;/home/felipe/mef/fepic/cl-simu/jacobian.cpp;0;2
-FILE_NAME_2=58357;C++;0;16;0;1;0;/home/felipe/mef/fepic/cl-simu/main.cpp;0;2
-FILE_NAME_3=121557;C++;0;16;0;1;0;/home/felipe/mef/fepic/cl-simu/main_old.cpp;0;2
-FILE_NAME_4=0;C++;0;16;0;1;0;/home/felipe/mef/fepic/cl-simu/mesh.cpp;0;2
-FILE_NAME_5=16996;C++;0;16;0;1;0;/home/felipe/mef/fepic/cl-simu/residue.cpp;0;2
-FILE_NAME_6=520;Matlab/Octave;0;16;1;1;0;/home/felipe/mef/fepic/cl-simu/args;0;2
-FILE_NAME_7=159;Make;0;16;1;1;0;/home/felipe/mef/fepic/cl-simu/Makefile;0;2
-FILE_NAME_8=9096;C++;0;16;0;1;0;/home/felipe/mef/fepic/cl-simu/common.hpp;0;2
+current_page=11
+FILE_NAME_0=0;C++;0;16;0;1;0;%2Fhome%2Ffelipe%2Fmef%2Fcl-simu%2Fconditions.cpp;0;2
+FILE_NAME_1=0;C++;0;16;0;1;0;%2Fhome%2Ffelipe%2Fmef%2Fcl-simu%2Fjacobian.cpp;0;2
+FILE_NAME_2=0;C++;0;16;0;1;0;%2Fhome%2Ffelipe%2Fmef%2Fcl-simu%2Fmain.cpp;0;2
+FILE_NAME_3=0;C++;0;16;0;1;0;%2Fhome%2Ffelipe%2Fmef%2Fcl-simu%2Fmain_old.cpp;0;2
+FILE_NAME_4=0;C++;0;16;0;1;0;%2Fhome%2Ffelipe%2Fmef%2Fcl-simu%2Fmesh.cpp;0;2
+FILE_NAME_5=0;C++;0;16;0;1;0;%2Fhome%2Ffelipe%2Fmef%2Fcl-simu%2Fold-main.cpp;0;2
+FILE_NAME_6=0;C++;0;16;0;1;0;%2Fhome%2Ffelipe%2Fmef%2Fcl-simu%2Fresidue.cpp;0;2
+FILE_NAME_7=0;C++;0;16;0;1;0;%2Fhome%2Ffelipe%2Fmef%2Fcl-simu%2Fwx2cpp.cpp;0;2
+FILE_NAME_8=0;C++;0;16;0;1;0;%2Fhome%2Ffelipe%2Fmef%2Fcl-simu%2Fcommon.hpp;0;2
+FILE_NAME_9=0;C++;0;16;0;1;0;%2Fhome%2Ffelipe%2Fmef%2Fcl-simu%2Fmypetsc.hpp;0;2
+FILE_NAME_10=5243;None;0;16;0;1;0;%2Fhome%2Ffelipe%2Fmef%2Fcl-simu%2Fargs;0;2
+FILE_NAME_11=395;Make;0;16;1;1;0;%2Fhome%2Ffelipe%2Fmef%2Fcl-simu%2FMakefile;0;2
 
 [VTE]
 last_dir=/home/felipe
+
+[file_prefs]
+final_new_line=true
+ensure_convert_new_lines=false
+strip_trailing_spaces=false
+replace_tabs=false

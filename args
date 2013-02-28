@@ -16,7 +16,7 @@ beta2 1.0
 -sst -1.e-7             # steady state tol (Unew-Uold)/(Unew)
 -utheta 1.             # time discretization theta method (momentum)
 vtheta 1.0             # time discretization theta method (mesh velocity)
--quadr_c 2              # quadrature degree (cell) // 2D: 3 para ME e TH2, 2 para GLS .... 3D
+-quadr_c 3              # quadrature degree (cell) // 2D: 3 para ME e TH2, 2 para GLS .... 3D
 -quadr_f 2              # quadrature degree (facet)
 -quadr_r 2              # quadrature degree (corner)
 -quadr_e 8              # quadrature degree (exact)
