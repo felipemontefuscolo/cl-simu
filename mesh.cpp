@@ -185,6 +185,7 @@ void AppCtx::getVecNormals(Vec const* Vec_x_1, Vec & Vec_normal_)
   {
     tag = point->getTag();
 
+
     if (!mesh->inBoundary(&*point))
       continue;
 

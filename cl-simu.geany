@@ -8,8 +8,9 @@ indent_mode=2
 
 [project]
 name=cl-simu
-base_path=/home/felipe/mef/fepic/cl-simu/
+base_path=/home/felipe/mef/cl-simu/
 description=
+file_patterns=
 
 [long line marker]
 long_line_behaviour=1
@@ -21,14 +22,14 @@ FILE_NAME_0=0;C++;0;16;0;1;0;%2Fhome%2Ffelipe%2Fmef%2Fcl-simu%2Fconditions.cpp;0
 FILE_NAME_1=0;C++;0;16;0;1;0;%2Fhome%2Ffelipe%2Fmef%2Fcl-simu%2Fjacobian.cpp;0;2
 FILE_NAME_2=0;C++;0;16;0;1;0;%2Fhome%2Ffelipe%2Fmef%2Fcl-simu%2Fmain.cpp;0;2
 FILE_NAME_3=0;C++;0;16;0;1;0;%2Fhome%2Ffelipe%2Fmef%2Fcl-simu%2Fmain_old.cpp;0;2
-FILE_NAME_4=0;C++;0;16;0;1;0;%2Fhome%2Ffelipe%2Fmef%2Fcl-simu%2Fmesh.cpp;0;2
+FILE_NAME_4=6085;C++;0;16;0;1;0;%2Fhome%2Ffelipe%2Fmef%2Fcl-simu%2Fmesh.cpp;0;2
 FILE_NAME_5=0;C++;0;16;0;1;0;%2Fhome%2Ffelipe%2Fmef%2Fcl-simu%2Fold-main.cpp;0;2
 FILE_NAME_6=0;C++;0;16;0;1;0;%2Fhome%2Ffelipe%2Fmef%2Fcl-simu%2Fresidue.cpp;0;2
 FILE_NAME_7=0;C++;0;16;0;1;0;%2Fhome%2Ffelipe%2Fmef%2Fcl-simu%2Fwx2cpp.cpp;0;2
 FILE_NAME_8=0;C++;0;16;0;1;0;%2Fhome%2Ffelipe%2Fmef%2Fcl-simu%2Fcommon.hpp;0;2
 FILE_NAME_9=0;C++;0;16;0;1;0;%2Fhome%2Ffelipe%2Fmef%2Fcl-simu%2Fmypetsc.hpp;0;2
 FILE_NAME_10=5243;None;0;16;0;1;0;%2Fhome%2Ffelipe%2Fmef%2Fcl-simu%2Fargs;0;2
-FILE_NAME_11=395;Make;0;16;1;1;0;%2Fhome%2Ffelipe%2Fmef%2Fcl-simu%2FMakefile;0;2
+FILE_NAME_11=375;Make;0;16;1;1;0;%2Fhome%2Ffelipe%2Fmef%2Fcl-simu%2FMakefile;0;2
 
 [VTE]
 last_dir=/home/felipe
@@ -38,3 +39,8 @@ final_new_line=true
 ensure_convert_new_lines=false
 strip_trailing_spaces=false
 replace_tabs=false
+
+[build-menu]
+NF_00_LB=_Make
+NF_00_CM=make all
+NF_00_WD=

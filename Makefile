@@ -9,7 +9,7 @@ FFLAGS   =
 CPPFLAGS = -I. -I${FEPIC_DIR} $(FEP_INCLUDE) -Wall -Wextra -fopenmp -m64 -msse2 -L$(FEP_LIBS_DIR) -lfepic $(FEP_LDFLAGS)
 FPPFLAGS =
 
-.PHONY: clean
+.PHONY: all clean
 
 # tests some variables
 ifeq "" "$(wildcard ${FEPIC_DIR})"
@@ -38,6 +38,8 @@ include ${PETSC_DIR}/conf/rules
 include ${FEPIC_DIR}/conf/variables
 
 PETSC_KSP_LIB += -L$(FEP_LIBS_DIR) -lfepic $(FEP_LDFLAGS)
+
+all: main
 
 main: ${OBJECTS} chkopts
 	-${CLINKER} -o $(EXE) $(OBJECTS) ${PETSC_KSP_LIB}
