@@ -103,6 +103,8 @@ Vector u_initial(Vector const& X, int tag);
 double p_initial(Vector const& X, int tag);
 Vector solid_normal(Vector const& X, double t, int tag);
 Vector v_exact(Vector const& X, double t, int tag);
+Vector solid_veloc(Vector const& X, double t, int tag);
+Tensor feature_proj(Vector const& X, double t, int tag);
 
 
 inline double sqr(double v) {return v*v;}
@@ -373,6 +375,10 @@ public:
   PetscErrorCode solveTimeProblem();
   PetscErrorCode formJacobian(SNES /*snes*/,Vec x,Mat *Mat_Jac, Mat* /*prejac*/, MatStructure * /*flag*/);
   PetscErrorCode formFunction(SNES /*snes*/, Vec x, Vec f);
+  
+  PetscErrorCode formJacobian_mesh(SNES /*snes*/,Vec x, Mat *Mat_Jac, Mat* /*prejac*/, MatStructure * /*flag*/);
+  PetscErrorCode formFunction_mesh(SNES /*snes*/, Vec x, Vec f);  
+  
   // form the residue of the cell
   void formCellFunction(cell_iterator &cell,
                                   VectorXi &mapU_c,  VectorXi &/*mapP_c*/, // mappers
@@ -443,7 +449,15 @@ public:
       //m = point->getPosition() - mesh->numVerticesPerCell();
       //cell = mesh->getCellPtr(point->getIncidCell());
 
-      if (!is_in(tag,solid_tags) && !is_in(tag,triple_tags))
+      if (is_in(tag,feature_tags))
+      {
+        dof_handler[DH_MESH].getVariable(VAR_M).getVertexAssociatedDofs(dofs, point);
+        VecGetValues(Vec_x_, dim, dofs, X.data());
+        P.block(i*dim,i*dim,dim,dim)  = feature_proj(X,t,tag);
+        continue;
+      }
+
+      if (!is_in(tag,solid_tags) && !is_in(tag,triple_tags) && !is_in(tag,feature_tags))
         continue;
 
       dof_handler[DH_MESH].getVariable(VAR_M).getVertexAssociatedDofs(dofs, point);
@@ -469,12 +483,19 @@ public:
   void swapMeshWithVec(Vec & Vec_xmsh);
   // @param[in] Vec_up_1 unknows vector with fluid velocity
   // @param[out] u_mesh
-  PetscErrorCode calcMeshVelocity(Vec const& Vec_x_0, Vec const& Vec_x_1, Vec &Vec_v_mid);
+  PetscErrorCode calcMeshVelocity(Vec const& Vec_x_0, Vec const& Vec_up_0, Vec const& Vec_up_1, double vtheta, Vec &Vec_v_mid, double tt); // by elasticity
   PetscErrorCode moveMesh(Vec const& Vec_x_0, Vec const& Vec_up_0, Vec const& Vec_up_1, double const vtheta, double tt, Vec & Vec_x_new);
   double getCellQuality(Vec const& Vec_x_, int cell_id) const;
   double getCellPatchQuality(Vec const& Vec_x_, int const* cells) const;
   void freePetscObjs();
 
+  bool isFixedPoint(int tag) const
+  {
+    if (is_in(tag, neumann_tags) || is_in(tag, dirichlet_tags) || is_in(tag, periodic_tags))
+      return true;
+    else
+      return false;
+  }
 
   // global settings
   int         dim; // = space dim
@@ -517,6 +538,8 @@ public:
   std::vector<int> interface_tags;
   std::vector<int> solid_tags;
   std::vector<int> triple_tags;
+  std::vector<int> periodic_tags;
+  std::vector<int> feature_tags; // 3d only .. assume 90 degree corners
 
   DofHandler                   dof_handler[2];
   MeshIoMsh                    msh_reader;
@@ -640,6 +663,14 @@ public:
   KSP    			        ksp;
   PC	   			        pc;
 
+  // mesh
+  Mat                 Mat_Jac_m;
+  SNES                snes_m;
+  KSP    			        ksp_m;
+  PC	   			        pc_m;
+  Vec                 Vec_res_m;
+  SNESLineSearch      linesearch;
+  
 };
 
 

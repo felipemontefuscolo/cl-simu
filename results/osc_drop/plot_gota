@@ -1,8 +1,28 @@
 set samples 500
-step = 0.2  # print_step * dt
-ampe = 0.2
-taue = 25
-we   = sqrt(6)
+
+n = 2
+R = 1.0154
+rho = 1
+gamma = 1
+mu = 0.01
+step = 0.050  # print_step * dt
+ampe = 0.044
+
+taue = rho*R*R/(mu*2*n*(n-1))
+we   = sqrt( gamma*(n**3-n)/(rho*R**3) )
+#A(x) = ampe * exp(-x/taue) * cos(we*x)
 A(x) = ampe * exp(-x/taue) * cos(we*x)
+
+plot './amplitude.curve' u (step*$1):($2) w l title "numeric", A(x) title "exact"
+
+
 f(x) = a*exp(-x/tau)*cos(w*x)
-plot './amplitude.curve' u (step*$1):($2-1) w lp title "numeric", A(x) title "exact"
+a = 0.217
+tau = 25
+w = sqrt(6)
+fit f(x) './amplitude.curve' u (step*$1):($2) via a,tau,w
+
+
+#rep f(x)
+#rep taue, we
+

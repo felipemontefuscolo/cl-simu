@@ -24,7 +24,7 @@ Tensor grad_u_exact(Vector const& X, double t, int tag);
 Vector u_initial(Vector const& X, int tag);
 double p_initial(Vector const& X, int tag);
 Vector solid_normal(Vector const& X, double t, int tag);
-
+Tensor feature_proj(Vector const& X, double t, int tag);
 
 inline double sign(double a) {a<0 ? -1 : 1;};
 
@@ -42,8 +42,12 @@ inline double sign(double a) {a<0 ? -1 : 1;};
 #define COUETTE        12
 #define PSEUDO_OSC2D   13
 #define QUASI_STOKES   14
+#define GERBEAU        15
+#define ZETA3D         16
+#define MICRO2D        17
+#define TRACO          18
 
-#define PROBLEM_TYPE 8
+#define PROBLEM_TYPE 18
 
 
 #if (PROBLEM_TYPE==CAVITY_2D_3D)
@@ -131,6 +135,15 @@ Vector v_exact(Vector const& , double , int ) //(X,t,tag)
 {
 
 }
+
+Vector solid_veloc(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+  N(1) = 1;
+  return N;
+}
+
+
 #endif
 
 #if (PROBLEM_TYPE==KOVASZNAY_2D)
@@ -235,6 +248,14 @@ Vector solid_normal(Vector const& X, double t, int tag)
   return N;
 }
 
+Vector solid_veloc(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+  N(1) = 1;
+  return N;
+}
+
+
 Vector v_exact(Vector const& X, double t, int ) //(X,t,tag)
 {
 
@@ -243,6 +264,9 @@ Vector v_exact(Vector const& X, double t, int ) //(X,t,tag)
   v(1) = 0*cos(pi*t)*(X(1)+0.5)*(X(1)-.5)/2.;
   return v;
 }
+
+
+
 #endif
 
 #if (PROBLEM_TYPE==STOKES_JD_2D)
@@ -369,6 +393,14 @@ Vector solid_normal(Vector const& X, double t, int tag)
   return N;
 }
 
+Vector solid_veloc(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+  N(1) = 1;
+  return N;
+}
+
+
 Vector v_exact(Vector const& X, double , int ) //(X,t,tag)
 {
   return Vector::Zero(X.size());
@@ -450,6 +482,15 @@ Vector solid_normal(Vector const& X, double t, int tag)
 
   return N;
 }
+
+Vector solid_veloc(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+  N(1) = 1;
+  return N;
+}
+
+
 Vector v_exact(Vector const& X, double , int ) //(X,t,tag)
 {
   return Vector::Zero(X.size());
@@ -564,6 +605,15 @@ Vector v_exact(Vector const& , double , int ) //(X,t,tag)
 {
 
 }
+
+Vector solid_veloc(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+  N(1) = 1;
+  return N;
+}
+
+
 #endif
 
 #if (PROBLEM_TYPE==ANYTHING_3D)
@@ -701,6 +751,14 @@ Vector solid_normal(Vector const& X, double t, int tag)
   return N;
 }
 
+Vector solid_veloc(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+  N(1) = 1;
+  return N;
+}
+
+
 #endif
 
 #if (PROBLEM_TYPE==OSCI_BB)
@@ -711,17 +769,17 @@ double pho(Vector const& X, int tag)
 
 double cos_theta0()
 {
-  return 0*0.5;
+  return 0;
 }
 
 double zeta(double u_norm, double angle)
 {
-  return 0*5.e-1;
+  return 0;
 }
 
 double beta_diss()
 {
-  return 0*1.e-4;
+  return 0;
 }
 
 double gama(Vector const& X, double t, int tag)
@@ -770,27 +828,30 @@ double p_initial(Vector const& X, int tag)
 
 Vector solid_normal(Vector const& X, double t, int tag)
 {
-  Vector N(X.size());
-  if (tag == 3)
-    N << 1,0;
-  else
-  if (tag == 4)
-    N << 0,1;
-  else
-  if (tag == 5)
-    N << -1,0;
+  Vector N(Vector::Zero(X.size()));
 
-  N = X;
-  N.normalize();
+  if (tag==3)
+    N(0) = -1;
+  else
+    N(1) = -1;
 
   return N;
 }
 
 
-Vector v_exact(Vector const& , double , int ) //(X,t,tag)
+Vector v_exact(Vector const& X, double , int ) //(X,t,tag)
 {
-
+  Vector N(Vector::Zero(X.size()));
+  return N;
 }
+
+Vector solid_veloc(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+  return N;
+}
+
+
 #endif
 
 #if (PROBLEM_TYPE==RAMP2D3D)
@@ -908,6 +969,14 @@ Vector solid_normal(Vector const& X, double t, int tag)
   return N;
 }
 
+Vector solid_veloc(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+  N(1) = 1;
+  return N;
+}
+
+
 Vector u_initial(Vector const& X, int tag)
 {
   Vector r(X.size());
@@ -925,6 +994,8 @@ Vector v_exact(Vector const& X, double , int ) //(X,t,tag)
   Vector v(X.size());
   v.setZero();
 }
+
+
 #endif
 
 #if (PROBLEM_TYPE==RUSSA2D)
@@ -1052,6 +1123,15 @@ Vector v_exact(Vector const& , double , int ) //(X,t,tag)
 {
 
 }
+
+Vector solid_veloc(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+  N(1) = 1;
+  return N;
+}
+
+
 #endif
 
 #if (PROBLEM_TYPE==ANGLE2D)
@@ -1178,6 +1258,14 @@ Vector v_exact(Vector const& , double , int ) //(X,t,tag)
 {
 
 }
+
+Vector solid_veloc(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+  N(1) = 1;
+  return N;
+}
+
 
 #endif
 
@@ -1313,6 +1401,13 @@ Vector x_exact(Vector const& X, double t, int tag)
   Vector r(Vector::Zero(X.size()));
 
 
+}
+
+Vector solid_veloc(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+  N(1) = 1;
+  return N;
 }
 
 
@@ -1472,6 +1567,12 @@ Vector v_exact(Vector const& X, double t, int tag) //(X,t,tag)
   return v * (tag!=1 && tag!=2);
 }
 
+Vector solid_veloc(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+  N(1) = 1;
+  return N;
+}
 
 
 #endif
@@ -1604,5 +1705,606 @@ Vector v_exact(Vector const& X, double , int ) //(X,t,tag)
 {
   return Vector::Zero(X.size());
 }
+
+Vector solid_veloc(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+  N(1) = 1;
+  return N;
+}
+
+
 #endif
+
+#if (PROBLEM_TYPE==GERBEAU)
+double pho(Vector const& X, int tag)
+{
+  return 0.81;
+}
+
+double cos_theta0()
+{
+  return 0;
+}
+
+double zeta(double u_norm, double angle)
+{
+  return 0;
+}
+
+double beta_diss()
+{
+  return 1.5;
+}
+
+double gama(Vector const& X, double t, int tag)
+{
+  return 5.5;
+}
+
+double muu(int tag)
+{
+  return 1.95;
+}
+
+Vector force(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+  Vector f(Vector::Zero(X.size()));
+  
+  return f;
+}
+Vector u_exact(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+  Vector v(Vector::Zero(X.size()));
+  double h = 13.6;
+  double V = 0.2;
+
+  v(1) = 0;
+  v(0) = (y/h-1./2)*2*V;
+
+  return v;
+}
+Vector traction(Vector const& X, Vector const& normal, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+  Vector T(Vector::Zero(X.size()));
+
+  //T = -X;
+
+  return T;
+}
+double pressure_exact(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+
+  return 2;
+}
+Vector grad_p_exact(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+  Vector r(Vector::Zero(X.size()));
+
+  return r;
+}
+Tensor grad_u_exact(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+  Tensor dxU(Tensor::Zero(X.size(),X.size()));
+
+  return dxU;
+}
+
+Vector solid_normal(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+
+  if (X(1)<0.5)
+    N(1) = 1;
+  else
+    N(1) = -1;
+
+  return N;
+}
+
+Vector solid_veloc(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+  if (X(1)<0.5)
+    N(0) = -0.25;
+  else
+    N(0) = 0.25;
+  return N;
+}
+
+
+Vector u_initial(Vector const& X, int /*tag*/)
+{
+  Vector r(Vector::Zero(X.size()));
+  double h = 13.6;
+  double L = 27.2;
+  double V0 = 0.21;
+
+  r(0) = (2*X(1)/h - 1)*V0;
+
+  return r;
+}
+double p_initial(Vector const& X, int tag)
+{
+  return X.size()-1;
+}
+
+Vector v_exact(Vector const& X, double t, int tag) //(X,t,tag)
+{
+  Vector v(Vector::Zero(X.size()));
+  
+  if (tag != 4 && tag != 5)
+    v(0) = sin(20*t);
+  
+  return v;
+}
+
+
+#endif
+
+#if (PROBLEM_TYPE==ZETA3D)
+double pho(Vector const& X, int tag)
+{
+  return 0;
+}
+
+double cos_theta0()
+{
+  return 0*sqrt(2.)/2.;
+}
+
+double zeta(double u_norm, double angle)
+{
+  return 1.e-4;
+}
+
+double beta_diss()
+{
+  return 1.e-4;
+}
+
+double gama(Vector const& X, double t, int tag)
+{
+  return 0.075;
+}
+double muu(int tag)
+{
+  return 1.e-5;
+}
+Vector force(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+  Vector f(Vector::Zero(X.size()));
+  
+  //f(1)=4;
+  //f(0)=1;
+  //f /= 4*sqrt(2);
+
+
+  return f;
+}
+Vector u_exact(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+  Vector v(Vector::Zero(X.size()));
+
+  return v;
+}
+Vector traction(Vector const& X, Vector const& normal, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+  Vector T(Vector::Zero(X.size()));
+
+  //T = -X;
+
+  return T;
+}
+double pressure_exact(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+
+  return 2;
+}
+Vector grad_p_exact(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+  Vector r(Vector::Zero(X.size()));
+
+  return r;
+}
+Tensor grad_u_exact(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+  Tensor dxU(Tensor::Zero(X.size(),X.size()));
+
+  return dxU;
+}
+
+Vector solid_normal(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+  
+  if (tag == 4)
+    N(1) = 1;
+  else if (tag == 6 )
+    N(0) = 1;
+  else
+    N(2) = 1;
+  
+  return N;
+}
+
+Vector solid_veloc(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+  return N;
+}
+
+
+Vector u_initial(Vector const& X, int tag)
+{
+  Vector r(Vector::Zero(X.size()));
+  return r;
+}
+double p_initial(Vector const& X, int tag)
+{
+  return X.size()-1;
+}
+
+Vector v_exact(Vector const& X, double , int ) //(X,t,tag)
+{
+  Vector v(Vector::Zero(X.size()));
+  return v;
+}
+
+Tensor feature_proj(Vector const& X, double t, int tag)
+{
+  Tensor f(Tensor::Zero(X.size(), X.size()));
+  
+  Vector A = solid_normal(X,t,tag);
+  
+  if (tag == 7)
+  {
+    f(0,0) = 1;
+  }
+  else if (tag == 8)
+  {
+    f(1,1) = 1;
+  }
+  else
+  {
+    f(2,2) = 1;
+  }
+  
+  return f;
+}
+#endif
+
+#if (PROBLEM_TYPE==MICRO2D)
+double pho(Vector const& X, int tag)
+{
+  return 0.81;
+}
+
+double cos_theta0()
+{
+  return 0;
+}
+
+double zeta(double u_norm, double angle)
+{
+  return 0;
+}
+
+double beta_diss()
+{
+  return 1.5;
+}
+
+double gama(Vector const& X, double t, int tag)
+{
+  return 5.5;
+}
+
+double muu(int tag)
+{
+  return 1.95;
+}
+
+Vector force(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+  Vector f(Vector::Zero(X.size()));
+  
+  return f;
+}
+Vector u_exact(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+  Vector v(Vector::Zero(X.size()));
+  double h = 13.6;
+  double V = 0.2;
+
+  v(1) = 0;
+  v(0) = (y/h-1./2)*2*V;
+
+  return v;
+}
+Vector traction(Vector const& X, Vector const& normal, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+  Vector T(Vector::Zero(X.size()));
+
+  //T = -X;
+
+  return T;
+}
+double pressure_exact(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+
+  return 2;
+}
+Vector grad_p_exact(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+  Vector r(Vector::Zero(X.size()));
+
+  return r;
+}
+Tensor grad_u_exact(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+  Tensor dxU(Tensor::Zero(X.size(),X.size()));
+
+  return dxU;
+}
+
+Vector solid_normal(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+
+  if (X(1)<0.5)
+    N(1) = 1;
+  else
+    N(1) = -1;
+
+  return N;
+}
+
+Vector solid_veloc(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+  if (X(1)<0.5)
+    N(0) = -0.25;
+  else
+    N(0) = 0.25;
+  return N;
+}
+
+
+Vector u_initial(Vector const& X, int /*tag*/)
+{
+  Vector r(Vector::Zero(X.size()));
+  double h = 13.6;
+  double L = 27.2;
+  double V0 = 0.21;
+
+  //r(0) = (2*X(1)/h - 1)*V0;
+
+  return r;
+}
+double p_initial(Vector const& X, int tag)
+{
+  return X.size()-1;
+}
+
+Vector v_exact(Vector const& X, double , int ) //(X,t,tag)
+{
+  Vector v(X.size());
+  v.setZero();
+  return v;
+}
+
+Tensor feature_proj(Vector const& X, double t, int tag)
+{
+  return Tensor::Zero(X.size(), X.size());
+}
+
+#endif
+
+#if (PROBLEM_TYPE==TRACO)
+
+double const w_ = pi;
+double const a__= 1;
+
+double pho(Vector const& X, int tag)
+{
+  return 0.0;
+}
+double cos_theta0()
+{
+  return 0.0;
+}
+
+double zeta(double u_norm, double angle)
+{
+  return 0*5.e-1;
+}
+
+double beta_diss()
+{
+  return 0*1.e-4;
+}
+
+double gama(Vector const& X, double t, int tag)
+{
+  return 0;
+}
+double muu(int tag)
+{
+  return  1.;
+}
+
+Vector force(Vector const& X, double t, int tag) // original
+{
+  double x = X(0);
+  double y = X(1);
+
+  Vector f(Vector::Zero(X.size()));
+
+  // linear case
+  f(0) = 2.*a__*sin(x)*cos(y);
+  f(1) =-2.*a__*cos(x)*sin(y);
+
+  //// quadratic case
+  //Tensor const dxU( grad_u_exact(X,t,tag) );
+  //Vector const u(u_exact(X,t,tag));
+  //f(0) =-a__*w_*sin(w_*t)* ( x*x/2. + y*x   ) ;
+  //f(1) =+a__*w_*sin(w_*t)* ( y*y/2. + x*y   ) ;
+  //f += dxU*u;
+
+  return f;
+}
+Vector u_exact(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+
+  Vector v(Vector::Zero(X.size()));
+
+  // linear case
+  v(0) = a__*sin(x)*cos(y);
+  v(1) =-a__*cos(x)*sin(y);
+  
+  ////quadratic case
+  //v(0) = a__*cos(w_*t)* ( x*x/2. + y*x   );
+  //v(1) =-a__*cos(w_*t)* ( y*y/2. + x*y   );
+  
+  return v;
+}
+double pressure_exact(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+
+  //// linear case
+  return 0;
+  
+  //// quadratic
+  //return  a__*cos(w_*t)*(x - y);
+}
+Vector grad_p_exact(Vector const& X, double t, int tag)
+{
+  //double x = X(0);
+  //double y = X(1);
+  Vector dxP(Vector::Zero(X.size()));
+  
+  // linear
+  // nothing
+  
+  //// quadratic
+  //dxP(0) = a__*cos(w_*t);
+  //dxP(1) = a__*cos(w_*t);
+
+  return dxP;
+}
+Tensor grad_u_exact(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+  Tensor dxU(Tensor::Zero(X.size(), X.size()));
+
+  // linear case
+  dxU(0,0) =  a__*cos(x)*cos(y);
+  dxU(0,1) = -a__*sin(x)*sin(y);
+  dxU(1,0) =  a__*sin(x)*sin(y);
+  dxU(1,1) = -a__*cos(x)*cos(y);;
+  
+  //// quadratic case
+  //dxU(0,0) = a__*cos(w_*t)*(x+y);
+  //dxU(0,1) = a__*cos(w_*t)*x;
+  //dxU(1,0) = a__*cos(w_*t)*(-y);
+  //dxU(1,1) = a__*cos(w_*t)*(-x-y);
+  
+  return dxU;
+}
+Vector traction(Vector const& X, Vector const& normal, double t, int tag)
+{
+  Vector T(Vector::Zero(X.size()));
+
+  Tensor dxU(X.size(),X.size());
+  Tensor I(Tensor::Identity(X.size(),X.size()));
+  dxU = grad_u_exact(X,t,tag);
+  double const p = pressure_exact(X,t,tag);
+
+  T = (-p*I + dxU+dxU.transpose())*normal;
+
+  return T;
+}
+Vector u_initial(Vector const& X, int tag)
+{
+  return u_exact(X,0,tag);
+}
+double p_initial(Vector const& X, int tag)
+{
+  return 0;
+}
+
+Vector solid_normal(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+
+  return N;
+}
+
+Vector v_exact(Vector const& X, double t, int tag) //(X,t,tag)
+{
+  double const w_ = pi;
+  Vector v(Vector::Zero(X.size()));
+  //v = u_exact(X,t,tag);
+  return v ;
+}
+
+Vector solid_veloc(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+  N(1) = 1;
+  return N;
+}
+
+
+Tensor feature_proj(Vector const& X, double t, int tag)
+{
+  Tensor f(Tensor::Zero(X.size(), X.size()));
+  return f;
+}
+
+#endif
+
+
 

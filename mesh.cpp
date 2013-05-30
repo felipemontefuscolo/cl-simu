@@ -19,13 +19,18 @@ void AppCtx::getVecNormals(Vec const* Vec_x_1, Vec & Vec_normal_)
   int               tag;
   //int               tag_other;
   bool              virtual_mesh;
+  bool              is_surface;
+  bool              is_solid;
+  int               sign_;
 
   if (Vec_x_1==NULL)
     virtual_mesh = false;
   else
     virtual_mesh = true;
 
+  Assembly(Vec_normal_);
   VecSet(Vec_normal_,0);
+  Assembly(Vec_normal_);
 
   // LOOP NAS FACES DO CONTORNO
   facet_iterator facet = mesh->facetBegin();
@@ -34,16 +39,11 @@ void AppCtx::getVecNormals(Vec const* Vec_x_1, Vec & Vec_normal_)
   {
     tag = facet->getTag();
 
+    is_surface = is_in(tag, interface_tags);
+    is_solid   = is_in(tag, solid_tags);
 
-    if (is_in(tag, solid_tags) || !mesh->inBoundary(&*facet))
+    if ( !(is_surface || is_solid || mesh->inBoundary(&*facet)) )
       continue;
-
-
-    //is_surface = is_in(tag, interface_tags);
-    //is_solid   = is_in(tag, solid_tags);
-    //
-    //if ( !is_surface && !is_solid)
-    //  continue;
 
     dof_handler[DH_MESH].getVariable(VAR_M).getFacetDofs(map.data(), &*facet);
 
@@ -54,6 +54,15 @@ void AppCtx::getVecNormals(Vec const* Vec_x_1, Vec & Vec_normal_)
       mesh->getNodesCoords(facet_nodes.begin(), facet_nodes.end(), x_coefs.data());
     x_coefs_trans = x_coefs.transpose();
 
+    // fix orientation in the case where the gas phase isn't passive
+    {
+      sign_ = 1;
+      cell_handler cc = mesh->getCell(facet->getIncidCell());
+      cell_handler oc = mesh->getCell(cc->getIncidCell(facet->getPosition()));
+      if ( oc.isValid()  )
+        if ( oc->getTag() > cc->getTag() )
+          sign_ = -1;
+    }
 
     if (false) // método alternativo que serve para todos os métodos (normal consistente)
     {
@@ -77,25 +86,26 @@ void AppCtx::getVecNormals(Vec const* Vec_x_1, Vec & Vec_normal_)
         VecSetValues(Vec_normal_, dim, map.data()+k*dim, normal.data(), ADD_VALUES);
 
       } // nodes
-            
+
     }
     else if (mesh_cell_type == TETRAHEDRON4) // facet = triangle3
     {
       F   = x_coefs_trans * dLphi_nf[0];
       Vector a(F.col(0)), b(F.col(1)-F.col(0)), c(F.col(1));
-      
+
       normal = cross(F.col(0), F.col(1));
-      
+      normal *= sign_;
+
       // 0
       X = normal;
       X /= a.dot(a) * c.dot(c);
       VecSetValues(Vec_normal_, dim, map.data()+0*dim, X.data(), ADD_VALUES);
-      
+
       // 1
       X = normal;
       X /= a.dot(a) * b.dot(b);
       VecSetValues(Vec_normal_, dim, map.data()+1*dim, X.data(), ADD_VALUES);
-      
+
       // 2
       X = normal;
       X /= b.dot(b) * c.dot(c);
@@ -110,7 +120,7 @@ void AppCtx::getVecNormals(Vec const* Vec_x_1, Vec & Vec_normal_)
       Vector x3(x_coefs_trans.col(3));
       Vector x4(x_coefs_trans.col(4));
       Vector x5(x_coefs_trans.col(5));
-      
+
       //edges
       double e03 = (x0-x3).squaredNorm();
       double e05 = (x0-x5).squaredNorm();
@@ -121,60 +131,70 @@ void AppCtx::getVecNormals(Vec const* Vec_x_1, Vec & Vec_normal_)
       double e34 = (x3-x4).squaredNorm();
       double e35 = (x3-x5).squaredNorm();
       double e45 = (x4-x5).squaredNorm();
-      
+
       // dividi o triangulo em 4 mini-triangulos
-      
+
       // node 0
       cross(normal,x3-x0,x5-x0);
       normal /= e03*e05;
+      normal *= sign_;
       VecSetValues(Vec_normal_, dim, map.data()+0*dim, normal.data(), ADD_VALUES);
-      
+
       // node 1
       cross(normal,x4-x1,x3-x1);
       normal /= e14*e13;
+      normal *= sign_;
       VecSetValues(Vec_normal_, dim, map.data()+1*dim, normal.data(), ADD_VALUES);
-      
+
       // node 2
       cross(normal,x5-x2,x4-x2);
       normal /= e25*e24;
+      normal *= sign_;
       VecSetValues(Vec_normal_, dim, map.data()+2*dim, normal.data(), ADD_VALUES);
-      
+
       // node 3
       normal = cross(x1-x3,x4-x3)/(e13*e34) + cross(x4-x3,x5-x3)/(e34*e35) + cross(x5-x3,x0-x3)/(e35*e03);
+      normal *= sign_;
       VecSetValues(Vec_normal_, dim, map.data()+3*dim, normal.data(), ADD_VALUES);
-      
+
       // node 4
       normal = cross(x2-x4,x5-x4)/(e24*e45) + cross(x5-x4,x3-x4)/(e45*e34) + cross(x3-x4,x1-x4)/(e34*e14);
+      normal *= sign_;
       VecSetValues(Vec_normal_, dim, map.data()+4*dim, normal.data(), ADD_VALUES);
-      
+
       // node 5
       normal = cross(x0-x5,x3-x5)/(e05*e35) + cross(x3-x5,x4-x5)/(e35*e45) + cross(x4-x5,x2-x5)/(e45*e25);
+      normal *= sign_;
       VecSetValues(Vec_normal_, dim, map.data()+5*dim, normal.data(), ADD_VALUES);
     }
     else if(mesh_cell_type == TRIANGLE3)
     {
       normal(0) = x_coefs_trans(1,1)-x_coefs_trans(1,0);
       normal(1) = x_coefs_trans(0,0)-x_coefs_trans(0,1);
-      
+
       normal /= (x_coefs_trans.col(0)-x_coefs_trans.col(1)).squaredNorm();
+      normal *= sign_;
       VecSetValues(Vec_normal_, dim, map.data()+0*dim, normal.data(), ADD_VALUES);
       VecSetValues(Vec_normal_, dim, map.data()+1*dim, normal.data(), ADD_VALUES);
+      //if (is_surface)
+      //  cout << "normal = " << normal(0) << " " << normal(1) << endl;
     }
     else if(mesh_cell_type == TRIANGLE6) // dividi a aresta em duas partes
     {
       normal(0) = x_coefs_trans(1,2)-x_coefs_trans(1,0);
       normal(1) = x_coefs_trans(0,0)-x_coefs_trans(0,2);
       normal /= (x_coefs_trans.col(0)-x_coefs_trans.col(2)).squaredNorm();
+      normal *= sign_;
       VecSetValues(Vec_normal_, dim, map.data()+0*dim, normal.data(), ADD_VALUES);
       VecSetValues(Vec_normal_, dim, map.data()+2*dim, normal.data(), ADD_VALUES);
-      
+
       normal(0) = x_coefs_trans(1,1)-x_coefs_trans(1,2);
       normal(1) = x_coefs_trans(0,2)-x_coefs_trans(0,1);
       normal /= (x_coefs_trans.col(1)-x_coefs_trans.col(2)).squaredNorm();
+      normal *= sign_;
       VecSetValues(Vec_normal_, dim, map.data()+1*dim, normal.data(), ADD_VALUES);
       VecSetValues(Vec_normal_, dim, map.data()+2*dim, normal.data(), ADD_VALUES);
     }
-    
 
   }
   Assembly(Vec_normal_);
@@ -185,8 +205,10 @@ void AppCtx::getVecNormals(Vec const* Vec_x_1, Vec & Vec_normal_)
   {
     tag = point->getTag();
 
+    is_surface = is_in(tag, interface_tags);
+    is_solid   = is_in(tag, solid_tags);
 
-    if (!mesh->inBoundary(&*point))
+    if ( !(is_surface || is_solid || mesh->inBoundary(&*point)) )
       continue;
 
     getNodeDofs(&*point, DH_MESH, VAR_M, map.data());
@@ -207,10 +229,11 @@ void AppCtx::getVecNormals(Vec const* Vec_x_1, Vec & Vec_normal_)
       normal = -solid_normal(X,current_time,tag);
 
       VecSetValues(Vec_normal_, dim, map.data(), normal.data(), INSERT_VALUES);
+      Assembly(Vec_normal_);
     }
 
   }
-
+  Assembly(Vec_normal_);
 
 }
 
@@ -223,12 +246,14 @@ void AppCtx::smoothsMesh(Vec & Vec_normal_, Vec &Vec_x_)
   bool const u_has_edge_assoc_dof = shape_phi_c->numDofsAssociatedToFacet()+shape_phi_c->numDofsAssociatedToCorner() > 0;
 
   Vector      Xm(dim); // X mean
+  Vector      X0(dim);
   Vector      Xi(dim);
   Vector      dX(dim);
   Vector      normal(dim);
   Vector      tmp(dim), tmp2(dim);
   Vector      Uf(dim), Ue(dim), Umsh(dim); // Ue := elastic velocity
   int         tag;
+  int         viz_tag;
   int         iVs[128], *iVs_end;
   int         iCs[128], viCs[128];
   VectorXi    vtx_dofs_umesh(dim);  // indices de onde pegar a velocidade
@@ -240,10 +265,13 @@ void AppCtx::smoothsMesh(Vec & Vec_normal_, Vec &Vec_x_)
   double      old_quality, new_quality;
   bool        in_boundary;
   //int        id;
+  bool        is_surface;
+  bool        is_solid;
 
+  int const n_smooths = 10;
 
   /* suavização laplaciana */
-  for (int smooth_it = 0; smooth_it < 3; ++smooth_it)
+  for (int smooth_it = 0; smooth_it < n_smooths; ++smooth_it)
   {
     error = 0;
     getVecNormals(&Vec_x_, Vec_normal_);
@@ -253,21 +281,30 @@ void AppCtx::smoothsMesh(Vec & Vec_normal_, Vec &Vec_x_)
     point_iterator point_end = mesh->pointEnd();
     for (; point != point_end; ++point)
     {
+      tag = point->getTag();
 
-      in_boundary = mesh->inBoundary(&*point);
+      is_surface = is_in(tag, interface_tags);
+      is_solid   = is_in(tag, solid_tags);
+
+      in_boundary =  is_surface || is_solid;
 
       // pula o caso em que o ponto está no contoro mas não tem boundary smoothing
       if (!boundary_smoothing && in_boundary)
         continue;
 
-      tag = point->getTag();
+      if (is_in(tag,triple_tags) || is_in(tag,feature_tags))
+          continue;
+
+      if (is_in(tag,dirichlet_tags) || is_in(tag,neumann_tags) || is_in(tag,periodic_tags))
+          continue;
 
       if (mesh->isVertex(&*point))
       {
         //if (  is_in(tag,interface_tags) || is_in(tag,triple_tags) || is_in(tag,solid_tags) ||
         //    is_in(tag,dirichlet_tags) || is_in(tag,neumann_tags)  )
-        if (is_in(tag,triple_tags))
-          continue;
+
+        dof_handler[DH_MESH].getVariable(VAR_M).getVertexDofs(vtx_dofs_umesh.data(), &*point);
+        VecGetValues(Vec_x_, dim, vtx_dofs_umesh.data(), X0.data()); // old coord
 
         Xm = Vector::Zero(dim);
         //iVs_end = mesh->connectedVtcs(&*point, iVs);
@@ -275,13 +312,23 @@ void AppCtx::smoothsMesh(Vec & Vec_normal_, Vec &Vec_x_)
 
         if (!in_boundary)
         {
+          int N=0;
+          Point const* viz_pt;
           for (int *it = iVs; it != iVs_end ; ++it)
           {
-            dof_handler[DH_MESH].getVariable(VAR_M).getVertexDofs(vtx_dofs_umesh.data(), mesh->getNodePtr(*it));
+            viz_pt = mesh->getNodePtr(*it);
+            viz_tag = viz_pt->getTag();
+            dof_handler[DH_MESH].getVariable(VAR_M).getVertexDofs(vtx_dofs_umesh.data(), viz_pt);
             VecGetValues(Vec_x_, dim, vtx_dofs_umesh.data(), tmp.data());
+            ++N;
             Xm += tmp;
+            //if (isFixedPoint(viz_tag))
+            //{
+            //  Xm += 5*X0;
+            //  N += 5;
+            //}
           }
-          Xm /= (iVs_end-iVs);
+          Xm /= N;
 
           dof_handler[DH_MESH].getVariable(VAR_M).getVertexDofs(vtx_dofs_umesh.data(), &*point);
           //// compute error
@@ -306,14 +353,22 @@ void AppCtx::smoothsMesh(Vec & Vec_normal_, Vec &Vec_x_)
           for (int *it = iVs; it != iVs_end ; ++it)
           {
             Point const* viz_pt = mesh->getNodePtr(*it);
-            if (viz_pt->getTag()!=tag && !is_in( viz_pt->getTag(), triple_tags ))
+            //if (viz_pt->getTag()!=tag && !is_in( viz_pt->getTag(), triple_tags ))
+            viz_tag = viz_pt->getTag();
+            if (viz_tag!=tag && (is_in(viz_tag,interface_tags) || is_in(viz_tag,solid_tags)) )
+              continue;
+            if (viz_tag!=tag && !is_in(viz_tag,triple_tags) && !isFixedPoint(viz_tag) && !is_in(viz_tag,feature_tags))
               continue;
             dof_handler[DH_MESH].getVariable(VAR_M).getVertexDofs(vtx_dofs_umesh.data(), mesh->getNodePtr(*it));
             // debug
             VecGetValues(Vec_x_, dim, vtx_dofs_umesh.data(), tmp.data());
             ++N;
             Xm += tmp;
-
+            //if (isFixedPoint(viz_tag))
+            //{
+            //  Xm += 3*X0;
+            //  N += 3;
+            //}
           }
 
           dof_handler[DH_MESH].getVariable(VAR_M).getVertexDofs(vtx_dofs_umesh.data(), &*point);
@@ -323,8 +378,8 @@ void AppCtx::smoothsMesh(Vec & Vec_normal_, Vec &Vec_x_)
             Xm = (N*Xi + 2*Xm)/(3*N);
             //Xm = Xm/N;
           else
-            Xm = (N*Xi + Xm)/(2*N);
-            //Xm = Xm/N;
+            //Xm = (N*Xi + Xm)/(2*N);
+            Xm = Xm/N;
           //
 
           dX = Xm - Xi;
@@ -336,14 +391,14 @@ void AppCtx::smoothsMesh(Vec & Vec_normal_, Vec &Vec_x_)
           VecGetValues(Vec_x_, dim, vtx_dofs_umesh.data(), tmp.data());
           error += (tmp-Xi).norm();
 
-          old_quality = getCellPatchQuality(Vec_x_, iCs);
+          //old_quality = getCellPatchQuality(Vec_x_, iCs);
           VecSetValues(Vec_x_, dim, vtx_dofs_umesh.data(), Xi.data(), INSERT_VALUES);
-          new_quality = getCellPatchQuality(Vec_x_, iCs);
-          // se a qualidade piorou, volta no que estava antes
-          if (new_quality < old_quality)
-          {
-            VecSetValues(Vec_x_, dim, vtx_dofs_umesh.data(), tmp.data(), INSERT_VALUES);
-          }
+          //new_quality = getCellPatchQuality(Vec_x_, iCs);
+          //// se a qualidade piorou, volta no que estava antes
+          //if (new_quality < old_quality)
+          //{
+          //  VecSetValues(Vec_x_, dim, vtx_dofs_umesh.data(), tmp.data(), INSERT_VALUES);
+          //}
         }
 
       }
@@ -357,14 +412,16 @@ void AppCtx::smoothsMesh(Vec & Vec_normal_, Vec &Vec_x_)
     if (u_has_edge_assoc_dof)
     for (; point != point_end; ++point)
     {
+      tag = point->getTag();
 
-      in_boundary = mesh->inBoundary(&*point);
+      is_surface = is_in(tag, interface_tags);
+      is_solid   = is_in(tag, solid_tags);
+
+      in_boundary = mesh->inBoundary(&*point) || is_surface || is_solid;
 
       // pula o caso em que o ponto está no contoro mas não tem boundary smoothing
       if (!boundary_smoothing && in_boundary)
         continue;
-
-      tag = point->getTag();
 
       if (!mesh->isVertex(&*point))
       {
@@ -497,16 +554,123 @@ void AppCtx::swapMeshWithVec(Vec & Vec_xmsh)
 }
 
 
-PetscErrorCode AppCtx::calcMeshVelocity(Vec const& Vec_x_0, Vec const& Vec_x_1, Vec &Vec_v_mid)
+//PetscErrorCode AppCtx::calcMeshVelocity(Vec const& Vec_x_0, Vec const& Vec_x_1, Vec &Vec_v_mid)
+//{
+//  PetscErrorCode ierr;
+//  ierr = VecCopy(Vec_x_1, Vec_v_mid);      CHKERRQ(ierr);
+//  ierr = VecAXPY(Vec_v_mid,-1.,Vec_x_0);   CHKERRQ(ierr);
+//  ierr = VecScale(Vec_v_mid, 1./dt);       CHKERRQ(ierr);
+//  Assembly(Vec_v_mid);
+//
+//  // DEBUG
+//  //Vector      U0(dim);
+//  //Vector      X0(dim);
+//  //Vector      X1(dim);
+//  //VectorXi    node_dofs_fluid(dim);
+//  //getNodeDofs(&*mesh->getNodePtr(120), DH_UNKS, VAR_U, node_dofs_fluid.data());
+//  //VecGetValues(Vec_v_mid,  dim, node_dofs_fluid.data(), U0.data());
+//  //VecGetValues(Vec_x_0,  dim, node_dofs_fluid.data(), X0.data());
+//  //VecGetValues(Vec_x_1,  dim, node_dofs_fluid.data(), X1.data());
+//  //cout << "VELOCITY VELOCITY VELOCITY VELOCITY VELOCITY VELOCITY = " << U0(0) << " " << U0(1) << endl;
+//  //cout << "VELOCITY VELOCITY VELOCITY VELOCITY VELOCITY VELOCITY = " << X0(0) << " " << X0(1) << endl;
+//  //cout << "VELOCITY VELOCITY VELOCITY VELOCITY VELOCITY VELOCITY = " << X1(0) << " " << X1(1) << endl;
+//  //cout.flush();
+//
+//
+//  PetscFunctionReturn(0);
+//}
+//
+
+// by elasticity
+// @brief A mean between Vec_up_0 and Vec_up_1 is used as boundary conditions to an elasticity problem. This mean
+// is computed by = vtheta*Vec_up_1 + (1-Vec_up_1)*Vec_up_0
+
+PetscErrorCode AppCtx::calcMeshVelocity(Vec const& Vec_x_0, Vec const& Vec_up_0, Vec const& Vec_up_1, double vtheta, Vec &Vec_v_mid, double tt)
 {
   PetscErrorCode ierr;
-  ierr = VecCopy(Vec_x_1, Vec_v_mid);      CHKERRQ(ierr);
-  ierr = VecAXPY(Vec_v_mid,-1.,Vec_x_0);   CHKERRQ(ierr);
-  ierr = VecScale(Vec_v_mid, 1./dt);       CHKERRQ(ierr);
-  Assembly(Vec_v_mid);
+
+  // The normal used must be at time step n.
+
+  // set boundary conditions on the initial guess
+  {
+    VectorXi    node_dofs_mesh(dim);
+    VectorXi    node_dofs_fluid(dim);
+    int tag;
+
+    Vector      U0(dim);
+    Vector      X0(dim);
+    Vector      U1(dim);
+    Vector      tmp(dim);
+    Vector      k1(dim),k2(dim),k3(dim),k4(dim); //  RK4
+
+    point_iterator point = mesh->pointBegin();
+    point_iterator point_end = mesh->pointEnd();
+    for (; point != point_end; ++point)
+    {
+      tag = point->getTag();
+
+      getNodeDofs(&*point, DH_MESH, VAR_M, node_dofs_mesh.data());
+      getNodeDofs(&*point, DH_UNKS, VAR_U, node_dofs_fluid.data());
+
+      VecGetValues(Vec_x_0, dim, node_dofs_mesh.data(), X0.data());
+
+      if (force_mesh_velocity)
+      {
+        k1 = v_exact(X0,tt,tag);
+        k2 = v_exact(X0+0.5*k1*dt,tt+0.5*dt,tag);
+        k3 = v_exact(X0+0.5*k2*dt,tt+0.5*dt,tag);
+        k4 = v_exact(X0+k3*dt,tt+dt,tag);
+        tmp =  (k1 + 2.*(k2+k3) + k4)/6.; // velocity
+        //if (!mesh->isVertex(&*point)) // APAGAR TEMP ERASE-ME ... este codigo é só para não entortar a malha
+        //{
+        //  int vtcs[3];
+        //  const int m = point->getPosition() - mesh->numVerticesPerCell();
+        //  Cell const* cell = mesh->getCellPtr(point->getIncidCell());
+        //  if (dim==3)
+        //    cell->getCornerVerticesId(m, vtcs);
+        //  else
+        //    cell->getFacetVerticesId(m, vtcs);
+        //  if (mesh->inBoundary(mesh->getNodePtr(vtcs[0])) || mesh->inBoundary(mesh->getNodePtr(vtcs[1])))
+        //    tmp = tmp / 2.;
+        //  if (mesh->inBoundary(mesh->getNodePtr(vtcs[0])) && mesh->inBoundary(mesh->getNodePtr(vtcs[1])))
+        //    tmp = tmp * 0.;
+        //}
+        VecSetValues(Vec_v_mid, dim, node_dofs_mesh.data(), tmp.data(), INSERT_VALUES);
+      }
+      else
+      {
+        if (  false &&  (  is_in(tag, neumann_tags) || is_in(tag, dirichlet_tags) || is_in(tag, periodic_tags)   )   )
+        {
+          tmp.setZero();
+          VecSetValues(Vec_v_mid, dim, node_dofs_mesh.data(), tmp.data(), INSERT_VALUES);
+        }
+        else
+        //if (is_in(tag, interface_tags) || is_in(tag, triple_tags) || is_in(tag, solid_tags) || is_in(tag,feature_tags))
+        {
+          VecGetValues(Vec_up_0,  dim, node_dofs_fluid.data(), U0.data());
+          VecGetValues(Vec_up_1,  dim, node_dofs_fluid.data(), U1.data());
+
+          tmp = vtheta*U1 + (1.-vtheta)*U0;
+          VecSetValues(Vec_v_mid, dim, node_dofs_mesh.data(), tmp.data(), INSERT_VALUES);
+        }
+        
+      } // if force_mesh_velocity
+
+
+    } // end for point
+
+  } // b.c.
+  
+  if (!force_mesh_velocity)
+  {
+    ierr = SNESSolve(snes_m, PETSC_NULL, Vec_v_mid);  CHKERRQ(ierr);
+  }
+
 
   PetscFunctionReturn(0);
 }
+
+
 
 /// @brief move the implicit mesh.
 ///
@@ -553,7 +717,7 @@ PetscErrorCode AppCtx::moveMesh(Vec const& Vec_x_0, Vec const& Vec_up_0, Vec con
       Vector k4 = dt * v_exact(X0+k3,tt+dt,tag);
       tmp =  (k1 + 2.*(k2+k3) + k4)/6.; // velocity
       //if (!mesh->isVertex(&*point)) // APAGAR TEMP ERASE-ME ... este codigo é só para não entortar a malha
-      //{ 
+      //{
       //  int vtcs[3];
       //  const int m = point->getPosition() - mesh->numVerticesPerCell();
       //  Cell const* cell = mesh->getCellPtr(point->getIncidCell());
@@ -571,11 +735,29 @@ PetscErrorCode AppCtx::moveMesh(Vec const& Vec_x_0, Vec const& Vec_up_0, Vec con
     }
     else
     {
-      VecGetValues(Vec_up_0,  dim, node_dofs_fluid.data(), U0.data());
-      VecGetValues(Vec_up_1,  dim, node_dofs_fluid.data(), U1.data());
 
-      tmp = X0 + dt*(  vtheta*U1 + (1.-vtheta)*U0 );
-      VecSetValues(Vec_x_new, dim, node_dofs_mesh.data(), tmp.data(), INSERT_VALUES);
+      if (is_in(tag, neumann_tags) || is_in(tag, dirichlet_tags) || is_in(tag, periodic_tags))
+      {
+        VecSetValues(Vec_x_new, dim, node_dofs_mesh.data(), X0.data(), INSERT_VALUES);
+      }
+      else
+      //if (is_in(tag, interface_tags) || is_in(tag, triple_tags) || is_in(tag, solid_tags) || is_in(tag,feature_tags))
+      if (true)
+      {
+        VecGetValues(Vec_up_0,  dim, node_dofs_fluid.data(), U0.data());
+        VecGetValues(Vec_up_1,  dim, node_dofs_fluid.data(), U1.data());
+
+        tmp = X0 + dt*(  vtheta*U1 + (1.-vtheta)*U0 );
+        VecSetValues(Vec_x_new, dim, node_dofs_mesh.data(), tmp.data(), INSERT_VALUES);
+      }
+      else // volume
+      {
+        VecGetValues(Vec_v_mid,   dim, node_dofs_mesh.data(), U0.data()); // get old vmesh
+
+        //double const a = 0.001351644*X0(0)*(54.4 - X0(0));
+        tmp = X0 + dt*U0 ;
+        VecSetValues(Vec_x_new, dim, node_dofs_mesh.data(), tmp.data(), INSERT_VALUES);
+      }
     }
   }
 

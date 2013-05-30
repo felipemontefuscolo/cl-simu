@@ -285,7 +285,7 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
                   delta_cd = c==d;
                   Aloc(i*dim + c, j*dim + d) += JxW_mid*
                                                 ( has_convec*phi_c[qp][i]*utheta *rho*( delta_cd*Uconv_qp.dot(dxphi_c.row(j))  +  dxU(c,d)*phi_c[qp][j] )   // advecção
-                                                + delta_cd*rho*phi_c[qp][i]*phi_c[qp][j]/dt     // time derivative
+                                                + unsteady* delta_cd*rho*phi_c[qp][i]*phi_c[qp][j]/dt     // time derivative
                                                 + utheta*visc*( delta_cd * dxphi_c.row(i).dot(dxphi_c.row(j)) + dxphi_c(i,d)*dxphi_c(j,c))   ); // rigidez
 
                 }
@@ -314,12 +314,12 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
                   delta_cd = c==d;
                   Bbn(c, j*dim + d) += JxW_mid*
                                        ( has_convec*bble[qp]*utheta *rho*( delta_cd*Uconv_qp.dot(dxphi_c.row(j))  +  dxU(c,d)*phi_c[qp][j] )   // convective
-                                       + delta_cd*rho*bble[qp]*phi_c[qp][j]/dt     // time derivative
+                                       + unsteady*delta_cd*rho*bble[qp]*phi_c[qp][j]/dt     // time derivative
                                        + utheta*visc*(delta_cd * dxphi_c.row(j).dot(dxbble) + dxphi_c(j,c)*dxbble(d)) );    // rigidez
 
                   Bnb(j*dim + d, c) += JxW_mid*
                                        ( has_convec*phi_c[qp][j]*utheta *rho*(  delta_cd*Uconv_qp.dot(dxbble)  )   // convective
-                                       + delta_cd*rho*phi_c[qp][j]*bble[qp]/dt     // time derivative
+                                       + unsteady*delta_cd*rho*phi_c[qp][j]*bble[qp]/dt     // time derivative
                                        + utheta*visc*(delta_cd * dxphi_c.row(j).dot(dxbble) + dxphi_c(j,c)*dxbble(d)) );    // rigidez
 
                 }
@@ -337,12 +337,12 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
 
                 iBbb(c, d) += JxW_mid*
                               ( has_convec*bble[qp]*utheta *rho*( delta_cd*Uconv_qp.dot(dxbble) )   // convective
-                              + delta_cd*rho*bble[qp]*bble[qp]/dt     // time derivative
+                              + unsteady*delta_cd*rho*bble[qp]*bble[qp]/dt     // time derivative
                               + utheta*visc*(delta_cd* dxbble.dot(dxbble)  + dxbble(d)*dxbble(c)) ); // rigidez
               }
 
               FUb(c) += JxW_mid*
-                        ( bble[qp]*rho*(dUdt(c) + has_convec*Uconv_qp.dot(dxU.row(c))) + // time derivative + convective
+                        ( bble[qp]*rho*(dUdt(c)*unsteady + has_convec*Uconv_qp.dot(dxU.row(c))) + // time derivative + convective
                           visc*dxbble.dot(dxU.row(c) + dxU.col(c).transpose()) - //rigidez
                           Pqp_new*dxbble(c) -                     // pressão
                           force_at_mid(c)*bble[qp]   ); // força
@@ -353,11 +353,11 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
           else
           if(behaviors & BH_GLS)
           {
-            Res = rho*( dUdt +  has_convec*dxU*Uconv_qp) + dxP_new - force_at_mid;
+            Res = rho*( dUdt*unsteady +  has_convec*dxU*Uconv_qp) + dxP_new - force_at_mid;
 
             for (int j = 0; j < n_dofs_u_per_cell/dim; ++j)
             {
-              dResdu = (rho*phi_c[qp][j]/dt)*I + has_convec*rho*utheta*(  phi_c[qp][j]*dxU + Uconv_qp.dot(dxphi_c.row(j))*I );
+              dResdu = unsteady*(rho*phi_c[qp][j]/dt)*I + has_convec*rho*utheta*(  phi_c[qp][j]*dxU + Uconv_qp.dot(dxphi_c.row(j))*I );
 
               for (int i = 0; i < n_dofs_p_per_cell; ++i)
               {
@@ -769,7 +769,7 @@ PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec Vec_up_k,Mat *Mat_Jac, Mat
     point_iterator point_end = mesh->pointEnd();
     for ( ; point != point_end; ++point)
     {
-      if (!is_in(point->getTag(),solid_tags) && !is_in(point->getTag(),triple_tags))
+      if (!is_in(point->getTag(),solid_tags) && !is_in(point->getTag(),triple_tags) && !is_in(point->getTag(),feature_tags))
         continue;
       //dof_handler[DH_UNKS].getVariable(VAR_U).getVertexAssociatedDofs(u_dofs, &*point);
       getNodeDofs(&*point, DH_UNKS, VAR_U, u_dofs);
