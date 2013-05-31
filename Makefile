@@ -1,6 +1,6 @@
 EXE			+= main
-SOURCES	+= main.cpp mesh.cpp residue.cpp jacobian.cpp
-OBJECTS	+= main.o conditions.o mesh.o residue.o jacobian.o
+SOURCES	+= main.cpp mesh.cpp residue.cpp
+OBJECTS	+= main.o conditions.o mesh.o residue.o
 #PETSC_ARCH=arch-linux2-cxx-debug
 PETSC_ARCH =arch-linux2-cxx-opt
 

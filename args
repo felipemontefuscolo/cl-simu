@@ -1,23 +1,23 @@
 -dim 2  				        # cell dimension (= space dimension)
--dt  1.e-6              # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04
--finaltime -0.2         # the simulation ends at this time.
--maxts 1               # maximum number of time steps
+-dt  0.0078125              # time step  0.5 0.25 0.125 0.0625     0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04
+-finaltime -1         # the simulation ends at this time.
+-maxts 8               # maximum number of time steps
 -renumber_dofs 0        # dofs renumbering
 -print_step 1          # print step
 -has_convec 1           # convective term: true or false CONSIDERE COLOCAR utheta=1 se desativar isto.
 -unsteady   1           # steady or unsteady problem
 -boundary_smoothing 0
--force_mesh_velocity 1  # imposes the mesh velocity of boundary grid
+-force_mesh_velocity 0  # imposes the mesh velocity of boundary grid
 -fprint_ca 0            # print contact angle at file ContactHistory
 beta1 0.0               # Vmesh = bet1 * Ufluid  +  bet2 * Uelastic
 beta2 1.0
 -plot_es 1              # plot exact solution: true or false
 -family_files 1         # plot output as 001, 002, 003, ...
 -sst -1.e-7             # steady state tol (Unew-Uold)/(Unew)
--utheta 1               # time discretization theta method (momentum)
+-utheta .5               # time discretization theta method (momentum)
 vtheta 1.0              # time discretization theta method (mesh velocity)
--quadr_c 3              # quadrature degree (cell) // 2D: 3 para ME e TH2, 2 para GLS .... 3D
--quadr_f 3              # quadrature degree (facet)
+-quadr_c 4              # quadrature degree (cell) // 2D: 3 para ME e TH2, 2 para GLS .... 3D
+-quadr_f 7              # quadrature degree (facet)
 -quadr_r 2              # quadrature degree (corner)
 -quadr_e 8              # quadrature degree (exact)
 -ale 1                  #
@@ -93,6 +93,7 @@ ramp ( ; ;2;3;20,21)
 
 stokes donea dir_tags 2 neum_tags 1
 ramp:        interf_tags 2 solid_tags 3 triple_tags 20,21
+russa:       interf_tags 2 solid_tags 3 triple_tags 20,21
 satic drop:  interf_tags 2 neum_tags 2 (debug)
 kovasznay    dir_tags 2 neum_tags 1    serve tambem para #Anything3D
 couette      dir_tags 1,2 neum_tags 1
@@ -161,6 +162,8 @@ fin  results/ramp/3d/mesh/ramp.msh
 fout results/ramp/3d/mesh/cretino.vtk
 fin  results/russab/2d/mesh/russa.msh
 fout results/russab/2d/mesh/cretino.vtk
+fin  results/russa_sin/2d/mesh/russa.msh
+fout results/russa_sin/2d/mesh/russa.vtk
 fin  results/angle/2d/mesh/angle.msh
 fout results/angle/2d/mesh/angle-dis.vtk
 fin  results/ramp/2d/mesh/ramp2nd.msh

@@ -17,11 +17,16 @@ void AppCtx::getVecNormals(Vec const* Vec_x_1, Vec & Vec_normal_)
   VectorXi          map(n_dofs_u_per_facet);
   //bool               is_surface, is_solid;
   int               tag;
+  int               tag_0, tag_1, tag_2;
+  bool              contrib_0, contrib_1, contrib_2;
   //int               tag_other;
   bool              virtual_mesh;
   bool              is_surface;
   bool              is_solid;
+  bool              is_cl;
   int               sign_;
+  int               pts_id[15];
+
 
   if (Vec_x_1==NULL)
     virtual_mesh = false;
@@ -41,9 +46,31 @@ void AppCtx::getVecNormals(Vec const* Vec_x_1, Vec & Vec_normal_)
 
     is_surface = is_in(tag, interface_tags);
     is_solid   = is_in(tag, solid_tags);
+    is_cl      = is_in(tag, triple_tags);
 
-    if ( !(is_surface || is_solid || mesh->inBoundary(&*facet)) )
+    if ( !(is_surface || is_solid || is_cl || mesh->inBoundary(&*facet)) )
       continue;
+
+    contrib_0 = true;
+    contrib_1 = true;
+    contrib_2 = true;
+    // the solid normal doesn't contribute to the triple normal
+    if (is_solid)
+    {
+      mesh->getFacetNodesId(&*facet, pts_id);
+
+      tag_0 = mesh->getNodePtr(pts_id[0])->getTag();
+      contrib_0 = !is_in(tag_0, triple_tags);
+      
+      tag_1 = mesh->getNodePtr(pts_id[1])->getTag();
+      contrib_1 = !is_in(tag_1, triple_tags);
+      
+      if (dim==3)
+      {
+        tag_2 = mesh->getNodePtr(pts_id[2])->getTag();
+        contrib_2 = !is_in(tag_2, triple_tags);
+      }
+    }
 
     dof_handler[DH_MESH].getVariable(VAR_M).getFacetDofs(map.data(), &*facet);
 
@@ -97,19 +124,28 @@ void AppCtx::getVecNormals(Vec const* Vec_x_1, Vec & Vec_normal_)
       normal *= sign_;
 
       // 0
-      X = normal;
-      X /= a.dot(a) * c.dot(c);
-      VecSetValues(Vec_normal_, dim, map.data()+0*dim, X.data(), ADD_VALUES);
+      if (contrib_0)
+      {
+        X = normal;
+        X /= a.dot(a) * c.dot(c);
+        VecSetValues(Vec_normal_, dim, map.data()+0*dim, X.data(), ADD_VALUES);
+      }
 
       // 1
-      X = normal;
-      X /= a.dot(a) * b.dot(b);
-      VecSetValues(Vec_normal_, dim, map.data()+1*dim, X.data(), ADD_VALUES);
-
+      if (contrib_1)
+      {
+        X = normal;
+        X /= a.dot(a) * b.dot(b);
+        VecSetValues(Vec_normal_, dim, map.data()+1*dim, X.data(), ADD_VALUES);
+      }
+      
       // 2
-      X = normal;
-      X /= b.dot(b) * c.dot(c);
-      VecSetValues(Vec_normal_, dim, map.data()+2*dim, X.data(), ADD_VALUES);
+      if (contrib_2)
+      {
+        X = normal;
+        X /= b.dot(b) * c.dot(c);
+        VecSetValues(Vec_normal_, dim, map.data()+2*dim, X.data(), ADD_VALUES);
+      }
 
     }
     else if(mesh_cell_type == TETRAHEDRON10) // facet = triangle6
@@ -135,37 +171,55 @@ void AppCtx::getVecNormals(Vec const* Vec_x_1, Vec & Vec_normal_)
       // dividi o triangulo em 4 mini-triangulos
 
       // node 0
-      cross(normal,x3-x0,x5-x0);
-      normal /= e03*e05;
-      normal *= sign_;
-      VecSetValues(Vec_normal_, dim, map.data()+0*dim, normal.data(), ADD_VALUES);
+      if (contrib_0)
+      {
+        cross(normal,x3-x0,x5-x0);
+        normal /= e03*e05;
+        normal *= sign_;
+        VecSetValues(Vec_normal_, dim, map.data()+0*dim, normal.data(), ADD_VALUES);
+      }
 
       // node 1
-      cross(normal,x4-x1,x3-x1);
-      normal /= e14*e13;
-      normal *= sign_;
-      VecSetValues(Vec_normal_, dim, map.data()+1*dim, normal.data(), ADD_VALUES);
+      if (contrib_1)
+      {
+        cross(normal,x4-x1,x3-x1);
+        normal /= e14*e13;
+        normal *= sign_;
+        VecSetValues(Vec_normal_, dim, map.data()+1*dim, normal.data(), ADD_VALUES);
+      }
 
       // node 2
-      cross(normal,x5-x2,x4-x2);
-      normal /= e25*e24;
-      normal *= sign_;
-      VecSetValues(Vec_normal_, dim, map.data()+2*dim, normal.data(), ADD_VALUES);
+      if (contrib_2)
+      {
+        cross(normal,x5-x2,x4-x2);
+        normal /= e25*e24;
+        normal *= sign_;
+        VecSetValues(Vec_normal_, dim, map.data()+2*dim, normal.data(), ADD_VALUES);
+      }
 
       // node 3
-      normal = cross(x1-x3,x4-x3)/(e13*e34) + cross(x4-x3,x5-x3)/(e34*e35) + cross(x5-x3,x0-x3)/(e35*e03);
-      normal *= sign_;
-      VecSetValues(Vec_normal_, dim, map.data()+3*dim, normal.data(), ADD_VALUES);
+      if (contrib_0 && contrib_1)
+      {
+        normal = cross(x1-x3,x4-x3)/(e13*e34) + cross(x4-x3,x5-x3)/(e34*e35) + cross(x5-x3,x0-x3)/(e35*e03);
+        normal *= sign_;
+        VecSetValues(Vec_normal_, dim, map.data()+3*dim, normal.data(), ADD_VALUES);
+      }
 
       // node 4
-      normal = cross(x2-x4,x5-x4)/(e24*e45) + cross(x5-x4,x3-x4)/(e45*e34) + cross(x3-x4,x1-x4)/(e34*e14);
-      normal *= sign_;
-      VecSetValues(Vec_normal_, dim, map.data()+4*dim, normal.data(), ADD_VALUES);
+      if (contrib_1 && contrib_2)
+      {
+        normal = cross(x2-x4,x5-x4)/(e24*e45) + cross(x5-x4,x3-x4)/(e45*e34) + cross(x3-x4,x1-x4)/(e34*e14);
+        normal *= sign_;
+        VecSetValues(Vec_normal_, dim, map.data()+4*dim, normal.data(), ADD_VALUES);
+      }
 
       // node 5
-      normal = cross(x0-x5,x3-x5)/(e05*e35) + cross(x3-x5,x4-x5)/(e35*e45) + cross(x4-x5,x2-x5)/(e45*e25);
-      normal *= sign_;
-      VecSetValues(Vec_normal_, dim, map.data()+5*dim, normal.data(), ADD_VALUES);
+      if (contrib_2 && contrib_0)
+      {
+        normal = cross(x0-x5,x3-x5)/(e05*e35) + cross(x3-x5,x4-x5)/(e35*e45) + cross(x4-x5,x2-x5)/(e45*e25);
+        normal *= sign_;
+        VecSetValues(Vec_normal_, dim, map.data()+5*dim, normal.data(), ADD_VALUES);
+      }
     }
     else if(mesh_cell_type == TRIANGLE3)
     {
@@ -174,8 +228,10 @@ void AppCtx::getVecNormals(Vec const* Vec_x_1, Vec & Vec_normal_)
 
       normal /= (x_coefs_trans.col(0)-x_coefs_trans.col(1)).squaredNorm();
       normal *= sign_;
-      VecSetValues(Vec_normal_, dim, map.data()+0*dim, normal.data(), ADD_VALUES);
-      VecSetValues(Vec_normal_, dim, map.data()+1*dim, normal.data(), ADD_VALUES);
+      if (contrib_0)
+        VecSetValues(Vec_normal_, dim, map.data()+0*dim, normal.data(), ADD_VALUES);
+      if (contrib_1)
+        VecSetValues(Vec_normal_, dim, map.data()+1*dim, normal.data(), ADD_VALUES);
       //if (is_surface)
       //  cout << "normal = " << normal(0) << " " << normal(1) << endl;
     }
@@ -185,14 +241,16 @@ void AppCtx::getVecNormals(Vec const* Vec_x_1, Vec & Vec_normal_)
       normal(1) = x_coefs_trans(0,0)-x_coefs_trans(0,2);
       normal /= (x_coefs_trans.col(0)-x_coefs_trans.col(2)).squaredNorm();
       normal *= sign_;
-      VecSetValues(Vec_normal_, dim, map.data()+0*dim, normal.data(), ADD_VALUES);
+      if (contrib_0)
+        VecSetValues(Vec_normal_, dim, map.data()+0*dim, normal.data(), ADD_VALUES);
       VecSetValues(Vec_normal_, dim, map.data()+2*dim, normal.data(), ADD_VALUES);
 
       normal(0) = x_coefs_trans(1,1)-x_coefs_trans(1,2);
       normal(1) = x_coefs_trans(0,2)-x_coefs_trans(0,1);
       normal /= (x_coefs_trans.col(1)-x_coefs_trans.col(2)).squaredNorm();
       normal *= sign_;
-      VecSetValues(Vec_normal_, dim, map.data()+1*dim, normal.data(), ADD_VALUES);
+      if (contrib_1)
+        VecSetValues(Vec_normal_, dim, map.data()+1*dim, normal.data(), ADD_VALUES);
       VecSetValues(Vec_normal_, dim, map.data()+2*dim, normal.data(), ADD_VALUES);
     }
 
@@ -207,8 +265,9 @@ void AppCtx::getVecNormals(Vec const* Vec_x_1, Vec & Vec_normal_)
 
     is_surface = is_in(tag, interface_tags);
     is_solid   = is_in(tag, solid_tags);
+    is_cl      = is_in(tag, triple_tags);
 
-    if ( !(is_surface || is_solid || mesh->inBoundary(&*point)) )
+    if ( !(is_surface || is_solid || is_cl || mesh->inBoundary(&*point)) )
       continue;
 
     getNodeDofs(&*point, DH_MESH, VAR_M, map.data());

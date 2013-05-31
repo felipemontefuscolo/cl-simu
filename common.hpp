@@ -372,6 +372,7 @@ public:
   void onUpdateMesh();
   PetscErrorCode setInitialConditions();
   PetscErrorCode checkSnesConvergence(SNES snes, PetscInt it,PetscReal xnorm, PetscReal pnorm, PetscReal fnorm, SNESConvergedReason *reason);
+  PetscErrorCode setUPInitialGuess();
   PetscErrorCode solveTimeProblem();
   PetscErrorCode formJacobian(SNES /*snes*/,Vec x,Mat *Mat_Jac, Mat* /*prejac*/, MatStructure * /*flag*/);
   PetscErrorCode formFunction(SNES /*snes*/, Vec x, Vec f);
@@ -421,54 +422,6 @@ public:
     }
   }
 
-  template <typename Derived>
-  void getProjectorMatrix(MatrixBase<Derived> & P, int n_nodes, int const* nodes, Vec const& Vec_x_, double t) const
-  {
-    // check
-    if ((P.rows() != P.cols()) || (P.cols() != dim*n_nodes))
-    {
-      //cout << "Projector matrix size: " << P.rows() << " x " << P.cols() << endl;
-      //cout << "dim x n_nodes:         " << (dim*n_nodes) << endl;
-    }
-    P.setIdentity();
-
-    Tensor I(dim,dim);
-    Vector X(dim);
-    Vector normal(dim);
-    int    dofs[dim];
-    int    tag;
-    Point const* point;
-
-    I.setIdentity();
-
-    // NODES
-    for (int i = 0; i < n_nodes; ++i)
-    {
-      point = mesh->getNodePtr(nodes[i]);
-      tag = point->getTag();
-      //m = point->getPosition() - mesh->numVerticesPerCell();
-      //cell = mesh->getCellPtr(point->getIncidCell());
-
-      if (is_in(tag,feature_tags))
-      {
-        dof_handler[DH_MESH].getVariable(VAR_M).getVertexAssociatedDofs(dofs, point);
-        VecGetValues(Vec_x_, dim, dofs, X.data());
-        P.block(i*dim,i*dim,dim,dim)  = feature_proj(X,t,tag);
-        continue;
-      }
-
-      if (!is_in(tag,solid_tags) && !is_in(tag,triple_tags) && !is_in(tag,feature_tags))
-        continue;
-
-      dof_handler[DH_MESH].getVariable(VAR_M).getVertexAssociatedDofs(dofs, point);
-      VecGetValues(Vec_x_, dim, dofs, X.data());
-
-      normal = -solid_normal(X,t,tag);
-
-      P.block(i*dim,i*dim,dim,dim)  = I - normal*normal.transpose();
-
-    } // end nodes
-  }
 
   double getMeshVolume();
   double getMaxVelocity();

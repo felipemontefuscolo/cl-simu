@@ -1268,6 +1268,8 @@ PetscErrorCode AppCtx::setInitialConditions()
   //int       dof;
   int tag;
 
+  current_time = 0;
+
   VecZeroEntries(Vec_res);
   VecZeroEntries(Vec_up_0);
   VecZeroEntries(Vec_up_1);
@@ -1305,7 +1307,6 @@ PetscErrorCode AppCtx::setInitialConditions()
   VecCopy(Vec_up_0,Vec_up_1);
 
   // remember: Vec_normals follows the Vec_x_1
-  double tt=0;
   
   //moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, tt, Vec_x_1);
   calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, Vec_v_mid, 0.0);
@@ -1328,7 +1329,10 @@ PetscErrorCode AppCtx::setInitialConditions()
       printf("\tIterations %d\n", i);
       // * SOLVE THE SYSTEM *
       if (solve_the_sys)
+      {
+        setUPInitialGuess();
         ierr = SNESSolve(snes,PETSC_NULL,Vec_up_1);  CHKERRQ(ierr);
+      }
       // * SOLVE THE SYSTEM *
 
       // update
@@ -1435,6 +1439,47 @@ PetscErrorCode AppCtx::checkSnesConvergence(SNES snes, PetscInt it,PetscReal xno
 */
 }
 
+PetscErrorCode AppCtx::setUPInitialGuess()
+{
+  // set u^n+1 b.c.
+  
+  VectorXi    u_dofs(dim);
+  VectorXi    x_dofs(dim);  
+  int tag;
+
+  Vector      X1(dim);
+  Vector      U1(dim);
+
+  point_iterator point = mesh->pointBegin();
+  point_iterator point_end = mesh->pointEnd();
+  for (; point != point_end; ++point)
+  {
+    tag = point->getTag();
+
+    getNodeDofs(&*point, DH_MESH, VAR_M, x_dofs.data());
+    getNodeDofs(&*point, DH_UNKS, VAR_U, u_dofs.data());
+
+    VecGetValues(Vec_x_1, dim, x_dofs.data(), X1.data());
+
+    if (  is_in(tag, dirichlet_tags)  )
+    {
+      U1 = u_exact(X1, current_time+dt, tag);
+      VecSetValues(Vec_up_1, dim, u_dofs.data(), U1.data(), INSERT_VALUES);
+    }
+    else
+    if (is_in(tag, solid_tags) || is_in(tag, feature_tags) || is_in(tag, triple_tags))
+    {
+      U1.setZero();
+      VecSetValues(Vec_up_1, dim, u_dofs.data(), U1.data(), INSERT_VALUES);
+    }
+
+  } // end for point  
+  
+  Assembly(Vec_up_1);
+  
+  PetscFunctionReturn(0);
+}
+
 PetscErrorCode AppCtx::solveTimeProblem()
 {
   PetscErrorCode      ierr(0);
@@ -1529,7 +1574,10 @@ PetscErrorCode AppCtx::solveTimeProblem()
 
     // * SOLVE THE SYSTEM *
     if (solve_the_sys)
+    {
+      setUPInitialGuess();
       ierr = SNESSolve(snes,PETSC_NULL,Vec_up_1);        CHKERRQ(ierr);
+    }
     // * SOLVE THE SYSTEM *
 
     printContactAngle(fprint_ca);
