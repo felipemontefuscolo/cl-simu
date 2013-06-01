@@ -48,7 +48,7 @@ inline double sign(double a) {a<0 ? -1 : 1;};
 #define TRACO          18
 #define RUSSA_SIN2D    19
 
-#define PROBLEM_TYPE 18
+#define PROBLEM_TYPE 19
 
 
 #if (PROBLEM_TYPE==CAVITY_2D_3D)
@@ -2327,7 +2327,7 @@ const double R = 10.0;
 
 double pho(Vector const& X, int tag)
 {
-  return 1.e-5;
+  return 1.e-0;
 }
 
 double cos_theta0()
@@ -2337,7 +2337,7 @@ double cos_theta0()
 
 double zeta(double u_norm, double angle)
 {
-  return 0*1.e-1;
+  return 1.e-3;
 }
 
 double beta_diss()
@@ -2347,7 +2347,7 @@ double beta_diss()
 
 double gama(Vector const& X, double t, int tag)
 {
-  return 1.e-3;
+  return 1;
 }
 double muu(int tag)
 {
@@ -2421,11 +2421,11 @@ Vector solid_normal(Vector const& X, double t, int tag)
   
   const double tet = pi + acos(-x/r);
   
-  //N(0) = -x/r + a*w*sin(w*tet)*y/r2;
-  //N(1) = -y/r - a*w*sin(w*tet)*x/r2;
+  N(0) = -x/r + a*w*sin(w*tet)*y/r2;
+  N(1) = -y/r - a*w*sin(w*tet)*x/r2;
 
   //N(0) = 1;
-  N(1) = 1;
+  //N(1) = 1;
 
   N.normalize();
 

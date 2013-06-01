@@ -949,7 +949,6 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
     int              tag;
     bool             is_triple;
 
-    MatrixXd         u_coefs_r(n_dofs_u_per_corner/dim, dim);
     VectorXd         FUloc(n_dofs_u_per_corner);
     MatrixXd         Aloc_r(n_dofs_u_per_corner, n_dofs_u_per_corner);
 
@@ -959,7 +958,6 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
     MatrixXd         Prj(n_dofs_u_per_corner,n_dofs_u_per_corner);
     VectorXi         corner_nodes(nodes_per_corner);
 
-    int const           sdim = this->dim;
     bool                gen_error = false;
     //MatrixXd             u_coefs_r_mid(n_dofs_u_per_corner/dim, dim);
     MatrixXd            u_coefs_r_mid_trans(dim, n_dofs_u_per_corner/dim);  // n+utheta
@@ -1025,32 +1023,20 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       if (!is_triple)
         continue;
 
-      // mapeamento do local para o global:
-      //
-      dof_handler[DH_UNKS].getVariable(VAR_U).getCornerDofs(mapU_r.data(), &*corner);
-      dof_handler[DH_UNKS].getVariable(VAR_P).getCornerDofs(mapP_r.data(), &*corner);
-
-      VecGetValues(Vec_up_k , mapU_r.size(), mapU_r.data(), u_coefs_r.data());
-
-      tag = corner->getTag();
-
-      is_triple = (triple_tags.end() != std::find(triple_tags.begin(), triple_tags.end(), tag));
-
-      if (!is_triple)
-        continue;
-
       FUloc.setZero();
       Aloc_r.setZero();
 
       mesh->getCornerNodesId(&*corner, corner_nodes.data());
      // mesh->getNodesCoords(corner_nodes.begin(), corner_nodes.end(), x_coefs_r_mid.data());
 
+      dof_handler[DH_UNKS].getVariable(VAR_U).getCornerDofs(mapU_r.data(), &*corner);
+      dof_handler[DH_UNKS].getVariable(VAR_P).getCornerDofs(mapP_r.data(), &*corner);
       dof_handler[DH_MESH].getVariable(VAR_M).getCornerDofs(mapM_r.data(), &*corner);
 
       VecGetValues(Vec_x_0,     mapM_r.size(), mapM_r.data(), x_coefs_r_old.data());
       VecGetValues(Vec_x_1,     mapM_r.size(), mapM_r.data(), x_coefs_r_new.data());
       VecGetValues(Vec_up_0,    mapU_r.size(), mapU_r.data(), u_coefs_r_old.data());
-      VecGetValues(Vec_up_1,    mapU_r.size(), mapU_r.data(), u_coefs_r_new.data());
+      VecGetValues(Vec_up_k,    mapU_r.size(), mapU_r.data(), u_coefs_r_new.data());
 
       u_coefs_r_mid_trans = utheta*u_coefs_r_new.transpose() + (1.-utheta)*u_coefs_r_old.transpose();
       x_coefs_r_mid_trans = utheta*x_coefs_r_new.transpose() + (1.-utheta)*x_coefs_r_old.transpose();
@@ -1058,7 +1044,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       //visc = muu(tag);
       //rho  = pho(Xqp,tag);
 
-      if (sdim==3)
+      if (dim==3)
       {
         // encontrando o ponto da superfície sólido. com ele, é calculado uma normal
         // que corrigi o sinal de line_normal
@@ -1166,7 +1152,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
       for (int qp = 0; qp < n_qpts_corner; ++qp)
       {
-        if (sdim==3)
+        if (dim==3)
         {
           F_r_mid   = x_coefs_r_mid_trans * dLqsi_r[qp];
           J_mid = F_r_mid.norm();
@@ -1189,7 +1175,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
         gama_mid = gama(Xqp, current_time+dt*utheta, tag);
 
-        if (sdim==3)
+        if (dim==3)
         {
           normal  = solid_normal(Xqp, current_time, tag);
           line_normal(0)= F_r_mid(0,0);
@@ -1206,10 +1192,14 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
           for (int c = 0; c < dim; ++c)
           {
             FUloc(i*dim + c) += JxW_mid*(-gama_mid*cos_theta0() + zeta(Uqp_norm,0)*line_normal.dot(Uqp))*line_normal(c)*phi_r[qp][i];
+            //FUloc(i*dim + c) += JxW_mid*(-gama_mid*cos_theta0() )*line_normal(c)*phi_r[qp][i];
+            //FUloc(i*dim + c) += JxW_mid*zeta(Uqp_norm,0)*Uqp(c)*phi_r[qp][i];
           
             for (int j = 0; j < n_dofs_u_per_corner/dim; ++j)
               for (int d = 0; d < dim; ++d)
-                Aloc_r(i*dim + c, j*dim + d) += JxW_mid* zeta(Uqp_norm,0)*line_normal(d) *phi_r[qp][j]*line_normal(c)*phi_r[qp][i];
+                Aloc_r(i*dim + c, j*dim + d) += JxW_mid* zeta(Uqp_norm,0)*utheta*line_normal(d) *phi_r[qp][j]*line_normal(c)*phi_r[qp][i];
+                //if (c==d)
+                //  Aloc_r(i*dim + c, j*dim + d) += JxW_mid* zeta(Uqp_norm,0) *utheta*phi_r[qp][j]*phi_r[qp][i];
           
           }
           
