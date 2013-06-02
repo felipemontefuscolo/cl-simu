@@ -5,7 +5,7 @@ void getProjectorMatrix(MatrixBase<Derived> & P, int n_nodes, int const* nodes, 
 {
   int const dim = app.dim;
   Mesh const* mesh = &*app.mesh;
-  DofHandler const* dof_handler = &*app.dof_handler;
+  //DofHandler const* dof_handler = &*app.dof_handler;
   std::vector<int> const& dirichlet_tags  = app.dirichlet_tags;
   //std::vector<int> const& neumann_tags    = app.neumann_tags  ;
   //std::vector<int> const& interface_tags  = app.interface_tags;
@@ -38,7 +38,7 @@ void getProjectorMatrix(MatrixBase<Derived> & P, int n_nodes, int const* nodes, 
 
     if (is_in(tag,feature_tags))
     {
-      dof_handler[DH_MESH].getVariable(VAR_M).getVertexAssociatedDofs(dofs, point);
+      app.getNodeDofs(&*point, DH_MESH, VAR_M, dofs);
       VecGetValues(Vec_x_, dim, dofs, X.data());
       P.block(i*dim,i*dim,dim,dim)  = feature_proj(X,t,tag);
       continue;
@@ -46,7 +46,7 @@ void getProjectorMatrix(MatrixBase<Derived> & P, int n_nodes, int const* nodes, 
     else
     if (is_in(tag,solid_tags) || is_in(tag, triple_tags))
     {
-      dof_handler[DH_MESH].getVariable(VAR_M).getVertexAssociatedDofs(dofs, point);
+      app.getNodeDofs(&*point, DH_MESH, VAR_M, dofs);
       VecGetValues(Vec_x_, dim, dofs, X.data());
 
       normal = solid_normal(X,t,tag);
@@ -1302,7 +1302,7 @@ void getProjectorBC(MatrixBase<Derived> & P, int n_nodes, int const* nodes, Vec 
 {
   int const dim = app.dim;
   Mesh const* mesh = &*app.mesh;
-  DofHandler const* dof_handler = &*app.dof_handler;
+  //DofHandler const* dof_handler = &*app.dof_handler;
   std::vector<int> const& dirichlet_tags  = app.dirichlet_tags;
   std::vector<int> const& neumann_tags    = app.neumann_tags  ;
   std::vector<int> const& interface_tags  = app.interface_tags;
@@ -1335,28 +1335,31 @@ void getProjectorBC(MatrixBase<Derived> & P, int n_nodes, int const* nodes, Vec 
 
     if (is_in(tag,feature_tags))
     {
-      dof_handler[DH_MESH].getVariable(VAR_M).getVertexAssociatedDofs(dofs, point);
+      app.getNodeDofs(&*point, DH_MESH, VAR_M, dofs);
       VecGetValues(Vec_x_, dim, dofs, X.data());
       P.block(i*dim,i*dim,dim,dim)  = feature_proj(X,t,tag);
     }
     else
     if (is_in(tag,solid_tags) )
     {
-      dof_handler[DH_MESH].getVariable(VAR_M).getVertexAssociatedDofs(dofs, point);
-      VecGetValues(Vec_x_, dim, dofs, X.data());
-
-      normal = -solid_normal(X,t,tag);
-
-      P.block(i*dim,i*dim,dim,dim)  = I - normal*normal.transpose();      
-      //P.block(i*dim,i*dim,dim,dim) = Z;
-
+      if (app.boundary_smoothing)
+      {
+        app.getNodeDofs(&*point, DH_MESH, VAR_M, dofs);
+        VecGetValues(Vec_x_, dim, dofs, X.data());
+        normal = -solid_normal(X,t,tag);
+        P.block(i*dim,i*dim,dim,dim)  = I - normal*normal.transpose();      
+      }
+      else
+      {
+        P.block(i*dim,i*dim,dim,dim) = Z;  
+      }
     }
     else
     if (is_in(tag,interface_tags))
     {
       if (app.boundary_smoothing)
       {
-        dof_handler[DH_MESH].getVariable(VAR_M).getVertexAssociatedDofs(dofs, point);
+        app.getNodeDofs(&*point, DH_MESH, VAR_M, dofs);
         VecGetValues(Vec_normal, dim, dofs, X.data());
         P.block(i*dim,i*dim,dim,dim) = I - X*X.transpose();
       }
@@ -1397,8 +1400,7 @@ PetscErrorCode AppCtx::formFunction_mesh(SNES /*snes_m*/, Vec Vec_v, Vec Vec_fun
   FEP_PRAGMA_OMP(parallel default(none) shared(Vec_v, Vec_fun, cout))
 #endif
   {
-    
-    bool const non_linear = 0;
+    bool const non_linear = nonlinear_elasticity;
     
     Tensor            dxV(dim,dim);   // grad u
     Tensor            F_c(dim,dim);
@@ -1483,13 +1485,13 @@ PetscErrorCode AppCtx::formFunction_mesh(SNES /*snes_m*/, Vec Vec_v, Vec Vec_fun
                   {
                     sigma_ck -= dxV(l,l);
                     for (int m = 0; m < dim; ++m)
-                      sigma_ck -= dxV(l,m)*dxV(l,m);
+                      sigma_ck -=  dxV(l,m)*dxV(l,m); 
                   }
 
                 }
               }
 
-              Floc(i*dim + c) += sigma_ck*dxqsi_c(i,k);
+              Floc(i*dim + c) += (JxW/JxW) *sigma_ck*dxqsi_c(i,k); // (JxW/JxW) is to compiler not complain about unused variables
 
               for (int j = 0; j < n_dofs_v_per_cell/dim; ++j)
               {

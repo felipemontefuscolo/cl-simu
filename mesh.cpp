@@ -726,6 +726,50 @@ PetscErrorCode AppCtx::calcMeshVelocity(Vec const& Vec_x_0, Vec const& Vec_up_0,
   }
 
 
+  // don't let edges to be curved
+  if (mesh->numNodesPerCell() > mesh->numVerticesPerCell())
+  {
+    int tag;
+    int dofs[50];
+    Vector Vm(dim);
+    Vector V0(dim);
+    Vector V1(dim);
+    
+    point_iterator point = mesh->pointBegin();
+    point_iterator point_end = mesh->pointEnd();
+    for (; point != point_end; ++point)
+    {
+      tag = point->getTag();
+
+      if (mesh->isVertex(&*point))
+        continue;
+  
+      if (is_in(tag, solid_tags) || is_in(tag, triple_tags) || is_in(tag, interface_tags) || is_in(tag, feature_tags))
+        continue;
+
+
+      const int m = point->getPosition() - mesh->numVerticesPerCell();
+      Cell const* cell = mesh->getCellPtr(point->getIncidCell());
+      if (dim==3)
+      {
+        const int edge_id = cell->getCornerId(m);
+        dof_handler[DH_MESH].getVariable(VAR_M).getCornerDofs(dofs, mesh->getCornerPtr(edge_id));
+      }
+      else
+      {
+        const int edge_id = cell->getFacetId(m);
+        dof_handler[DH_MESH].getVariable(VAR_M).getFacetDofs(dofs, mesh->getFacetPtr(edge_id));
+      }
+      VecGetValues(Vec_v_mid, dim, dofs + 0*dim, V0.data());
+      VecGetValues(Vec_v_mid, dim, dofs + 1*dim, V1.data());
+      Vm = .5*(V0+V1);
+      VecSetValues(Vec_v_mid, dim, dofs + 2*dim, Vm.data(), INSERT_VALUES);
+      
+    }
+    Assembly(Vec_v_mid);
+  }
+
+
   PetscFunctionReturn(0);
 }
 

@@ -178,6 +178,7 @@ void AppCtx::setUpDefaultOptions()
   has_convec             = PETSC_TRUE;
   renumber_dofs          = PETSC_FALSE;
   fprint_ca              = PETSC_FALSE;
+  nonlinear_elasticity   = PETSC_FALSE;
 
   filename = (dim==2 ? "malha/cavity2d-1o.msh" : "malha/cavity3d-1o.msh");
 }
@@ -221,6 +222,7 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
   PetscOptionsBool("-force_mesh_velocity", "force_mesh_velocity", "main.cpp", force_mesh_velocity, &force_mesh_velocity, PETSC_NULL);
   PetscOptionsBool("-renumber_dofs", "renumber dofs", "main.cpp", renumber_dofs, &renumber_dofs, PETSC_NULL);
   PetscOptionsBool("-fprint_ca", "print contact angle", "main.cpp", fprint_ca, &fprint_ca, PETSC_NULL);
+  PetscOptionsBool("-nonlinear_elasticity", "put a non-linear term in the elasticity problem", "main.cpp", nonlinear_elasticity, &nonlinear_elasticity, PETSC_NULL);
   PetscOptionsInt("-quadr_e", "quadrature degree (for calculating the error)", "main.cpp", quadr_degree_err, &quadr_degree_err, PETSC_NULL);
   PetscOptionsInt("-quadr_c", "quadrature degree", "main.cpp", quadr_degree_cell, &quadr_degree_cell, PETSC_NULL);
   PetscOptionsInt("-quadr_f", "quadrature degree (facet)", "main.cpp", quadr_degree_facet, &quadr_degree_facet, PETSC_NULL);
@@ -800,11 +802,16 @@ PetscErrorCode AppCtx::allocPetscObjs()
   ierr = KSPGetPC(ksp_m,&pc_m);                                                      CHKERRQ(ierr);
   ierr = KSPSetOperators(ksp_m,Mat_Jac_m,Mat_Jac_m,SAME_NONZERO_PATTERN);            CHKERRQ(ierr);
   // ierr = KSPSetType(ksp_m,KSPPREONLY);                                            CHKERRQ(ierr);
-  ierr = KSPSetType(ksp_m,KSPGMRES);                                                 CHKERRQ(ierr);
-  ierr = PCSetType(pc_m,PCILU);                                                      CHKERRQ(ierr);
+  ierr = KSPSetType(ksp_m,KSPCG);                                                 CHKERRQ(ierr);
+  //ierr = KSPSetType(ksp_m,KSPPREONLY);                                                 CHKERRQ(ierr);
+  ierr = PCSetType(pc_m,PCILU);                                                   CHKERRQ(ierr);
   // ierr = PCFactorSetMatOrderingType(pc_m, MATORDERINGNATURAL);                         CHKERRQ(ierr);
   // ierr = KSPSetTolerances(ksp_m,1.e-7,PETSC_DEFAULT,PETSC_DEFAULT,PETSC_DEFAULT);  CHKERRQ(ierr);
   // ierr = SNESSetApplicationContext(snes_m,this);
+  
+  if(!nonlinear_elasticity)
+    ierr = SNESSetType(snes_m, SNESKSPONLY);                                            CHKERRQ(ierr);
+
 
 //~ #ifdef PETSC_HAVE_MUMPS
   //~ PCFactorSetMatSolverPackage(pc_m,MATSOLVERMUMPS);
@@ -813,7 +820,7 @@ PetscErrorCode AppCtx::allocPetscObjs()
   //ierr = SNESMonitorSet(snes_m, SNESMonitorDefault, 0, 0); CHKERRQ(ierr);
   //ierr = SNESMonitorSet(snes_m,Monitor,0,0);CHKERRQ(ierr);
   //ierr = SNESSetTolerances(snes_m,0,0,0,13,PETSC_DEFAULT);
-  ierr = SNESSetFromOptions(snes_m); CHKERRQ(ierr);
+  //ierr = SNESSetFromOptions(snes_m); CHKERRQ(ierr);
   //ierr = SNESLineSearchSet(snes_m, SNESLineSearchNo, &user); CHKERRQ(ierr);
 
 

@@ -468,6 +468,7 @@ public:
   PetscBool   plot_exact_sol;
   PetscBool   family_files;
   PetscBool   fprint_ca; // print contact angle
+  PetscBool   nonlinear_elasticity;
   int         converged_times;
   double      dt;
   double      steady_tol;

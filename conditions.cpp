@@ -2321,37 +2321,37 @@ Tensor feature_proj(Vector const& X, double t, int tag)
 #if (PROBLEM_TYPE==RUSSA_SIN2D)
 
 const double a = 0.1;
-const double w = 90.0;
+const double w = 45.0;
 const double R = 10.0;
 
 
 double pho(Vector const& X, int tag)
 {
-  return 1.e-0;
+  return 1.e+2;
 }
 
 double cos_theta0()
 {
-  return 0;
+  return 0*sqrt(2)/2;
 }
 
 double zeta(double u_norm, double angle)
 {
-  return 1.e-3;
+  return 1.e-2;
 }
 
 double beta_diss()
 {
-  return 0*1.e-5;
+  return 1.e-3;
 }
 
 double gama(Vector const& X, double t, int tag)
 {
-  return 1;
+  return 1e+1;
 }
 double muu(int tag)
 {
-  return 1;
+  return 1.e+2;
 }
 Vector force(Vector const& X, double t, int tag)
 {
@@ -2359,7 +2359,8 @@ Vector force(Vector const& X, double t, int tag)
   double y = X(1);
   Vector f(Vector::Zero(X.size()));
   
-  f(1)=-1;
+  //f(1)=max(-1.0,-t);
+  f(1)=-1.e+2;
   //f(0)=-1;
   //f /= 4*sqrt(2);
 
