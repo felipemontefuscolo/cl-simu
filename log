@@ -1,20 +1,20 @@
-mesh: results/microchannel/micro.msh
+mesh: results/russa_sin/2d/mesh/russa.msh
 elem type: Linear triangle
 space dim: 2
-# nodes:   48
-# cells:   60
-# facets:  107
-# corners: 48
+# nodes:   24
+# cells:   31
+# facets:  54
+# corners: 24
 
-# velocity unknows: 96
-# preassure unknows: 48
+# velocity unknows: 48
+# preassure unknows: 24
 
 Cell list: 
-  -size:           60
+  -size:           31
 Node list: 
-  -size:           48
+  -size:           24
 Facet list: 
-  -size:           107
+  -size:           54
 Corner list: 
   -size:           0
 elapsed    0.000s in : buildCellsAdjacency()
@@ -23,84 +23,58 @@ elapsed    0.000s in : setUpConnected/BoundaryComponentsId()
 elapsed    0.000s in : buildNodesAdjacency()
 elapsed    0.000s in : readFileMsh(): read connectivity
 elapsed    0.000s in : readFileMsh(): search for boundary elements
-feature_tags =  7 8 9 
+feature_tags =  
 on update mesh
 allocing petsc objs ... done.
 matrix coloring ... done 
-dir_entries size : 0
-initial volume: 739.839999999994575 
+initial volume: 2.581189263923068 
 Initial conditions:
 	Iterations 0
-  0 SNES Function norm 7.323824137703e+00 
-  1 SNES Function norm 2.290818860045e-03 
-  2 SNES Function norm 8.095854165092e-10 
-AQUIIIIIIIIIIIIIIIIIIIIIIIIIIIII    1   
-AQUIIIIIIIIIIIIIIIIIIIIIIIIIIIII    2   
-AQUIIIIIIIIIIIIIIIIIIIIIIIIIIIII    3   
+  0 SNES Function norm 5.688286962228e+01 
+  1 SNES Function norm 4.507604244872e-02 
+  2 SNES Function norm 5.340378802959e-08 
 	Iterations 1
-  0 SNES Function norm 7.324858482335e+00 
-  1 SNES Function norm 2.270793295433e-03 
-  2 SNES Function norm 7.778268230787e-10 
-AQUIIIIIIIIIIIIIIIIIIIIIIIIIIIII    1   
-AQUIIIIIIIIIIIIIIIIIIIIIIIIIIIII    2   
-AQUIIIIIIIIIIIIIIIIIIIIIIIIIIIII    3   
+  0 SNES Function norm 7.003918176055e+01 
+  1 SNES Function norm 3.397213962323e-02 
+  2 SNES Function norm 1.874006252203e-08 
 	Iterations 2
-  0 SNES Function norm 7.324060621490e+00 
-  1 SNES Function norm 2.263021126964e-03 
-  2 SNES Function norm 7.840891469162e-10 
-AQUIIIIIIIIIIIIIIIIIIIIIIIIIIIII    1   
-AQUIIIIIIIIIIIIIIIIIIIIIIIIIIIII    2   
-AQUIIIIIIIIIIIIIIIIIIIIIIIIIIIII    3   
+  0 SNES Function norm 6.995613101448e+01 
+  1 SNES Function norm 3.411826939274e-02 
+  2 SNES Function norm 1.803076775889e-08 
 	Iterations 3
-  0 SNES Function norm 7.324054447581e+00 
-  1 SNES Function norm 2.263017560190e-03 
-  2 SNES Function norm 7.840721017261e-10 
-AQUIIIIIIIIIIIIIIIIIIIIIIIIIIIII    1   
-AQUIIIIIIIIIIIIIIIIIIIIIIIIIIIII    2   
-AQUIIIIIIIIIIIIIIIIIIIIIIIIIIIII    3   
+  0 SNES Function norm 6.995611178089e+01 
+  1 SNES Function norm 3.412479415521e-02 
+  2 SNES Function norm 1.801563006482e-08 
 	Iterations 4
-  0 SNES Function norm 7.324054472075e+00 
-  1 SNES Function norm 2.263017530620e-03 
-  2 SNES Function norm 7.840720029186e-10 
-AQUIIIIIIIIIIIIIIIIIIIIIIIIIIIII    1   
-AQUIIIIIIIIIIIIIIIIIIIIIIIIIIIII    2   
-AQUIIIIIIIIIIIIIIIIIIIIIIIIIIIII    3   
+  0 SNES Function norm 6.995610001676e+01 
+  1 SNES Function norm 3.412483244922e-02 
+  2 SNES Function norm 1.801533597966e-08 
 starting time loop . . . 
 num snes iterations: 2
 
 current time: 0
 time step: 0
 steady error: 1
-  0 SNES Function norm 7.324054471831e+00 
-  1 SNES Function norm 2.263017531971e-03 
-  2 SNES Function norm 7.840717629455e-10 
-theta min: 28.0653
-theta max: 28.0795
-  0 SNES Function norm 3.179080653867e+00 
-  1 SNES Function norm 5.249906847893e-03 
-  2 SNES Function norm 3.297920227141e-09 
-theta min: 28.0606
-theta max: 28.084
+  0 SNES Function norm 6.995609976329e+01 
+  1 SNES Function norm 3.412483229066e-02 
+  2 SNES Function norm 1.801530877365e-08 
 
 ==========================================
 stop reason:
 maximum number of iterations reached. 
 num snes iterations: 2
 
-final volume: 739.840012024738598 
-volume error 100*(f-i)/i: 0.000001625316828 per percent
-x error : 1.050943319158191 
+final volume: 2.580767453933711 
+volume error 100*(f-i)/i: 0.016341691609052 per percent
+x error : 10.800988343022320 
 num snes iterations: 2
 reason: 3
 SNES_CONVERGED_FNORM_RELATIVE /* ||F|| < rtol*||F_initial|| */
-3888 allocated		2358 used	1530 unneeded
+1728 allocated		0 used	1728 unneeded
 
 mean errors: 
 # hmean            u_L2_err         p_L2_err          grad_u_L2_err     grad_p_L2_err
 0.000000000000000 0.000000000000000 0.000000000000000 0.000000000000000 0.000000000000000
-temporario:
-umax_err          pmax_err
-0.041325052102607 1.307423181390582
 
 elapsed    0.000s in : CuthillMcKeeRenumber
 WARNING! There are options you set that were not used!

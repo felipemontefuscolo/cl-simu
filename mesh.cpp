@@ -1,7 +1,16 @@
 #include "common.hpp"
+#include <tr1/tuple>
 
+using std::tr1::tuple;
+using std::tr1::make_tuple;
+using std::tr1::get;
 
+extern PetscErrorCode FormJacobian(SNES snes,Vec Vec_up_1,Mat *Mat_Jac, Mat *prejac, MatStructure *flag, void *ptr);
+extern PetscErrorCode FormFunction(SNES snes, Vec Vec_up_1, Vec Vec_fun, void *ptr);
+extern PetscErrorCode CheckSnesConvergence(SNES snes, PetscInt it,PetscReal xnorm, PetscReal pnorm, PetscReal fnorm, SNESConvergedReason *reason, void *ctx);
 
+extern PetscErrorCode FormJacobian_mesh(SNES snes,Vec Vec_up_1,Mat *Mat_Jac, Mat *prejac, MatStructure *flag, void *ptr);
+extern PetscErrorCode FormFunction_mesh(SNES snes, Vec Vec_up_1, Vec Vec_fun, void *ptr);
 
 
 
@@ -61,10 +70,10 @@ void AppCtx::getVecNormals(Vec const* Vec_x_1, Vec & Vec_normal_)
 
       tag_0 = mesh->getNodePtr(pts_id[0])->getTag();
       contrib_0 = !is_in(tag_0, triple_tags);
-      
+
       tag_1 = mesh->getNodePtr(pts_id[1])->getTag();
       contrib_1 = !is_in(tag_1, triple_tags);
-      
+
       if (dim==3)
       {
         tag_2 = mesh->getNodePtr(pts_id[2])->getTag();
@@ -138,7 +147,7 @@ void AppCtx::getVecNormals(Vec const* Vec_x_1, Vec & Vec_normal_)
         X /= a.dot(a) * b.dot(b);
         VecSetValues(Vec_normal_, dim, map.data()+1*dim, X.data(), ADD_VALUES);
       }
-      
+
       // 2
       if (contrib_2)
       {
@@ -613,6 +622,321 @@ void AppCtx::swapMeshWithVec(Vec & Vec_xmsh)
 }
 
 
+PetscErrorCode AppCtx::meshAdapt()
+{
+  //PetscFunctionReturn(0);
+  PetscErrorCode      ierr;
+
+  // only for 2d ... TODO for 3d too
+  if (dim != 2)
+    PetscFunctionReturn(0);
+  // only for linear elements
+  if (mesh->numNodesPerCell() > mesh->numVerticesPerCell())
+    PetscFunctionReturn(0);
+
+  const Real TOL = 0.1;
+
+  typedef tuple<int, int, int> EdgeVtcs; // get<0> = mid node, get<1> = top node, get<2> = bot node
+
+
+  std::list<EdgeVtcs> adde_vtcs;
+
+  CellElement *edge;
+  Real h;
+  Real expected_h;
+  VectorXi edge_nodes(3); // 3 nodes at most
+  Vector Xa(dim), Xb(dim);
+  int tag_a;
+  int tag_b;
+  int tag_e;
+
+  bool mesh_was_changed = false;
+
+  //printf("ENTRANDO NO LOOP is_splitting!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+  // first make collapses, then make splittings.
+  // NOTE: mark added points
+  for (int is_splitting = 0; is_splitting < 2 ; ++is_splitting)
+  {
+    int const n_edges_total = (dim==2) ? mesh->numFacetsTotal() : mesh->numCornersTotal();
+
+    //printf("ENTRANDO NO LOOP eid!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+    for (int eid = 0; eid < n_edges_total; ++eid)
+    {
+
+      if (dim == 2)
+        edge = mesh->getFacetPtr(eid);
+      else
+        edge = mesh->getCornerPtr(eid);
+
+      if (edge==NULL || edge->isDisabled())
+        continue;
+
+      if (dim == 2)
+        mesh->getFacetNodesId(eid, edge_nodes.data());
+      else
+        mesh->getCornerNodesId(eid, edge_nodes.data());
+
+      tag_a = mesh->getNodePtr(edge_nodes[0])->getTag();
+      tag_b = mesh->getNodePtr(edge_nodes[1])->getTag();
+      tag_e = edge->getTag();
+
+      if (!( tag_a==tag_b && tag_b==tag_e ))
+        continue;
+
+      Point const* pt_a = mesh->getNodePtr(edge_nodes[0]);
+      Point const* pt_b = mesh->getNodePtr(edge_nodes[1]);
+
+      if (pt_a->isMarked() || pt_b->isMarked())
+        continue;
+
+      pt_a->getCoord(Xa.data(),dim);
+      pt_b->getCoord(Xb.data(),dim);
+      
+      h = (Xa-Xb).norm();
+
+      expected_h = .5*(mesh_sizes[edge_nodes[0]] + mesh_sizes[edge_nodes[1]]);
+
+      //printf("mesh size  %lf!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", (h - expected_h)/expected_h);
+
+      if (is_splitting )//&& (time_step%2==0))
+      {
+        if ((h - expected_h)/expected_h > TOL)
+        {
+          mesh_was_changed = true;
+          int pt_id = MeshToolsTri::insertVertexOnEdge(edge->getIncidCell(), edge->getPosition(), 0.5, &*mesh);
+          //printf("INSERTED %d !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", pt_id);
+          adde_vtcs.push_back(make_tuple(pt_id, edge_nodes[0], edge_nodes[1]));
+          mesh->getNodePtr(pt_id)->setMarkedTo(true);
+          if (pt_id < (int)mesh_sizes.size())
+            mesh_sizes[pt_id] = expected_h;
+          else
+          {
+            if (pt_id > (int)mesh_sizes.size())
+            {
+              printf("ERROR: Something with mesh_sizes is wrong!!\n");
+              throw;
+            }
+            mesh_sizes.push_back(expected_h);
+          }
+        }
+      }
+      else if(!is_splitting )//&& !(time_step%2==0)) // is collapsing
+      {
+        if ((h - expected_h)/expected_h < -TOL)
+        {
+          mesh_was_changed = true;
+          //printf("COLLAPSED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+          int pt_id = MeshToolsTri::collapseEdge2d(edge->getIncidCell(), edge->getPosition(), 0.0, &*mesh);
+          //printf("COLLAPSED %d !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", pt_id);
+          //mesh->getNodePtr(pt_id)->setMarkedTo(true);
+        }
+      }
+
+    } // end n_edges_total
+  }
+
+  if (!mesh_was_changed)
+    PetscFunctionReturn(0);
+
+  // atualiza tudo!
+  meshAliasesUpdate();
+
+  // free petsc matrices first and residues to save memory.
+  // destroy only those who not depends on DofHandler
+  Destroy(Mat_Jac);
+  Destroy(Mat_Jac_m);
+  Destroy(Vec_res);
+  Destroy(Vec_res_m);
+  Destroy(Vec_normal);
+  Destroy(Vec_v_mid);
+  SNESReset(snes);
+  SNESReset(snes_m);
+  KSPReset(ksp);
+  KSPReset(ksp_m);
+  PCReset(pc);
+  PCReset(pc_m);
+  SNESLineSearchReset(linesearch);
+
+  DofHandler  dof_handler_tmp[2];
+  
+  // tranfers variables values from old to new mesh
+  {
+    // First fix the u-p unknows
+    dof_handler_tmp[DH_MESH].copy(dof_handler[DH_MESH]);
+    dof_handler_tmp[DH_UNKS].copy(dof_handler[DH_UNKS]);
+
+    dofsUpdate();
+
+
+    Vec *petsc_vecs[] = {&Vec_up_0, &Vec_up_1, &Vec_x_0, &Vec_x_1};
+    int DH_t[]       = {DH_UNKS , DH_UNKS , DH_MESH, DH_MESH};
+
+    std::vector<Real> temp;
+
+    // NOTE: the mesh must not be changed in this loop
+    for (int v = 0; v < static_cast<int>( sizeof(DH_t)/sizeof(int) ); ++v)
+    {
+      int vsize;
+
+      VecGetSize(*petsc_vecs[v], &vsize);
+
+      temp.assign(vsize, 0.0);
+
+      double *array;
+
+      // copy
+      VecGetArray(*petsc_vecs[v], &array);
+      for (int i = 0; i < vsize; ++i)
+        temp[i] = array[i];
+      VecRestoreArray(*petsc_vecs[v], &array);
+
+      Destroy(*petsc_vecs[v]);
+
+      ierr = VecCreate(PETSC_COMM_WORLD, petsc_vecs[v]);                              CHKERRQ(ierr);
+      ierr = VecSetSizes(*petsc_vecs[v], PETSC_DECIDE, dof_handler[DH_t[v]].numDofs()); CHKERRQ(ierr);
+      ierr = VecSetFromOptions(*petsc_vecs[v]);                                         CHKERRQ(ierr);
+
+      int dofs_0[64]; // old
+      int dofs_1[64]; // new
+
+      // copy data from old mesh to new mesh
+      VecGetArray(*petsc_vecs[v], &array);
+      for (point_iterator point = mesh->pointBegin(), point_end = mesh->pointEnd(); point != point_end; ++point)
+      {
+        if (!mesh->isVertex(&*point))
+          continue;
+
+        if (!point->isMarked())
+        {
+          for (int k = 0; k < dof_handler_tmp[DH_t[v]].numVars(); ++k)
+          {
+            //printf("v=%d,  point = %d, k=%d @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n  ", v, mesh->getPointId(&*point), k);
+            //dof_handler_tmp[DH_t[v]].getVariable(k).getVertexAssociatedDofs(dofs_0, &*point);
+            dof_handler_tmp[DH_t[v]].getVariable(k).getVertexDofs(dofs_0, mesh->getPointId(&*point));
+            dof_handler    [DH_t[v]].getVariable(k).getVertexAssociatedDofs(dofs_1, &*point);
+            for (int j = 0; j < dof_handler_tmp[DH_t[v]].getVariable(k).numDofsPerVertex(); ++j)
+              array[dofs_1[j]] = temp.at(dofs_0[j]);
+
+          }
+        }
+      }
+      // interpolate values at new points
+      std::list<EdgeVtcs>::iterator it     = adde_vtcs.begin();
+      std::list<EdgeVtcs>::iterator it_end = adde_vtcs.end();
+      for (; it != it_end; ++it)
+      {
+        int const pt_id        =  get<0>(*it);
+        int const a_id         =  get<1>(*it);
+        int const b_id         =  get<2>(*it);
+        Point      * point = mesh->getNodePtr(pt_id);
+        Point const* pt_a  = mesh->getNodePtr(a_id);
+        Point const* pt_b  = mesh->getNodePtr(b_id);
+        Point const* link[] = {pt_a, pt_b};
+        int const Nlinks = sizeof(link)/sizeof(Point*);
+        double const weight = 1./Nlinks;
+        //printf("a_id = b_id %d %d!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", a_id, b_id);
+        for (int k = 0; k < dof_handler_tmp[DH_t[v]].numVars(); ++k)
+        {
+          dof_handler[DH_t[v]].getVariable(k).getVertexAssociatedDofs(dofs_1, &*point);
+
+          for (int j = 0; j < Nlinks; ++j)
+          {
+            dof_handler_tmp[DH_t[v]].getVariable(k).getVertexAssociatedDofs(dofs_0, link[j]);
+            //printf("v = %d  x = %lf  y = %lf !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", v, temp[dofs_0[0]], temp[dofs_0[1]]);
+            for (int c = 0; c < dof_handler_tmp[DH_t[v]].getVariable(k).numDofsPerVertex(); ++c)
+              array[dofs_1[c]] += weight*temp[dofs_0[c]];
+          }
+        }
+        
+      }
+      VecRestoreArray(*petsc_vecs[v], &array);
+      Assembly(*petsc_vecs[v]);
+    } // end loop in vectors
+
+    std::list<EdgeVtcs>::iterator it     = adde_vtcs.begin();
+    std::list<EdgeVtcs>::iterator it_end = adde_vtcs.end();
+    for (; it != it_end; ++it)
+    {
+      int const pt_id =  get<0>(*it);
+      mesh->getNodePtr(pt_id)->setMarkedTo(false);
+    }
+
+    //for (point_iterator point = mesh->pointBegin(), point_end = mesh->pointEnd(); point != point_end; ++point)
+    //{
+    //  if (point->isMarked())
+    //  {
+    //    printf("%d MERDA MERDA MERDA MERDA MERDA MERDA MERDA MERDA MERDA MERDA MERDA MERDA MERDA MERDA\n", mesh->getPointId(&*point));
+    //  }
+    //}
+
+
+  } // end tranf
+
+  //Vec Vec_res;
+  ierr = VecCreate(PETSC_COMM_WORLD, &Vec_res);                     CHKERRQ(ierr);
+  ierr = VecSetSizes(Vec_res, PETSC_DECIDE, n_unknowns);            CHKERRQ(ierr);
+  ierr = VecSetFromOptions(Vec_res);                                CHKERRQ(ierr);
+
+  //Vec Vec_v_mid
+  ierr = VecCreate(PETSC_COMM_WORLD, &Vec_v_mid);                  CHKERRQ(ierr);
+  ierr = VecSetSizes(Vec_v_mid, PETSC_DECIDE, n_dofs_v_mesh);      CHKERRQ(ierr);
+  ierr = VecSetFromOptions(Vec_v_mid);                             CHKERRQ(ierr);
+
+  //Vec Vec_normal;
+  ierr = VecCreate(PETSC_COMM_WORLD, &Vec_normal);                  CHKERRQ(ierr);
+  ierr = VecSetSizes(Vec_normal, PETSC_DECIDE, n_dofs_v_mesh);      CHKERRQ(ierr);
+  ierr = VecSetFromOptions(Vec_normal);                             CHKERRQ(ierr);
+
+  //Vec Vec_res_m;
+  ierr = VecCreate(PETSC_COMM_WORLD, &Vec_res_m);                     CHKERRQ(ierr);
+  ierr = VecSetSizes(Vec_res_m, PETSC_DECIDE, n_dofs_v_mesh);         CHKERRQ(ierr);
+  ierr = VecSetFromOptions(Vec_res_m);
+
+  //Mat Mat_Jac;
+  ierr = MatCreate(PETSC_COMM_WORLD, &Mat_Jac);                                      CHKERRQ(ierr);
+  ierr = MatSetSizes(Mat_Jac, PETSC_DECIDE, PETSC_DECIDE, n_unknowns, n_unknowns);   CHKERRQ(ierr);
+  ierr = MatSetFromOptions(Mat_Jac);                                                 CHKERRQ(ierr);
+  ierr = MatSeqAIJSetPreallocation(Mat_Jac,  max_nz, NULL);                          CHKERRQ(ierr);
+  ierr = MatSetOption(Mat_Jac,MAT_NEW_NONZERO_ALLOCATION_ERR,PETSC_FALSE);           CHKERRQ(ierr);
+
+  //Mat Mat_Jac_m;
+  int n_mesh_dofs = dof_handler[DH_MESH].numDofs();
+  ierr = MatCreate(PETSC_COMM_WORLD, &Mat_Jac_m);                                        CHKERRQ(ierr);
+  ierr = MatSetType(Mat_Jac_m,MATSEQAIJ);                                                CHKERRQ(ierr);
+  ierr = MatSetSizes(Mat_Jac_m, PETSC_DECIDE, PETSC_DECIDE, n_mesh_dofs, n_mesh_dofs);   CHKERRQ(ierr);
+  ierr = MatSeqAIJSetPreallocation(Mat_Jac_m,  max_nz_m, NULL);                          CHKERRQ(ierr);
+  ierr = MatSetOption(Mat_Jac_m,MAT_NEW_NONZERO_ALLOCATION_ERR,PETSC_FALSE);             CHKERRQ(ierr);
+  ierr = MatSetOption(Mat_Jac_m,MAT_SYMMETRIC,PETSC_TRUE);                               CHKERRQ(ierr);
+
+  ierr = SNESSetFunction(snes, Vec_res, FormFunction, this);                             CHKERRQ(ierr);
+  ierr = SNESSetJacobian(snes, Mat_Jac, Mat_Jac, FormJacobian, this);                    CHKERRQ(ierr);
+  ierr = SNESSetConvergenceTest(snes,CheckSnesConvergence,this,PETSC_NULL);              CHKERRQ(ierr);
+  ierr = SNESGetKSP(snes,&ksp);                                                          CHKERRQ(ierr);
+  ierr = KSPGetPC(ksp,&pc);                                                              CHKERRQ(ierr);
+  ierr = KSPSetOperators(ksp,Mat_Jac,Mat_Jac,SAME_NONZERO_PATTERN);                      CHKERRQ(ierr);
+  ierr = SNESSetFromOptions(snes);                                                       CHKERRQ(ierr);
+
+  ierr = SNESSetFunction(snes_m, Vec_res_m, FormFunction_mesh, this);                    CHKERRQ(ierr);
+  ierr = SNESSetJacobian(snes_m, Mat_Jac_m, Mat_Jac_m, FormJacobian_mesh, this);         CHKERRQ(ierr);
+  ierr = SNESGetSNESLineSearch(snes_m,&linesearch);                                      CHKERRQ(ierr);
+  ierr = SNESLineSearchSetType(linesearch,SNESLINESEARCHBASIC);                          CHKERRQ(ierr);
+  ierr = SNESGetKSP(snes_m,&ksp_m);                                                  CHKERRQ(ierr);
+  ierr = KSPGetPC(ksp_m,&pc_m);                                                      CHKERRQ(ierr);
+  ierr = KSPSetOperators(ksp_m,Mat_Jac_m,Mat_Jac_m,SAME_NONZERO_PATTERN);            CHKERRQ(ierr);
+  ierr = KSPSetType(ksp_m,KSPCG);                                                    CHKERRQ(ierr);
+  ierr = PCSetType(pc_m,PCILU);                                                      CHKERRQ(ierr);
+
+  if(!nonlinear_elasticity)
+  {
+    ierr = SNESSetType(snes_m, SNESKSPONLY); CHKERRQ(ierr);
+  }
+
+
+
+
+  PetscFunctionReturn(0);
+}
+
 //PetscErrorCode AppCtx::calcMeshVelocity(Vec const& Vec_x_0, Vec const& Vec_x_1, Vec &Vec_v_mid)
 //{
 //  PetscErrorCode ierr;
@@ -712,14 +1036,14 @@ PetscErrorCode AppCtx::calcMeshVelocity(Vec const& Vec_x_0, Vec const& Vec_up_0,
           tmp = vtheta*U1 + (1.-vtheta)*U0;
           VecSetValues(Vec_v_mid, dim, node_dofs_mesh.data(), tmp.data(), INSERT_VALUES);
         }
-        
+
       } // if force_mesh_velocity
 
 
     } // end for point
 
   } // b.c.
-  
+
   if (!force_mesh_velocity)
   {
     ierr = SNESSolve(snes_m, PETSC_NULL, Vec_v_mid);  CHKERRQ(ierr);
@@ -734,7 +1058,7 @@ PetscErrorCode AppCtx::calcMeshVelocity(Vec const& Vec_x_0, Vec const& Vec_up_0,
     Vector Vm(dim);
     Vector V0(dim);
     Vector V1(dim);
-    
+
     point_iterator point = mesh->pointBegin();
     point_iterator point_end = mesh->pointEnd();
     for (; point != point_end; ++point)
@@ -743,7 +1067,7 @@ PetscErrorCode AppCtx::calcMeshVelocity(Vec const& Vec_x_0, Vec const& Vec_up_0,
 
       if (mesh->isVertex(&*point))
         continue;
-  
+
       if (is_in(tag, solid_tags) || is_in(tag, triple_tags) || is_in(tag, interface_tags) || is_in(tag, feature_tags))
         continue;
 
@@ -764,7 +1088,7 @@ PetscErrorCode AppCtx::calcMeshVelocity(Vec const& Vec_x_0, Vec const& Vec_up_0,
       VecGetValues(Vec_v_mid, dim, dofs + 1*dim, V1.data());
       Vm = .5*(V0+V1);
       VecSetValues(Vec_v_mid, dim, dofs + 2*dim, Vm.data(), INSERT_VALUES);
-      
+
     }
     Assembly(Vec_v_mid);
   }

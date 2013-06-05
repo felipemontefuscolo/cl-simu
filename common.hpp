@@ -368,7 +368,6 @@ public:
   void printMatlabLoader();
   // must be called after loadDofs
   void evaluateQuadraturePts();
-  void computeDirichletEntries();
   void onUpdateMesh();
   PetscErrorCode setInitialConditions();
   PetscErrorCode checkSnesConvergence(SNES snes, PetscInt it,PetscReal xnorm, PetscReal pnorm, PetscReal fnorm, SNESConvergedReason *reason);
@@ -376,6 +375,8 @@ public:
   PetscErrorCode solveTimeProblem();
   PetscErrorCode formJacobian(SNES /*snes*/,Vec x,Mat *Mat_Jac, Mat* /*prejac*/, MatStructure * /*flag*/);
   PetscErrorCode formFunction(SNES /*snes*/, Vec x, Vec f);
+  
+  PetscErrorCode meshAdapt();
   
   PetscErrorCode formJacobian_mesh(SNES /*snes*/,Vec x, Mat *Mat_Jac, Mat* /*prejac*/, MatStructure * /*flag*/);
   PetscErrorCode formFunction_mesh(SNES /*snes*/, Vec x, Vec f);  
@@ -524,7 +525,6 @@ public:
   int                          n_qpts_facet;
   int                          n_qpts_corner;
   int                          n_qpts_err;
-  std::vector<int>             dir_entries;   // as linhas da matriz onde são forçadas as c.c.
 
   // velocity
   VecOfVec                     phi_c;         // shape function evaluated at quadrature points
@@ -576,7 +576,7 @@ public:
 
   // dofs
   int           n_unknowns;
-  int           n_dofs_u_mesh;
+  int           n_dofs_v_mesh;
   int           n_dofs_u_per_cell;
   int           n_dofs_u_per_facet;
   int           n_dofs_u_per_corner;
@@ -586,7 +586,7 @@ public:
   int           n_dofs_v_per_cell;
   int           n_dofs_v_per_facet;
   int           n_dofs_v_per_corner;
-  int           n_dofs_v2_per_facet;
+  //int           n_dofs_v2_per_facet;
   
   // mesh alias
   int           n_nodes;
@@ -610,19 +610,24 @@ public:
   Timer         timer;
   Statistics    Stats;
 
+  // mesh size control ... mesh_size[i] is the mean of edge's size connected to node i at TIME=0
+  std::vector<Real>    mesh_sizes;
+
   // petsc vectors
-  Vec                 Vec_res, Vec_up_0, Vec_up_1, Vec_v_mid, Vec_x_0, Vec_x_1, Vec_normal/**/;
+  Vec                 Vec_res, Vec_up_0, Vec_up_1, Vec_normal/**/;
   Mat                 Mat_Jac;
+  int                 max_nz;
   SNES                snes;         /* nonlinear solver context */
   KSP    			        ksp;
   PC	   			        pc;
 
   // mesh
   Mat                 Mat_Jac_m;
+  int                 max_nz_m;
   SNES                snes_m;
   KSP    			        ksp_m;
   PC	   			        pc_m;
-  Vec                 Vec_res_m;
+  Vec                 Vec_res_m, Vec_x_0, Vec_x_1, Vec_v_mid;
   SNESLineSearch      linesearch;
   
 };

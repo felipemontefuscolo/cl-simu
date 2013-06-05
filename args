@@ -1,7 +1,7 @@
 -dim 2  				        # cell dimension (= space dimension)
 -dt  1.e-1              # time step  0.5 0.25 0.125 0.0625     0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04
 -finaltime -1           # the simulation ends at this time.
--maxts 1              # maximum number of time steps
+-maxts 5              # maximum number of time steps
 -renumber_dofs 0        # dofs renumbering
 -print_step 1           # print step
 -has_convec 1           # convective term: true or false CONSIDERE COLOCAR utheta=1 se desativar isto.
@@ -67,7 +67,7 @@ mat_no_inode 1
 -print_to_matlab 0  # prints jacobian to matlab
 -force_dirichlet 1  # forces dirichlet b.c.
 fp_trap 1           # stop on floating-point exceptions
-on_error_abort 1
+-on_error_abort 1
 
 ######THREADS  #ativar os 3 primeiros somente
 vec_type seqpthread
