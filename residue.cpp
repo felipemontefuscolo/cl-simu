@@ -383,6 +383,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
             cout << x_coefs_c_mid_trans.transpose() << endl;
             cout << "-----" << endl;
             cout << "cell id: " << mesh->getCellId(&*cell) << endl;
+            cout << "cell Contig id: " << mesh->getCellContigId( mesh->getCellId(&*cell) ) << endl;
             cout << "cell nodes:\n" << cell_nodes.transpose() << endl;
             cout << "mapM :\n" << mapM_c.transpose() << endl;
             throw;
@@ -1491,7 +1492,7 @@ PetscErrorCode AppCtx::formFunction_mesh(SNES /*snes_m*/, Vec Vec_v, Vec Vec_fun
                 }
               }
 
-              Floc(i*dim + c) += (JxW/JxW) *sigma_ck*dxqsi_c(i,k); // (JxW/JxW) is to compiler not complain about unused variables
+              Floc(i*dim + c) += sigma_ck*dxqsi_c(i,k); // (JxW/JxW) is to compiler not complain about unused variables
 
               for (int j = 0; j < n_dofs_v_per_cell/dim; ++j)
               {

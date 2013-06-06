@@ -815,9 +815,9 @@ PetscErrorCode AppCtx::allocPetscObjs()
   ierr = KSPGetPC(ksp_m,&pc_m);                                                      CHKERRQ(ierr);
   ierr = KSPSetOperators(ksp_m,Mat_Jac_m,Mat_Jac_m,SAME_NONZERO_PATTERN);            CHKERRQ(ierr);
   // ierr = KSPSetType(ksp_m,KSPPREONLY);                                            CHKERRQ(ierr);
-  ierr = KSPSetType(ksp_m,KSPCG);                                                 CHKERRQ(ierr);
-  //ierr = KSPSetType(ksp_m,KSPPREONLY);                                                 CHKERRQ(ierr);
-  ierr = PCSetType(pc_m,PCILU);                                                   CHKERRQ(ierr);
+  //ierr = KSPSetType(ksp_m,KSPGMRES);                                                 CHKERRQ(ierr);
+  ierr = KSPSetType(ksp_m,KSPPREONLY);                                                 CHKERRQ(ierr);
+  ierr = PCSetType(pc_m,PCLU);                                                   CHKERRQ(ierr);
   // ierr = PCFactorSetMatOrderingType(pc_m, MATORDERINGNATURAL);                         CHKERRQ(ierr);
   // ierr = KSPSetTolerances(ksp_m,1.e-7,PETSC_DEFAULT,PETSC_DEFAULT,PETSC_DEFAULT);  CHKERRQ(ierr);
   // ierr = SNESSetApplicationContext(snes_m,this);
@@ -1598,32 +1598,35 @@ PetscErrorCode AppCtx::solveTimeProblem()
       meshAdapt();
 
       copyVec2Mesh(Vec_x_1);
+    
       // MESH FLIPPING
       //if (0)
       if(time_step%1 == 0)
       if (dim==2)
       {
         Facet *f;
-        cell_handler ca, cb;
+        Cell* ca, *cb;
         // Delaunay
         for (int i = 0; i < n_facets_total; ++i)
         {
           f = mesh->getFacetPtr(i);
+          if (f->isDisabled())
+            continue;
           if (!MeshToolsTri::inCircle2d(f, &*mesh))
           {
-            ca = mesh->getCell(f->getIncidCell());
-            cb = mesh->getCell(ca->getIncidCell(f->getPosition()));
+            ca = mesh->getCellPtr(f->getIncidCell());
+            cb = mesh->getCellPtr(ca->getIncidCell(f->getPosition()));
 
-            if (!cb.isValid())
-              continue;
-
-            if (ca->getTag() == cb->getTag())
-              MeshToolsTri::flipEdge(f, &*mesh, true);
+            if (cb)
+              if (ca->getTag() == cb->getTag())
+                MeshToolsTri::flipEdge(f, &*mesh, true);
           }
         }
       }      
+
       //VecCopy(Vec_x_1, Vec_x_0);
       copyMesh2Vec(Vec_x_0);
+
 
 
       /* Compute Vec_x_1 and Vec_v_mid */

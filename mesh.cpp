@@ -12,7 +12,134 @@ extern PetscErrorCode CheckSnesConvergence(SNES snes, PetscInt it,PetscReal xnor
 extern PetscErrorCode FormJacobian_mesh(SNES snes,Vec Vec_up_1,Mat *Mat_Jac, Mat *prejac, MatStructure *flag, void *ptr);
 extern PetscErrorCode FormFunction_mesh(SNES snes, Vec Vec_up_1, Vec Vec_fun, void *ptr);
 
+void checkConsistencyTri(Mesh *mesh)
+{
+  cell_iterator cell = mesh->cellBegin();
+  cell_iterator cell_end = mesh->cellEnd();
+  
+  int const nfpc = mesh->numFacetsPerCell();
+  //  int const nnpc = mesh->numNodesPerCell();
+  int const nnpf = mesh->numNodesPerFacet();
+  
+  int f_nds[nnpf];
+  
+  //  Point *p;
+  Facet *f;
+  Cell  *c;
+  
+  for (; cell != cell_end; ++cell)
+  {
+    int myid = mesh->getCellId(&*cell);
+    for (int i = 0; i < nfpc; ++i)
+    {
+      if (cell->getIncidCell(i) >= 0)
+      {
+        // verifica o vizinho
+        c = mesh->getCellPtr(cell->getIncidCell(i));
+        int pos = cell->getIncidCellPos(i);
+        if(myid != c->getIncidCell(pos))
+        {
+          cout  << "myid=" << myid<<"; c->getIncidCell(pos)="<<c->getIncidCell(pos)<<"; i="<<i<<"; pos="<<pos ;
+          throw;
+        };
+        
+        // verifica a face
+        f = mesh->getFacetPtr(cell->getFacetId(i));
+        int icf = f->getIncidCell();
+        if(!(icf==myid || icf==cell->getIncidCell(i)))
+        {
+          cout <<"myid="<<myid<<"; icf="<<icf<<"; i="<<i<<"; cell->getIncidCell(i)="<<cell->getIncidCell(i)<<"\n";
+          throw;
+        }
+        if (icf==myid)
+        {
+          if(f->getPosition() != i)
+          {
+            cout << "myid=" << myid<<"; f->getPosition()="<<f->getPosition()<<"; i="<<i<<"\n";
+            throw;
+          }
+        }
+        else
+        {
+          if(f->getPosition() != pos)
+          {
+            cout << "myid=" << myid<<"; f->getPosition()="<<f->getPosition()<<"; pos="<<pos<<"; i="<<i<<"\n";
+            throw;
+          }
+        }
+      }
+      else // bordo
+      {
+        // verifica a face
+        f = mesh->getFacetPtr(cell->getFacetId(i));
+        int icf = f->getIncidCell();
+        // só pode ser o myid, pq do outro lado não tem ngm
+        if(icf!=myid)
+        {
+          cout << "icf = " << icf << ", myid = " << myid << endl;
+          throw;
+        }
+        
+        // verifica se os nós da face estão no contorno
+        mesh->getFacetNodesId(f, f_nds);
+        for (int j = 0; j < nnpf; ++j)
+        {
+          if(!mesh->inBoundary(mesh->getNodePtr(f_nds[j])))
+          {
+            cout << "node="<<f_nds[j]<<"; icell="<<mesh->getNodePtr(f_nds[j])->getIncidCell()
+                << "; pos="<< mesh->getNodePtr(f_nds[j])->getPosition();
+            throw;
+          }
+        }
+        
+      }
+    }
+    
+  }
+  
+  std::vector<int> ics;
+  std::vector<int> cc_ids;
+  std::vector<int>::iterator it;
+  for (point_iterator point = mesh->pointBegin(); point != mesh->pointEnd(); ++point)
+  {
+    point->getAllIncidences(ics);
+    
+    cc_ids.clear();
 
+    int myid = point.index();
+    
+    for (int i = 0; i < (int)ics.size()/2; ++i)
+    {
+      int ic = ics.at(2*i);
+      int pos = ics.at(2*i+1);
+      Cell *c = mesh->getCellPtr(ic);
+      if(c==NULL)
+      {
+        cout << "c = NULL" << endl;
+        throw;
+      }
+      if(myid != c->getNodeId(pos))
+      {
+        cout << "ic = " << ic << "; pos = " << pos;
+        throw;
+      }
+      cc_ids.push_back(c->getConnectedComponentId());
+    }
+    
+    std::sort(cc_ids.begin(), cc_ids.end());
+    it = unique (cc_ids.begin(), cc_ids.end());
+    
+    // checks if all incident cells have distinct connected component id
+    if( std::distance(cc_ids.begin(), it) != (int)cc_ids.size())
+    {
+      cout << "MERDA DE std::distance\n";
+      throw;
+    }
+    
+  }
+  
+  
+}
 
 void AppCtx::getVecNormals(Vec const* Vec_x_1, Vec & Vec_normal_)
 {
@@ -634,7 +761,7 @@ PetscErrorCode AppCtx::meshAdapt()
   if (mesh->numNodesPerCell() > mesh->numVerticesPerCell())
     PetscFunctionReturn(0);
 
-  const Real TOL = 0.5;
+  const Real TOL = 0.6;
 
   typedef tuple<int, int, int> EdgeVtcs; // get<0> = mid node, get<1> = top node, get<2> = bot node
 
@@ -726,6 +853,7 @@ PetscErrorCode AppCtx::meshAdapt()
         {
           mesh_was_changed = true;
           //printf("COLLAPSED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+          //printf("COLLAPSING  tags = %d  %d %d #################################################\n", tag_a, tag_b, tag_e);
           int pt_id = MeshToolsTri::collapseEdge2d(edge->getIncidCell(), edge->getPosition(), 0.0, &*mesh);
           //printf("COLLAPSED %d !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", pt_id);
           //mesh->getNodePtr(pt_id)->setMarkedTo(true);
@@ -872,6 +1000,7 @@ PetscErrorCode AppCtx::meshAdapt()
 
   } // end tranf
 
+
   //Vec Vec_res;
   ierr = VecCreate(PETSC_COMM_WORLD, &Vec_res);                     CHKERRQ(ierr);
   ierr = VecSetSizes(Vec_res, PETSC_DECIDE, n_unknowns);            CHKERRQ(ierr);
@@ -923,8 +1052,8 @@ PetscErrorCode AppCtx::meshAdapt()
   ierr = SNESGetKSP(snes_m,&ksp_m);                                                  CHKERRQ(ierr);
   ierr = KSPGetPC(ksp_m,&pc_m);                                                      CHKERRQ(ierr);
   ierr = KSPSetOperators(ksp_m,Mat_Jac_m,Mat_Jac_m,SAME_NONZERO_PATTERN);            CHKERRQ(ierr);
-  ierr = KSPSetType(ksp_m,KSPCG);                                                    CHKERRQ(ierr);
-  ierr = PCSetType(pc_m,PCILU);                                                      CHKERRQ(ierr);
+  //ierr = KSPSetType(ksp_m,KSPCG);                                                    CHKERRQ(ierr);
+  //ierr = PCSetType(pc_m,PCILU);                                                      CHKERRQ(ierr);
 
   if(!nonlinear_elasticity)
   {
@@ -968,6 +1097,8 @@ PetscErrorCode AppCtx::meshAdapt()
     }    
     
   }
+
+  checkConsistencyTri(&*mesh);
 
   PetscFunctionReturn(0);
 }
