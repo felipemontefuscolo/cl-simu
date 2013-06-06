@@ -86,6 +86,17 @@ public:
   virtual ~GetDataMeshVel() {}
 };
 
+class GetDataCellTag : public DefaultGetDataVtk
+{
+public:
+  GetDataCellTag(AppCtx const& user_) : user(user_){}
+  int get_data_i(int cellid) const;
+  AppCtx const& user;
+  virtual ~GetDataCellTag() {}
+};
+
+
+
 
 AppCtx::AppCtx(int argc, char **argv, bool &help_return, bool &erro)
 {
@@ -1537,6 +1548,8 @@ PetscErrorCode AppCtx::solveTimeProblem()
         if (dim==3)
           vtk_printer.addNodeScalarVtk("vz",   GetDataMeshVel<2>(v_array, *this));
 
+        vtk_printer.printPointTagVtk();
+        vtk_printer.addCellIntVtk("cell_tag", GetDataCellTag(*this));
 
         //vtk_printer.printPointTagVtk("point_tag");
         VecRestoreArray(Vec_up_0, &q_array);
@@ -1720,6 +1733,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
       vtk_printer.addNodeScalarVtk("vz",   GetDataMeshVel<2>(v_array, *this));
 
     vtk_printer.printPointTagVtk();
+    vtk_printer.addCellIntVtk("cell_tag", GetDataCellTag(*this));
 
     //vtk_printer.printPointTagVtk("point_tag");
     VecRestoreArray(Vec_up_0, &q_array);
@@ -2521,6 +2535,11 @@ double GetDataMeshVel<Coord>::get_data_r(int nodeid) const
   return U;
 }
 
+int GetDataCellTag::get_data_i(int cellid) const
+{
+  // assume que só há 1 grau de liberdade na célula
+  return user.mesh->getCellPtr(cellid)->getTag();
+}
 
 /* petsc functions*/
 extern PetscErrorCode FormJacobian(SNES,Vec,Mat*,Mat*,MatStructure*,void*);

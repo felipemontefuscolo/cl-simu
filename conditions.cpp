@@ -2337,12 +2337,12 @@ double cos_theta0()
 
 double zeta(double u_norm, double angle)
 {
-  return 1.e-2;
+  return 0*1.e-2;
 }
 
 double beta_diss()
 {
-  return 1.e-3;
+  return 0*1.e-3;
 }
 
 double gama(Vector const& X, double t, int tag)
@@ -2422,11 +2422,11 @@ Vector solid_normal(Vector const& X, double t, int tag)
   
   const double tet = pi + acos(-x/r);
   
-  N(0) = -x/r + a*w*sin(w*tet)*y/r2;
-  N(1) = -y/r - a*w*sin(w*tet)*x/r2;
+  //N(0) = -x/r + a*w*sin(w*tet)*y/r2;
+  //N(1) = -y/r - a*w*sin(w*tet)*x/r2;
 
   //N(0) = 1;
-  //N(1) = 1;
+  N(1) = 1;
 
   N.normalize();
 

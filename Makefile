@@ -1,8 +1,8 @@
 EXE			+= main
 SOURCES	+= main.cpp mesh.cpp residue.cpp
 OBJECTS	+= main.o conditions.o mesh.o residue.o
-PETSC_ARCH=arch-linux2-cxx-debug
-#PETSC_ARCH =arch-linux2-cxx-opt
+#PETSC_ARCH=arch-linux2-cxx-debug
+PETSC_ARCH =arch-linux2-cxx-opt
 
 CFLAGS   = -Wall -Wextra
 FFLAGS   =

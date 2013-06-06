@@ -634,7 +634,7 @@ PetscErrorCode AppCtx::meshAdapt()
   if (mesh->numNodesPerCell() > mesh->numVerticesPerCell())
     PetscFunctionReturn(0);
 
-  const Real TOL = 0.1;
+  const Real TOL = 0.5;
 
   typedef tuple<int, int, int> EdgeVtcs; // get<0> = mid node, get<1> = top node, get<2> = bot node
 
@@ -680,7 +680,7 @@ PetscErrorCode AppCtx::meshAdapt()
       tag_b = mesh->getNodePtr(edge_nodes[1])->getTag();
       tag_e = edge->getTag();
 
-      if (!( tag_a==tag_b && tag_b==tag_e ))
+      if (!( tag_a==tag_b && tag_b==tag_e ) && (is_splitting==0))
         continue;
 
       Point const* pt_a = mesh->getNodePtr(edge_nodes[0]);
@@ -932,7 +932,42 @@ PetscErrorCode AppCtx::meshAdapt()
   }
 
 
+  // check
+  if (false)
+  {
+    int const n_edges_total = (dim==2) ? mesh->numFacetsTotal() : mesh->numCornersTotal();
+    
+    //printf("ENTRANDO NO LOOP eid!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+    for (int eid = 0; eid < n_edges_total; ++eid)
+    {
 
+      if (dim == 2)
+        edge = mesh->getFacetPtr(eid);
+      else
+        edge = mesh->getCornerPtr(eid);
+
+      if (edge==NULL || edge->isDisabled())
+        continue;
+
+      int tag = edge->getTag();
+
+      if (tag != 2 && tag != 3 && tag != 7)
+      {
+        printf(" MERDA  MERDA MERDA MERDA MERDA MERDA MERDA MERDA MERDA MERDA MERDA MERDA MERDA MERDA MERDA MERDA\n");
+        printf("%d\n", tag);
+        throw;
+      }
+      
+      if (tag != 2 && tag != 3 && mesh->inBoundary((Facet*)edge))
+      {
+        printf(" MERDA  MERDA MERDA MERDA MERDA MERDA MERDA MERDA MERDA MERDA MERDA MERDA MERDA MERDA MERDA MERDA\n");
+        printf("%d\n", tag);
+        throw;
+      }
+      
+    }    
+    
+  }
 
   PetscFunctionReturn(0);
 }
