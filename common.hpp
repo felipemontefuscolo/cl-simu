@@ -238,107 +238,65 @@ inline void cross(Vector & c, Vector const& a, Vector const& b)
 
 class Statistics
 {
+  template<class T>
+  T max(T const& a, T const& b)
+  {
+    return a<b?b:a;
+  }
+  
 public:
-  Statistics()
+
+  Statistics() : p_L2_norm        (_data[0]),
+                 u_L2_norm        (_data[1]),
+                 grad_u_L2_norm   (_data[2]),
+                 grad_p_L2_norm   (_data[3]),
+                 p_inf_norm       (_data[4]),
+                 u_inf_norm       (_data[5]),
+                 hmean            (_data[6]),
+                 u_L2_facet_norm  (_data[7]),
+                 u_inf_facet_norm (_data[8])
   {
     this->reset();
   }
-
+  
   void reset()
   {
-    p_L2_norm=0;
-    u_L2_norm=0;
-    grad_u_L2_norm=0;
-    grad_p_L2_norm=0;
-    hmean=0;
-
-    Np=0;
-    Nu=0;
-    Ngp=0;
-    Ngu=0;
+    for (int i = 0; i < _n_data; ++i)
+      _data[i] = 0;
   }
 
-  void add_p_L2(double x)
-  {
-    p_L2_norm += x;
-    //Np++;
-  }
-  void add_u_L2(double x)
-  {
-    u_L2_norm += x;
-    //Nu ++;
-  }
-  void add_grad_u_L2(double x)
-  {
-    grad_u_L2_norm +=x;
-    //Ngu++;
-  }
-  void add_grad_p_L2(double x)
-  {
-    grad_p_L2_norm += x;
-    //Ngp++;
-  }
-  void add_hmean(double x)
-  {
-    hmean += x;
-  }
-  void add_p_inf(double x)
-  {
-    p_inf_norm += x;
-    //Np++;
-  }
-  void add_u_inf(double x)
-  {
-    u_inf_norm += x;
-    //Nu ++;
-  }
+  /* stores the highest value */
 
+#define STORES_HIGHEST(name) void add_##name(double x)      \
+                             {                              \
+                               name = max(x, name);         \
+                             }
 
-  double mean_p_L2_norm()
-  {
-    return p_L2_norm;
-  }
+  STORES_HIGHEST(p_L2_norm)
+  STORES_HIGHEST(u_L2_norm)
+  STORES_HIGHEST(grad_u_L2_norm)
+  STORES_HIGHEST(grad_p_L2_norm)
+  STORES_HIGHEST(hmean)
+  STORES_HIGHEST(p_inf_norm)
+  STORES_HIGHEST(u_inf_norm)
+  STORES_HIGHEST(u_L2_facet_norm)
+  STORES_HIGHEST(u_inf_facet_norm)
 
-  double mean_u_L2_norm()
-  {
-    return u_L2_norm;
-  }
+#undef STORES_HIGHEST
 
-  double mean_grad_u_L2_norm()
-  {
-    return grad_u_L2_norm;
-  }
+  double _data[9];
+  static const int _n_data = sizeof(_data)/sizeof(double);
 
-  double mean_grad_p_L2_norm()
-  {
-    return grad_p_L2_norm;
-  }
+  double & p_L2_norm;
+  double & u_L2_norm;
+  double & grad_u_L2_norm;
+  double & grad_p_L2_norm;
+  double & p_inf_norm;
+  double & u_inf_norm;
+  double & hmean;
+  double & u_L2_facet_norm;
+  double & u_inf_facet_norm;
 
-  double mean_hmean()
-  {
-    return hmean;
-  }
-
-  double mean_p_inf_norm()
-  {
-    return p_inf_norm;
-  }
-
-  double mean_u_inf_norm()
-  {
-    return u_inf_norm;
-  }
-
-
-  double p_L2_norm;
-  double u_L2_norm;
-  double grad_u_L2_norm;
-  double grad_p_L2_norm;
-  double p_inf_norm;
-  double u_inf_norm;
-  double hmean;
-
-  int Np, Nu, Ngp, Ngu;
 
 };
 

@@ -686,6 +686,8 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
             Gloc.col(i).setZero();
             Dloc.row(i).setZero();
             FPloc(i) = 0;
+            Eloc.col(i).setZero();
+            Eloc.row(i).setZero();
             break;
           }
         }

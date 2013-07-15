@@ -19,7 +19,7 @@
 
 
 #include "common.hpp"
-
+#include <iomanip>
 
 PetscErrorCode FormJacobian(SNES snes,Vec Vec_up_1,Mat *Mat_Jac, Mat *prejac, MatStructure *flag, void *ptr);
 PetscErrorCode FormFunction(SNES snes, Vec Vec_up_1, Vec Vec_fun, void *ptr);
@@ -1562,13 +1562,12 @@ PetscErrorCode AppCtx::solveTimeProblem()
         cout << "num snes iterations: " << its << endl;
       }
 
-
-      cout << endl;
-      cout << "current time: " << current_time << endl;
-      cout << "time step: "    << time_step  << endl;
-      cout << "steady error: " << steady_error << endl;
-
     }
+
+    cout << endl;
+    cout << "current time: " << current_time << endl;
+    cout << "time step: "    << time_step  << endl;
+    cout << "steady error: " << steady_error << endl;
 
     mesh->getNodePtr(0)->getCoord(X.data(), dim);
     Xe(0) = 1.0*exp(sin(pi*current_time)/pi);
@@ -1796,12 +1795,12 @@ PetscErrorCode AppCtx::solveTimeProblem()
   int lits;
   SNESGetLinearSolveIterations(snes,&lits);
 
-  //if (unsteady)
-  {
-    cout << "\nmean errors: \n";
-    cout << "# hmean            u_L2_err         p_L2_err          grad_u_L2_err     grad_p_L2_err" << endl;
-    printf( "%.15lf %.15lf %.15lf %.15lf %.15lf\n", Stats.mean_hmean() , Stats.mean_u_L2_norm(), Stats.mean_p_L2_norm(), Stats.mean_grad_u_L2_norm(), Stats.mean_grad_p_L2_norm());
-  }
+  ////if (unsteady)
+  //{
+  //  cout << "\nmean errors: \n";
+  //  cout << "# hmean            u_L2_err         p_L2_err          grad_u_L2_err     grad_p_L2_err" << endl;
+  //  printf( "%.15lf %.15lf %.15lf %.15lf %.15lf\n", Stats.mean_hmean() , Stats.mean_u_L2_norm(), Stats.mean_p_L2_norm(), Stats.mean_grad_u_L2_norm(), Stats.mean_grad_p_L2_norm());
+  //}
 
 
   PetscFunctionReturn(0);
@@ -1836,12 +1835,17 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
   int                 tag;
   double              volume=0;
 
+
   double              p_L2_norm = 0.;
   double              u_L2_norm = 0.;
   double              grad_u_L2_norm = 0.;
   double              grad_p_L2_norm = 0.;
+  double              p_inf_norm = 0.;
+  double              u_inf_norm = 0.;
+  double              hmean = 0.;
   double              u_L2_facet_norm = 0.;
-  double              u_max_facet_norm = 0.;
+  double              u_inf_facet_norm = 0.;
+
 
   VectorXi            mapU_c(n_dofs_u_per_cell);
   VectorXi            mapU_f(n_dofs_u_per_facet);
@@ -1903,7 +1907,9 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
       p_L2_norm        += sqr(pressure_exact(Xqp, tt, tag) - Pqp)*JxW;
       grad_u_L2_norm   += (grad_u_exact(Xqp, tt, tag) - dxU).squaredNorm()*JxW;
       grad_p_L2_norm   += (grad_p_exact(Xqp, tt, tag) - dxP).squaredNorm()*JxW;
-
+      u_inf_norm       = max(u_inf_norm, (u_exact(Xqp, tt, tag) - Uqp).norm());
+      p_inf_norm       = max(p_inf_norm, fabs(pressure_exact(Xqp, tt, tag) - Pqp));
+      
       volume += JxW;
     } // fim quadratura
 
@@ -1952,8 +1958,8 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
 
       double const diff = (U_exact - Uqp).norm();
 
-      if (diff > u_max_facet_norm)
-        u_max_facet_norm = diff;
+      if (diff > u_inf_facet_norm)
+        u_inf_facet_norm = diff;
 
 
     } // fim quadratura
@@ -1967,8 +1973,6 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
   grad_p_L2_norm = sqrt(grad_p_L2_norm);
   u_L2_facet_norm = sqrt(u_L2_facet_norm);
 
-  // compute hmean
-  double hmean=0;
   // ASSUME QUE SÓ POSSA TER NO MÁXIMO 1 NÓ POR ARESTA
 
 
@@ -2025,15 +2029,19 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
   {
     cout << endl;
     //cout << "errors computed at last time step: "<< endl;
-    cout << "# hmean            u_L2_norm         p_L2_norm         grad_u_L2_norm    grad_p_L2_norm   u_L2_facet_norm    u_max_facet_norm" << endl;
-    printf("%.15lf %.15lf %.15lf %.15lf %.15lf %.15lf %.15lf\n",hmean, u_L2_norm, p_L2_norm, grad_u_L2_norm, grad_p_L2_norm, u_L2_facet_norm,  u_max_facet_norm);
+    //cout << "# hmean               u_L2_norm         p_L2_norm         grad_u_L2_norm    grad_p_L2_norm   u_L2_facet_norm    u_inf_facet_norm" << endl;
+    printf("%-21s %-21s %-21s %-21s %-21s %-21s %s\n", "# hmean", "u_L2_norm", "p_L2_norm", "grad_u_L2_norm", "grad_p_L2_norm", "u_L2_facet_norm", "u_inf_facet_norm" );    
+    printf("%.15e %.15e %.15e %.15e %.15e %.15e %.15e\n\n",hmean, u_L2_norm, p_L2_norm, grad_u_L2_norm, grad_p_L2_norm, u_L2_facet_norm,  u_inf_facet_norm);
   }
 
-  Stats.add_u_L2(u_L2_norm/max(maxts,1));
-  Stats.add_p_L2(p_L2_norm/max(maxts,1));
-  Stats.add_grad_u_L2(grad_u_L2_norm/max(maxts,1));
-  Stats.add_grad_p_L2(grad_p_L2_norm/max(maxts,1));
-  Stats.add_hmean(hmean/max(maxts,1));
+  Stats.add_p_L2_norm      (p_L2_norm      );
+  Stats.add_u_L2_norm      (u_L2_norm      );
+  Stats.add_grad_u_L2_norm (grad_u_L2_norm );
+  Stats.add_grad_p_L2_norm (grad_p_L2_norm );
+  Stats.add_p_inf_norm     (p_inf_norm     );
+  Stats.add_u_inf_norm     (u_inf_norm     );
+  Stats.add_hmean          (hmean          );
+  
 }
 
 
