@@ -76,6 +76,28 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
   int null_space_press_dof=-1;
   
+  if (force_pressure)
+  {
+    if (behaviors & BH_Press_grad_elim)
+    {
+      cell_iterator cell = mesh->cellBegin();
+      dof_handler[DH_UNKS].getVariable(VAR_P).getCellDofs(&null_space_press_dof, &*cell);
+    }
+    else
+    {
+      point_iterator point = mesh->pointBegin();
+      while (!mesh->isVertex(&*point))
+        ++point;
+      dof_handler[DH_UNKS].getVariable(VAR_P).getVertexDofs(&null_space_press_dof, &*point);
+    }
+    // fix the initial guess
+    VecSetValue(Vec_up_k, null_space_press_dof, 0.0, INSERT_VALUES);
+    Assembly(Vec_up_k);
+  }
+
+
+  Mat *JJ = &Mat_Jac;
+
   int iter;
 
   SNESGetIterationNumber(snes,&iter);
@@ -83,46 +105,14 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
   if (!iter)
   {
     converged_times=0;
-  }  
-  
-  if (force_pressure )
-  {
-    Vector X(dim);
-    if (behaviors & BH_Press_grad_elim)
-    {
-      cell_iterator cell = mesh->cellBegin();
-      dof_handler[DH_UNKS].getVariable(VAR_P).getCellDofs(&null_space_press_dof, &*cell);
-      // fix the initial guess
-      VecSetValue(Vec_up_k, null_space_press_dof, 0.0, INSERT_VALUES);
-    }
-    else
-    {
-      point_iterator point = mesh->pointBegin();
-      while (!mesh->isVertex(&*point))
-        ++point;
-      int x_dofs[3];
-      dof_handler[DH_MESH].getVariable(VAR_M).getVertexDofs(x_dofs, &*point);
-      VecGetValues(Vec_x_1, dim, x_dofs, X.data());
-      dof_handler[DH_UNKS].getVariable(VAR_P).getVertexDofs(&null_space_press_dof, &*point);
-      // fix the initial guess
-      VecSetValue(Vec_up_k, null_space_press_dof, pressure_exact(X,current_time+dt,point->getTag()), INSERT_VALUES);
-    }
-    
-    Assembly(Vec_up_k);
   }
-
-
-
-  Mat *JJ = &Mat_Jac;
-
-
 
   //PetscErrorCode      ierr;
 
+  // LOOP NAS CÉLULAS
   VecZeroEntries(Vec_fun);
   MatZeroEntries(*JJ);
   
-  // LOOP NAS CÉLULAS
 #ifdef FEP_HAS_OPENMP
   FEP_PRAGMA_OMP(parallel default(none) shared(Vec_up_k,Vec_fun,cout))
 #endif
@@ -138,14 +128,12 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
     MatrixXd            u_coefs_c_new(n_dofs_u_per_cell/dim, dim);        // n+1
     MatrixXd            u_coefs_c_new_trans(dim,n_dofs_u_per_cell/dim);   // n+1
 
-    MatrixXd            v_coefs_c_old(nodes_per_cell, dim);      // mesh velocity;
-    MatrixXd            v_coefs_c_old_trans(dim, nodes_per_cell);      // mesh velocity;
+    MatrixXd            v_coefs_c_trans(dim, nodes_per_cell);      // mesh velocity; n+utheta
     MatrixXd            v_coefs_c_mid(nodes_per_cell, dim);        // mesh velocity; n
     MatrixXd            v_coefs_c_mid_trans(dim,nodes_per_cell);   // mesh velocity; n
 
     VectorXd            p_coefs_c_new(n_dofs_p_per_cell);  // n+1
-    VectorXd            p_coefs_c_old(n_dofs_p_per_cell);  // n
-    VectorXd            p_coefs_c_mid(n_dofs_p_per_cell);  // n
+    //VectorXd            p_coefs_c_old(n_dofs_p_per_cell);  // n
 
     //MatrixXd            x_coefs_c_mid(nodes_per_cell, dim);       // n+utheta
     MatrixXd            x_coefs_c_mid_trans(dim, nodes_per_cell); // n+utheta
@@ -157,16 +145,6 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
     Tensor              F_c_mid(dim,dim);       // n+utheta
     Tensor              invF_c_mid(dim,dim);    // n+utheta
     Tensor              invFT_c_mid(dim,dim);   // n+utheta
-    
-    Tensor              F_c_old(dim,dim);       // n
-    Tensor              invF_c_old(dim,dim);    // n
-    Tensor              invFT_c_old(dim,dim);   // n
-    
-    Tensor              F_c_new(dim,dim);       // n+1
-    Tensor              invF_c_new(dim,dim);    // n+1
-    Tensor              invFT_c_new(dim,dim);   // n+1
-    
-    
     //Tensor              F_c_new(dim,dim);       // n+1
     //Tensor              invF_c_new(dim,dim);    // n+1
     //Tensor              invFT_c_new(dim,dim);   // n+1
@@ -177,14 +155,10 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
     /* All variables are in (n+utheta) by default */
 
     MatrixXd            dxphi_c(n_dofs_u_per_cell/dim, dim);
-    MatrixXd            dxphi_c_new(dxphi_c);
     MatrixXd            dxpsi_c(n_dofs_p_per_cell, dim);
     MatrixXd            dxqsi_c(nodes_per_cell, dim);
     Vector              dxbble(dim);
-    Vector              dxbble_new(dim);
     Tensor              dxU(dim,dim);   // grad u
-    Tensor              dxU_old(dim,dim);   // grad u
-    Tensor              dxU_new(dim,dim);   // grad u
     Tensor              dxUb(dim,dim);  // grad u bble
     Vector              dxP_new(dim);   // grad p
     Vector              Xqp(dim);
@@ -197,15 +171,13 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
     Vector              Uconv_qp(dim);
     Vector              dUdt(dim);
     double              Pqp_new;
-    double              Pqp;
     double              bble_integ=0;
     //VectorXd          FUloc(n_dofs_u_per_cell); // subvetor da função f (parte de U)
     //VectorXd          FPloc(n_dofs_p_per_cell);     // subvetor da função f (parte de P)
     VectorXi            cell_nodes(nodes_per_cell);
     double              J_mid;
-    double              J_new, J_old;
+    //double              J_new, J_old;
     double              JxW_mid;
-    double              JxW_new, JxW_old;
     double              weight;
     double              visc=-1; // viscosity
     double              cell_volume;
@@ -268,21 +240,18 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       dof_handler[DH_UNKS].getVariable(VAR_U).getCellDofs(mapU_c.data(), &*cell);
       dof_handler[DH_UNKS].getVariable(VAR_P).getCellDofs(mapP_c.data(), &*cell);
 
-      VecGetValues(Vec_v_old,   mapM_c.size(), mapM_c.data(), v_coefs_c_old.data());
       VecGetValues(Vec_v_mid,   mapM_c.size(), mapM_c.data(), v_coefs_c_mid.data());
       VecGetValues(Vec_x_0,     mapM_c.size(), mapM_c.data(), x_coefs_c_old.data());
       VecGetValues(Vec_x_1,     mapM_c.size(), mapM_c.data(), x_coefs_c_new.data());
       VecGetValues(Vec_up_0,    mapU_c.size(), mapU_c.data(), u_coefs_c_old.data());
       VecGetValues(Vec_up_k,    mapU_c.size(), mapU_c.data(), u_coefs_c_new.data());
       VecGetValues(Vec_up_k,    mapP_c.size(), mapP_c.data(), p_coefs_c_new.data());
-      VecGetValues(Vec_up_0,    mapP_c.size(), mapP_c.data(), p_coefs_c_old.data());
 
       // get nodal coordinates of the old and new cell
       mesh->getCellNodesId(&*cell, cell_nodes.data());
       //mesh->getNodesCoords(cell_nodes.begin(), cell_nodes.end(), x_coefs_c.data());
       //x_coefs_c_trans = x_coefs_c_mid_trans;
 
-      v_coefs_c_old_trans = v_coefs_c_old.transpose();
       v_coefs_c_mid_trans = v_coefs_c_mid.transpose();
       x_coefs_c_old_trans = x_coefs_c_old.transpose();
       x_coefs_c_new_trans = x_coefs_c_new.transpose();
@@ -291,7 +260,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
       u_coefs_c_mid_trans = utheta*u_coefs_c_new_trans + (1.-utheta)*u_coefs_c_old_trans;
       x_coefs_c_mid_trans = utheta*x_coefs_c_new_trans + (1.-utheta)*x_coefs_c_old_trans;
-      p_coefs_c_mid       = utheta*p_coefs_c_new       + (1.-utheta)*p_coefs_c_old;
+      //p_coefs_c_mid       = utheta*p_coefs_c_new       + (1.-utheta)*p_coefs_c_old;
 
       visc = muu(tag);
       rho  = pho(Xqp,tag);
@@ -302,7 +271,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       FPloc.setZero();
 
 
-      if (behaviors & BH_bble_condens_PnPn) // reset matrices
+      if (behaviors & BH_bble_condens_PnPn)
       {
         iBbb.setZero();
         Bnb.setZero();
@@ -370,31 +339,21 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
         //invFT_c_old= invF_c_old.transpose();
 
         F_c_mid = x_coefs_c_mid_trans * dLqsi_c[qp];
-        F_c_old = x_coefs_c_old_trans * dLqsi_c[qp];
-        F_c_new = x_coefs_c_new_trans * dLqsi_c[qp];
         inverseAndDet(F_c_mid,dim,invF_c_mid,J_mid);
-        inverseAndDet(F_c_old,dim,invF_c_old,J_old);
-        inverseAndDet(F_c_new,dim,invF_c_new,J_new);
         invFT_c_mid= invF_c_mid.transpose();
-        invFT_c_old= invF_c_old.transpose();
-        invFT_c_new= invF_c_new.transpose();
 
-        dxphi_c_new = dLphi_c[qp] * invF_c_new;
         dxphi_c = dLphi_c[qp] * invF_c_mid;
         dxpsi_c = dLpsi_c[qp] * invF_c_mid;
         dxqsi_c = dLqsi_c[qp] * invF_c_mid;
 
         dxP_new  = dxpsi_c.transpose() * p_coefs_c_new;
         dxU  = u_coefs_c_mid_trans * dxphi_c;       // n+utheta
-        dxU_old  = u_coefs_c_old_trans * dLphi_c[qp] * invF_c_old;       // n
-        dxU_new  = u_coefs_c_new_trans * dLphi_c[qp] * invF_c_new;       // n+1
 
         Xqp      = x_coefs_c_mid_trans * qsi_c[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
         Uqp      = u_coefs_c_mid_trans * phi_c[qp]; //n+utheta
         Uqp_new  = u_coefs_c_new_trans * phi_c[qp]; //n+utheta
         Uqp_old  = u_coefs_c_old_trans * phi_c[qp]; //n+utheta
         Pqp_new  = p_coefs_c_new.dot(psi_c[qp]);
-        Pqp      = p_coefs_c_mid.dot(psi_c[qp]);
         Vqp      = v_coefs_c_mid_trans * qsi_c[qp];
         Uconv_qp = Uqp - Vqp;
         //Uconv_qp = Uqp_old;
@@ -404,8 +363,6 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
         weight = quadr_cell->weight(qp);
         JxW_mid = J_mid*weight;
-        JxW_old = J_old*weight;
-        JxW_new = J_new*weight;
 
         //~ if (mesh->getCellId(&*cell) == 0)
         //~ {
@@ -440,8 +397,8 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
             FUloc(i*dim + c) += JxW_mid*
                     ( rho*(unsteady*dUdt(c) + has_convec*Uconv_qp.dot(dxU.row(c)))*phi_c[qp][i] + // aceleração
                       visc*dxphi_c.row(i).dot(dxU.row(c) + dxU.col(c).transpose()) - //rigidez
-                      force_at_mid(c)*phi_c[qp][i]   ) -// força +
-                    JxW_mid*Pqp*dxphi_c(i,c);  // pressão
+                      Pqp_new*dxphi_c(i,c) - // pressão
+                      force_at_mid(c)*phi_c[qp][i]   ); // força
 
             for (int j = 0; j < n_dofs_u_per_cell/dim; ++j)
             {
@@ -456,12 +413,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
               }
             }
             for (int j = 0; j < n_dofs_p_per_cell; ++j)
-            {
-              //Gloc(i*dim + c,j) -= JxW_mid * psi_c[qp][j]* dxphi_c(i,c);
-              Gloc(i*dim + c,j) -= utheta*JxW_mid * psi_c[qp][j]* dxphi_c(i,c);
-              Dloc(j, i*dim + c) -= JxW_new * psi_c[qp][j]*  dxphi_c_new(i,c);
-              //Dloc(j, i*dim + c) -= utheta*JxW_mid * psi_c[qp][j]*  dxphi_c(i,c);
-            }
+              Gloc(i*dim + c,j) -= JxW_mid * psi_c[qp][j]* dxphi_c(i,c);
 
           }
 
@@ -473,8 +425,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
         }
         for (int i = 0; i < n_dofs_p_per_cell; ++i)
-          //FPloc(i) -= JxW_mid* dxU.trace()*psi_c[qp][i];
-          FPloc(i) -= JxW_new* dxU_new.trace() *psi_c[qp][i];
+          FPloc(i) -= JxW_mid* dxU.trace()*psi_c[qp][i];
 
         // ----------------
         //
@@ -483,8 +434,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
         //  ----------------
         if (behaviors & (BH_bble_condens_PnPn | BH_bble_condens_CR))
         {
-          dxbble =     invFT_c_mid * dLbble[qp];
-          dxbble_new = invFT_c_new * dLbble[qp];
+          dxbble = invFT_c_mid * dLbble[qp];
 
           for (int c = 0; c < dim; c++)
           {
@@ -508,10 +458,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
             }
             if (behaviors & BH_bble_condens_PnPn)
               for (int j = 0; j < n_dofs_p_per_cell; ++j)
-              {
-                Gbp(c, j) -= utheta*JxW_mid*psi_c[qp][j]*dxbble(c);
-                Dpb(j,c)  -= JxW_new*psi_c[qp][j]*dxbble(c);
-              }
+                Gbp(c, j) -= JxW_mid*psi_c[qp][j]*dxbble(c);
           }
 
           for (int c = 0; c < dim; c++)
@@ -528,7 +475,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
             FUb(c) += JxW_mid*
                       ( bble[qp]*rho*(dUdt(c)*unsteady + has_convec*Uconv_qp.dot(dxU.row(c))) + // time derivative + convective
                         visc*dxbble.dot(dxU.row(c) + dxU.col(c).transpose()) - //rigidez
-                        Pqp*dxbble(c) -                     // pressão
+                        Pqp_new*dxbble(c) -                     // pressão
                         force_at_mid(c)*bble[qp]   ); // força
           }
         }
@@ -602,7 +549,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
       } // fim quadratura
 
-      //Dloc += utheta*Gloc.transpose();
+      Dloc += utheta*Gloc.transpose();
 
       //
       // stabilization
@@ -612,11 +559,11 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
         //iBbb = iBbb.inverse().eval();
         invert(iBbb,dim);
 
-        //Dpb  = (1./utheta)*Gbp.transpose();
-
         FUloc = FUloc - Bnb*iBbb*FUb;
-        FPloc = FPloc - Dpb*iBbb*FUb;
+        FPloc = FPloc - utheta*Gbp.transpose()*iBbb*FUb;
         
+        Dpb  = utheta*Gbp.transpose();
+
         // correções com os coeficientes da bolha
 
         Ubqp = -utheta*iBbb*FUb; // U bolha no tempo n+utheta        
@@ -1345,20 +1292,8 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 } // END formFunction
 
 
-PetscErrorCode AppCtx::formJacobian(SNES snes,Vec Vec_up_k, Mat* /*Mat_Jac*/, Mat* /*prejac*/, MatStructure * /*flag*/)
+PetscErrorCode AppCtx::formJacobian(SNES /*snes*/,Vec /*Vec_up_k*/,Mat* /*Mat_Jac*/, Mat* /*prejac*/, MatStructure * /*flag*/)
 {
-  PetscBool          found = PETSC_FALSE;
-  char               snes_type[PETSC_MAX_PATH_LEN];
-  
-  PetscOptionsGetString(PETSC_NULL,"-snes_type",snes_type,PETSC_MAX_PATH_LEN-1,&found);
-  
-  if (found)
-    if (string(snes_type) == string("test"))
-    {
-      cout << "WARNING: TESTING JACOBIAN !!!!! \n";
-      this->formFunction(snes, Vec_up_k, Vec_res);
-    }
-  
   PetscFunctionReturn(0);
 }
 
