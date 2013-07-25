@@ -1272,8 +1272,13 @@ Vector solid_veloc(Vector const& X, double t, int tag)
 
 #if (PROBLEM_TYPE==COUETTE && true)
 
+<<<<<<< HEAD
 double const w_ = 1;
 double const a__= 0.4;
+=======
+double const w_ = pi;
+double const a__= 1;
+>>>>>>> e972e733d5a084cee736d4c055505144b1f894f8
 
 double pho(Vector const& X, int tag)
 {
@@ -1310,11 +1315,24 @@ Vector force(Vector const& X, double t, int tag)
   Vector f(Vector::Zero(X.size()));
   Tensor dxU(grad_u_exact(X,t,tag));
 
+<<<<<<< HEAD
   //f = dxU*u_exact(X,t,tag);
   ////f(0) += -a__*y*w_*sin(w_*t);
   ////f(1) += +a__*x*w_*cos(w_*t);
   //f(1) += +a__*x;
   f(0) = t;
+=======
+  //f(0) = a__*pho(X,tag)*(  -w_*sin(w_*t)*y + a__*x*cos(w_*t)*sin(w_*t));
+  //f(1) = a__*pho(X,tag)*(  +w_*cos(w_*t)*x + a__*y*cos(w_*t)*sin(w_*t));
+  //f(0) = a__*pho(X,tag)*(  -w_*sin(w_*t)*y + a__*x*cos(w_*t)*cos(w_*t));
+  //f(1) = a__*pho(X,tag)*(  -w_*sin(w_*t)*x + a__*y*cos(w_*t)*cos(w_*t));
+  //f(0) = a__*pho(X,tag)*(  w_*cos(w_*t)*y + a__*x*sin(w_*t)*sin(w_*t));
+  //f(1) = a__*pho(X,tag)*(  w_*cos(w_*t)*x + a__*y*sin(w_*t)*sin(w_*t));
+  f(0) = a__*a__*x;
+  f(1) = a__*a__*y;
+  //f(0) = 0;
+  //f(1) = 0;  
+>>>>>>> e972e733d5a084cee736d4c055505144b1f894f8
   
   return f;
 }
@@ -1331,12 +1349,19 @@ Vector u_exact(Vector const& X, double t, int tag)
   //v(1) = a__*x*cos(w_*t);
   //v(0) = a__*y*sin(w_*t);
   //v(1) = a__*x*sin(w_*t);
+<<<<<<< HEAD
   //v(0) = 0;
   //v(1) = a__*x*t;
   v(0) = 1.-y*y;
   v(1) = 0;
   //v(0) = y*t;
   //v(1) = 0;
+=======
+  v(0) = a__*y;
+  v(1) = a__*x;
+  //v(0) = 1;
+  //v(1) = 1;  
+>>>>>>> e972e733d5a084cee736d4c055505144b1f894f8
   
   
   return v;
@@ -1542,6 +1567,7 @@ Tensor grad_u_exact(Vector const& X, double t, int tag)
   Tensor dxU(Tensor::Zero(X.size(), X.size()));
 
   //dxU(0,0) = 0;
+<<<<<<< HEAD
   //dxU(0,1) = -2*y;//*cos(w_*t);
   //dxU(1,0) = 0;//sin(w_*t);
   //dxU(1,1) = 0;
@@ -1549,6 +1575,15 @@ Tensor grad_u_exact(Vector const& X, double t, int tag)
   dxU(0,0) = 0;
   dxU(0,1) = a__*cos(w_*t);
   dxU(1,0) = a__*sin(w_*t);
+=======
+  //dxU(0,1) = a__*cos(w_*t);
+  //dxU(1,0) = a__*cos(w_*t);
+  //dxU(1,1) = 0;
+  
+  dxU(0,0) = 0;
+  dxU(0,1) = a__;
+  dxU(1,0) = a__;
+>>>>>>> e972e733d5a084cee736d4c055505144b1f894f8
   dxU(1,1) = 0;
   
   return dxU;
@@ -1561,9 +1596,14 @@ Vector traction(Vector const& X, Vector const& normal, double t, int tag)
   //T(1) = muu(tag)*(cos(w_*t) + sin(w_*t));
 
   Tensor dxU(grad_u_exact(X,t,tag));
+<<<<<<< HEAD
   Tensor I(Tensor::Identity(2,2));
 
   T = (- pressure_exact(X,t,tag)*I +  muu(tag)*(dxU + dxU.transpose()))*normal;
+=======
+
+  T = muu(tag)*(dxU + dxU.transpose())*normal;
+>>>>>>> e972e733d5a084cee736d4c055505144b1f894f8
 
   return T;
 }
@@ -1589,6 +1629,7 @@ Vector v_exact(Vector const& X, double t, int tag) //(X,t,tag)
   double const x = X(0);
   double const y = X(1);
   Vector v(Vector::Zero(X.size()));
+<<<<<<< HEAD
   v(0) = +.1*( -cos(t) );//*(X(0)+0.5)*(X(0)-0.5)/2.;
   v(1) = +.1*( +cos(t) );//*(X(1)+0.5)*(X(1)-0.5)/2.;
   //v(0) = +0.1*(  1 );//*(X(0)+0.5)*(X(0)-0.5)/2.;
@@ -1598,6 +1639,15 @@ Vector v_exact(Vector const& X, double t, int tag) //(X,t,tag)
   //v(1) = t*(1-y*y)*(x + t*(1-x*x)/32. + 1)/32.;
   return v;
   //return u_exact(X,t,tag);
+=======
+  //v(0) = +0.1*(cos(w_*t));//*(X(0)+0.5)*(X(0)-0.5)/2.;
+  //v(1) = +0.1*(sin(w_*t));//*(X(1)+0.5)*(X(1)-0.5)/2.;
+  //return v * (tag!=1 && tag!=2);
+  v(0) = 1;
+  v(1) = 1;
+  
+  return v;
+>>>>>>> e972e733d5a084cee736d4c055505144b1f894f8
 }
 
 // posição do contorno
