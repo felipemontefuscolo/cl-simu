@@ -702,16 +702,12 @@ PetscErrorCode AppCtx::allocPetscObjs()
   //Vec Vec_res_m;
   ierr = VecCreate(PETSC_COMM_WORLD, &Vec_res_m);                     CHKERRQ(ierr);
   ierr = VecSetSizes(Vec_res_m, PETSC_DECIDE, n_dofs_v_mesh);         CHKERRQ(ierr);
-<<<<<<< HEAD
   ierr = VecSetFromOptions(Vec_res_m);                                CHKERRQ(ierr);
 
   //Vec Vec_v_old;
   ierr = VecCreate(PETSC_COMM_WORLD, &Vec_v_old);                     CHKERRQ(ierr);
   ierr = VecSetSizes(Vec_v_old, PETSC_DECIDE, n_dofs_v_mesh);         CHKERRQ(ierr);
   ierr = VecSetFromOptions(Vec_v_old);                                CHKERRQ(ierr);
-=======
-  ierr = VecSetFromOptions(Vec_res_m);
->>>>>>> e972e733d5a084cee736d4c055505144b1f894f8
 
   VectorXi nnz;
   //if(false)
@@ -1296,11 +1292,7 @@ PetscErrorCode AppCtx::setInitialConditions()
 
 
 
-<<<<<<< HEAD
   // velocidade inicial e pressao inicial
-=======
-  // velocidade inicial
->>>>>>> e972e733d5a084cee736d4c055505144b1f894f8
   point_iterator point = mesh->pointBegin();
   point_iterator point_end = mesh->pointEnd();
   for (; point != point_end; ++point)
@@ -1819,13 +1811,10 @@ PetscErrorCode AppCtx::solveTimeProblem()
   int lits;
   SNESGetLinearSolveIterations(snes,&lits);
 
-<<<<<<< HEAD
   cout << "Greatest error reached during the simulation:" << endl;
   printf("%-21s %-21s %-21s %-21s %-21s %-21s %-21s %-21s %s\n", "# hmean", "u_L2_norm", "p_L2_norm", "grad_u_L2_norm", "grad_p_L2_norm", "u_L2_facet_norm", "u_inf_facet_norm", "u_inf_norm", "p_inf_norm" ); 
   printf("%.15e %.15e %.15e %.15e %.15e %.15e %.15e %.15e %.15e\n\n",Stats.hmean, Stats.u_L2_norm, Stats.p_L2_norm, Stats.grad_u_L2_norm, Stats.grad_p_L2_norm, Stats.u_L2_facet_norm,  Stats.u_inf_facet_norm, Stats.u_inf_norm, Stats.p_inf_norm);
   
-=======
->>>>>>> e972e733d5a084cee736d4c055505144b1f894f8
   ////if (unsteady)
   //{
   //  cout << "\nmean errors: \n";
@@ -2065,7 +2054,6 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
     printf("%.15e %.15e %.15e %.15e %.15e %.15e %.15e\n\n",hmean, u_L2_norm, p_L2_norm, grad_u_L2_norm, grad_p_L2_norm, u_L2_facet_norm,  u_inf_facet_norm);
   }
 
-<<<<<<< HEAD
   Stats.add_p_L2_norm        (p_L2_norm       );
   Stats.add_u_L2_norm        (u_L2_norm       );
   Stats.add_grad_u_L2_norm   (grad_u_L2_norm  );
@@ -2075,15 +2063,6 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
   Stats.add_hmean            (hmean           );
   Stats.add_u_L2_facet_norm  (u_L2_facet_norm );
   Stats.add_u_inf_facet_norm (u_inf_facet_norm);
-=======
-  Stats.add_p_L2_norm      (p_L2_norm      );
-  Stats.add_u_L2_norm      (u_L2_norm      );
-  Stats.add_grad_u_L2_norm (grad_u_L2_norm );
-  Stats.add_grad_p_L2_norm (grad_p_L2_norm );
-  Stats.add_p_inf_norm     (p_inf_norm     );
-  Stats.add_u_inf_norm     (u_inf_norm     );
-  Stats.add_hmean          (hmean          );
->>>>>>> e972e733d5a084cee736d4c055505144b1f894f8
   
 }
 
