@@ -709,6 +709,7 @@ PetscErrorCode AppCtx::allocPetscObjs()
   ierr = VecSetSizes(Vec_v_old, PETSC_DECIDE, n_dofs_v_mesh);         CHKERRQ(ierr);
   ierr = VecSetFromOptions(Vec_v_old);                                CHKERRQ(ierr);
 
+
   VectorXi nnz;
   //if(false)
   {
@@ -2063,6 +2064,7 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
   Stats.add_hmean            (hmean           );
   Stats.add_u_L2_facet_norm  (u_L2_facet_norm );
   Stats.add_u_inf_facet_norm (u_inf_facet_norm);
+
   
 }
 

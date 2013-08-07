@@ -1275,6 +1275,7 @@ Vector solid_veloc(Vector const& X, double t, int tag)
 double const w_ = 1;
 double const a__= 0.4;
 
+
 double pho(Vector const& X, int tag)
 {
   return 1.0;
@@ -1316,7 +1317,6 @@ Vector force(Vector const& X, double t, int tag)
   //f(1) += +a__*x;
   f(0) = t;
 
-
   
   return f;
 }
@@ -1339,7 +1339,6 @@ Vector u_exact(Vector const& X, double t, int tag)
   v(1) = 0;
   //v(0) = y*t;
   //v(1) = 0;
-
 
   
   
@@ -1569,6 +1568,7 @@ Vector traction(Vector const& X, Vector const& normal, double t, int tag)
 
   T = (- pressure_exact(X,t,tag)*I +  muu(tag)*(dxU + dxU.transpose()))*normal;
 
+
   return T;
 }
 Vector u_initial(Vector const& X, int tag)
@@ -1602,6 +1602,7 @@ Vector v_exact(Vector const& X, double t, int tag) //(X,t,tag)
   //v(1) = t*(1-y*y)*(x + t*(1-x*x)/32. + 1)/32.;
   return v;
   //return u_exact(X,t,tag);
+
 }
 
 // posição do contorno
