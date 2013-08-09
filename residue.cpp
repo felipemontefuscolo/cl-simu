@@ -896,6 +896,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
       //noi_coefs_f_new_trans = x_coefs_f_mid_trans;
 
+
       for (int qp = 0; qp < n_qpts_facet; ++qp)
       {
 
@@ -1052,7 +1053,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
     Vector              point_a(dim); // ponto na linha triplice
     Vector              point_b(dim); // ponto na linha triplice
     Vector              ifacet_normal(dim); // ponto na linha triplice
-    double              line_normal_sign; // +1 or -1
+    double              line_normal_sign = 0; // +1 or -1
     double              J_mid=0, JxW_mid;
     double              weight=0;
     double              gama_mid;
@@ -1133,14 +1134,18 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
           for (int kk = 0; kk < mesh->numVerticesPerCell(); ++kk)
           {
+            int const nodekk_id = fluid_cell->getNodeId(kk);
             Point const* pp      = mesh->getNodePtr(fluid_cell->getNodeId(kk) );
             const int    tag_aux = pp->getTag();
 
             if ((is_in(tag_aux, solid_tags) || is_in(tag_aux,feature_tags)) && !is_in(tag_aux, triple_tags))
             {
-              gen_error = false;
-              pp->getCoord(solid_point.data(), dim);
-              break;
+              if (corner_nodes(0) != nodekk_id && corner_nodes(1) != nodekk_id)
+              {
+                gen_error = false;
+                pp->getCoord(solid_point.data(), dim);
+                break;
+              }
             }
           }
           if (gen_error==false)
@@ -1175,6 +1180,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
           line_normal_sign = 1;
         else
           line_normal_sign = -1;
+
 
       }
       else // dim==2
@@ -1417,13 +1423,13 @@ void getProjectorBC(MatrixBase<Derived> & P, int n_nodes, int const* nodes, Vec 
     //m = point->getPosition() - mesh->numVerticesPerCell();
     //cell = mesh->getCellPtr(point->getIncidCell());
 
-    if (is_in(tag,feature_tags))
-    {
-      app.getNodeDofs(&*point, DH_MESH, VAR_M, dofs);
-      VecGetValues(Vec_x_, dim, dofs, X.data());
-      P.block(i*dim,i*dim,dim,dim)  = feature_proj(X,t,tag);
-    }
-    else
+    //if (is_in(tag,feature_tags))
+    //{
+    //  app.getNodeDofs(&*point, DH_MESH, VAR_M, dofs);
+    //  VecGetValues(Vec_x_, dim, dofs, X.data());
+    //  P.block(i*dim,i*dim,dim,dim)  = feature_proj(X,t,tag);
+    //}
+    //else
     if (is_in(tag,solid_tags) )
     {
       if (app.boundary_smoothing)
@@ -1453,7 +1459,7 @@ void getProjectorBC(MatrixBase<Derived> & P, int n_nodes, int const* nodes, Vec 
       }
     }
     else
-    if (is_in(tag,triple_tags) || is_in(tag,dirichlet_tags) || is_in(tag,neumann_tags) || is_in(tag,periodic_tags))
+    if (is_in(tag,triple_tags) || is_in(tag,dirichlet_tags) || is_in(tag,neumann_tags) || is_in(tag,periodic_tags) || is_in(tag,feature_tags))
     {
       P.block(i*dim,i*dim,dim,dim) = Z;
     }

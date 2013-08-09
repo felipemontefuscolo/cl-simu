@@ -48,7 +48,7 @@ inline double sign(double a) {a<0 ? -1 : 1;};
 #define TRACO          18
 #define RUSSA_SIN2D    19
 
-#define PROBLEM_TYPE 12
+#define PROBLEM_TYPE 16
 
 
 #if (PROBLEM_TYPE==CAVITY_2D_3D)
@@ -1273,7 +1273,7 @@ Vector solid_veloc(Vector const& X, double t, int tag)
 #if (PROBLEM_TYPE==COUETTE && true)
 
 double const w_ = 1;
-double const a__= 1;
+double const a__= 0.4;
 
 
 double pho(Vector const& X, int tag)
@@ -1311,11 +1311,11 @@ Vector force(Vector const& X, double t, int tag)
   Vector f(Vector::Zero(X.size()));
   Tensor dxU(grad_u_exact(X,t,tag));
 
-  f = dxU*u_exact(X,t,tag);
-  f(0) += -a__*y*w_*sin(w_*t) + 1;
-  f(1) += +a__*x*w_*cos(w_*t);
+  //f = dxU*u_exact(X,t,tag);
+  ////f(0) += -a__*y*w_*sin(w_*t);
+  ////f(1) += +a__*x*w_*cos(w_*t);
   //f(1) += +a__*x;
-  //f(1) = 2*t;
+  f(0) = t;
 
   
   return f;
@@ -1327,17 +1327,17 @@ Vector u_exact(Vector const& X, double t, int tag)
 
   Vector v(Vector::Zero(X.size()));
 
-  v(0) = a__*y*cos(w_*t);
-  v(1) = a__*x*sin(w_*t);
+  //v(0) = a__*y*cos(w_*t);
+  //v(1) = a__*x*sin(w_*t);
   //v(0) = a__*y*cos(w_*t);
   //v(1) = a__*x*cos(w_*t);
   //v(0) = a__*y*sin(w_*t);
   //v(1) = a__*x*sin(w_*t);
   //v(0) = 0;
   //v(1) = a__*x*t;
-  //v(0) = 1.-y*y;
-  //v(1) = t*t;
-  //v(0) = 0;
+  v(0) = 1.-y*y;
+  v(1) = 0;
+  //v(0) = y*t;
   //v(1) = 0;
 
   
@@ -1346,12 +1346,11 @@ Vector u_exact(Vector const& X, double t, int tag)
 }
 double pressure_exact(Vector const& X, double t, int tag)
 {
-  double x = X(0);
-  double y = X(1);
+  //double x = X(0);
+  //double y = X(1);
 
-  return x;
-  //return  -2*x;
-  //return x;
+  //return 0;
+  return  -2*X(0) + X(0)*t;
 }
 Vector grad_p_exact(Vector const& X, double t, int tag)
 {
@@ -1370,8 +1369,8 @@ Tensor grad_u_exact(Vector const& X, double t, int tag)
   Tensor dxU(Tensor::Zero(X.size(), X.size()));
 
   dxU(0,0) = 0;
-  dxU(0,1) = cos(w_*t); //-2*y
-  dxU(1,0) = sin(w_*t);
+  dxU(0,1) = -2*y;//*cos(w_*t);
+  dxU(1,0) = 0;//sin(w_*t);
   dxU(1,1) = 0;
   
   //dxU(0,0) = 0;
@@ -1401,7 +1400,7 @@ Vector u_initial(Vector const& X, int tag)
 }
 double p_initial(Vector const& X, int tag)
 {
-  return 0*pressure_exact(X,0,tag);
+  return pressure_exact(X,0,tag);
 }
 
 Vector solid_normal(Vector const& X, double t, int tag)
@@ -1422,8 +1421,8 @@ Vector v_exact(Vector const& X, double t, int tag) //(X,t,tag)
   //v(0) = +0.1*(  1 );//*(X(0)+0.5)*(X(0)-0.5)/2.;
   //v(1) = +0.1*(  0 );//*(X(1)+0.5)*(X(1)-0.5)/2.;
   //return v * (tag!=1 && tag!=2);
-  v(0) = t*(1-x*x)*(1+y)/4.;
-  v(1) = t*(1-y*y)*(x + t*(1-x*x)/32. + 1)/4.;
+  v(0) = t*(1-x*x)*(1+y)/32.;
+  v(1) = t*(1-y*y)*(x + t*(1-x*x)/32. + 1)/32.;
   return v;
   //return u_exact(X,t,tag);
 }
@@ -2072,17 +2071,17 @@ Vector v_exact(Vector const& X, double t, int tag) //(X,t,tag)
 #if (PROBLEM_TYPE==ZETA3D)
 double pho(Vector const& X, int tag)
 {
-  return 0;
+  return 1;
 }
 
 double cos_theta0()
 {
-  return 0*sqrt(2.)/2.;
+  return -1;
 }
 
 double zeta(double u_norm, double angle)
 {
-  return 0*1.e-4;
+  return 0*1.e-3;
 }
 
 double beta_diss()
@@ -2092,11 +2091,11 @@ double beta_diss()
 
 double gama(Vector const& X, double t, int tag)
 {
-  return 0*0.075;
+  return 0.001;
 }
 double muu(int tag)
 {
-  return 1.e-0;
+  return 1.e-2;
 }
 Vector force(Vector const& X, double t, int tag)
 {
@@ -2105,7 +2104,7 @@ Vector force(Vector const& X, double t, int tag)
   Vector f(Vector::Zero(X.size()));
   
   //f(1)=-4;
-  f(0)=1;
+  //f(0)=1;
   //f /= 4*sqrt(2);
 
 
@@ -2136,8 +2135,8 @@ double pressure_exact(Vector const& X, double t, int tag)
   double x = X(0);
   double y = X(1);
 
-  //return 2*gama(X,t,tag);
-  return x;
+  return 2*gama(X,t,tag);
+  //return x;
 }
 Vector grad_p_exact(Vector const& X, double t, int tag)
 {
@@ -2174,11 +2173,11 @@ Vector solid_normal(Vector const& X, double t, int tag)
     return N;
   }
   
-  if (tag == 4)
+  if (tag == 4 || tag == 9 || tag == 7)
     N(1) = 1;
   else if (tag == 6 )
     N(0) = 1;
-  else
+  else if (tag == 5 )
     N(2) = 1;
   
   return N;
@@ -2198,8 +2197,7 @@ Vector u_initial(Vector const& X, int tag)
 }
 double p_initial(Vector const& X, int tag)
 {
-  return 0*pressure_exact(X,0,tag);
-
+  return pressure_exact(X,0,tag);
 }
 
 Vector v_exact(Vector const& X, double , int ) //(X,t,tag)
