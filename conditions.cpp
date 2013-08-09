@@ -48,7 +48,7 @@ inline double sign(double a) {a<0 ? -1 : 1;};
 #define TRACO          18
 #define RUSSA_SIN2D    19
 
-#define PROBLEM_TYPE 16
+#define PROBLEM_TYPE 12
 
 
 #if (PROBLEM_TYPE==CAVITY_2D_3D)
@@ -1311,11 +1311,11 @@ Vector force(Vector const& X, double t, int tag)
   Vector f(Vector::Zero(X.size()));
   Tensor dxU(grad_u_exact(X,t,tag));
 
-  //f = dxU*u_exact(X,t,tag);
+  f = dxU*u_exact(X,t,tag);
   ////f(0) += -a__*y*w_*sin(w_*t);
   ////f(1) += +a__*x*w_*cos(w_*t);
   //f(1) += +a__*x;
-  f(0) = t;
+  //f(1) = 2*t;
 
   
   return f;
@@ -1336,8 +1336,8 @@ Vector u_exact(Vector const& X, double t, int tag)
   //v(0) = 0;
   //v(1) = a__*x*t;
   v(0) = 1.-y*y;
-  v(1) = 0;
-  //v(0) = y*t;
+  //v(1) = t*t;
+  //v(0) = 0;
   //v(1) = 0;
 
   
@@ -1346,18 +1346,19 @@ Vector u_exact(Vector const& X, double t, int tag)
 }
 double pressure_exact(Vector const& X, double t, int tag)
 {
-  //double x = X(0);
-  //double y = X(1);
+  double x = X(0);
+  double y = X(1);
 
   //return 0;
-  return  -2*X(0) + X(0)*t;
+  return  -2*x;
+  //return x;
 }
 Vector grad_p_exact(Vector const& X, double t, int tag)
 {
   double x = X(0);
   double y = X(1);
   Vector dxP(2);
-  dxP(0) = 0;
+  dxP(0) = -2;
   dxP(1) = 0;
 
   return dxP;
@@ -1400,7 +1401,7 @@ Vector u_initial(Vector const& X, int tag)
 }
 double p_initial(Vector const& X, int tag)
 {
-  return pressure_exact(X,0,tag);
+  return 0*pressure_exact(X,0,tag);
 }
 
 Vector solid_normal(Vector const& X, double t, int tag)
@@ -1421,8 +1422,8 @@ Vector v_exact(Vector const& X, double t, int tag) //(X,t,tag)
   //v(0) = +0.1*(  1 );//*(X(0)+0.5)*(X(0)-0.5)/2.;
   //v(1) = +0.1*(  0 );//*(X(1)+0.5)*(X(1)-0.5)/2.;
   //return v * (tag!=1 && tag!=2);
-  v(0) = t*(1-x*x)*(1+y)/32.;
-  v(1) = t*(1-y*y)*(x + t*(1-x*x)/32. + 1)/32.;
+  v(0) = t*(1-x*x)*(1+y)/4.;
+  v(1) = t*(1-y*y)*(x + t*(1-x*x)/32. + 1)/4.;
   return v;
   //return u_exact(X,t,tag);
 }
@@ -2081,21 +2082,21 @@ double cos_theta0()
 
 double zeta(double u_norm, double angle)
 {
-  return 1.e-4;
+  return 0*1.e-4;
 }
 
 double beta_diss()
 {
-  return 1.e-4;
+  return 0*1.e-4;
 }
 
 double gama(Vector const& X, double t, int tag)
 {
-  return 0.075;
+  return 0*0.075;
 }
 double muu(int tag)
 {
-  return 1.e-5;
+  return 1.e-0;
 }
 Vector force(Vector const& X, double t, int tag)
 {
@@ -2103,8 +2104,8 @@ Vector force(Vector const& X, double t, int tag)
   double y = X(1);
   Vector f(Vector::Zero(X.size()));
   
-  //f(1)=4;
-  //f(0)=1;
+  //f(1)=-4;
+  f(0)=1;
   //f /= 4*sqrt(2);
 
 
@@ -2115,6 +2116,8 @@ Vector u_exact(Vector const& X, double t, int tag)
   double x = X(0);
   double y = X(1);
   Vector v(Vector::Zero(X.size()));
+
+  v(0) = 0;
 
   return v;
 }
@@ -2133,7 +2136,8 @@ double pressure_exact(Vector const& X, double t, int tag)
   double x = X(0);
   double y = X(1);
 
-  return 2;
+  //return 2*gama(X,t,tag);
+  return x;
 }
 Vector grad_p_exact(Vector const& X, double t, int tag)
 {
@@ -2156,6 +2160,20 @@ Vector solid_normal(Vector const& X, double t, int tag)
 {
   Vector N(Vector::Zero(X.size()));
   
+  double x = X(0);
+  double y = X(1);
+  double z = X(2);
+  
+  if (tag == 2) { // contact line
+    if (x < 1.e-9)
+      N(0) = 1;
+    else if (y < 1.e-9)
+      N(1) = 1;
+    else if (z < 1.e-9)
+      N(2) = 1;
+    return N;
+  }
+  
   if (tag == 4)
     N(1) = 1;
   else if (tag == 6 )
@@ -2176,11 +2194,11 @@ Vector solid_veloc(Vector const& X, double t, int tag)
 Vector u_initial(Vector const& X, int tag)
 {
   Vector r(Vector::Zero(X.size()));
-  return r;
+  return u_exact(X,0,tag);
 }
 double p_initial(Vector const& X, int tag)
 {
-  return X.size()-1;
+  return 0*pressure_exact(X,0,tag);
 }
 
 Vector v_exact(Vector const& X, double , int ) //(X,t,tag)

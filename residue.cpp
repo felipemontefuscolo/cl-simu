@@ -85,9 +85,10 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
     converged_times=0;
   }  
   
-  if (force_pressure )
+  if (force_pressure && (iter<2))
   {
     Vector X(dim);
+    Vector X_new(dim);
     if (behaviors & BH_Press_grad_elim)
     {
       cell_iterator cell = mesh->cellBegin();
@@ -102,15 +103,24 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
         ++point;
       int x_dofs[3];
       dof_handler[DH_MESH].getVariable(VAR_M).getVertexDofs(x_dofs, &*point);
-      VecGetValues(Vec_x_1, dim, x_dofs, X.data());
+      VecGetValues(Vec_x_1, dim, x_dofs, X_new.data());
+      VecGetValues(Vec_x_0, dim, x_dofs, X.data());
+      X = .5*(X+X_new);
       dof_handler[DH_UNKS].getVariable(VAR_P).getVertexDofs(&null_space_press_dof, &*point);
       // fix the initial guess
-      VecSetValue(Vec_up_k, null_space_press_dof, pressure_exact(X,current_time+dt,point->getTag()), INSERT_VALUES);
+      VecSetValue(Vec_up_k, null_space_press_dof, pressure_exact(X,current_time+.5*dt,point->getTag()), INSERT_VALUES);
     }
     
     Assembly(Vec_up_k);
+    
   }
 
+  // checking:
+  if (null_space_press_dof < 0 && force_pressure==1)
+  {
+    cout << "force_pressure: somthing is wrong ..." << endl;
+    throw;
+  }
 
 
   Mat *JJ = &Mat_Jac;
@@ -439,9 +449,12 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
           {
             FUloc(i*dim + c) += JxW_mid*
                     ( rho*(unsteady*dUdt(c) + has_convec*Uconv_qp.dot(dxU.row(c)))*phi_c[qp][i] + // aceleração
-                      visc*dxphi_c.row(i).dot(dxU.row(c) + dxU.col(c).transpose()) - //rigidez
-                      force_at_mid(c)*phi_c[qp][i]   ) -// força +
-                    JxW_mid*Pqp*dxphi_c(i,c);  // pressão
+                      visc*dxphi_c.row(i).dot(dxU.row(c) + dxU.col(c).transpose())  //rigidez
+                    ) -
+                    JxW_mid*force_at_mid(c)*phi_c[qp][i] -// força +
+                    //JxW_new*Pqp_new*dxphi_c_new(i,c);  // pressão
+                    //JxW_mid*Pqp*dxphi_c(i,c);  // pressão
+                    JxW_mid*Pqp_new*dxphi_c(i,c);  // pressão
 
             for (int j = 0; j < n_dofs_u_per_cell/dim; ++j)
             {
@@ -457,8 +470,9 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
             }
             for (int j = 0; j < n_dofs_p_per_cell; ++j)
             {
-              //Gloc(i*dim + c,j) -= JxW_mid * psi_c[qp][j]* dxphi_c(i,c);
-              Gloc(i*dim + c,j) -= utheta*JxW_mid * psi_c[qp][j]* dxphi_c(i,c);
+              Gloc(i*dim + c,j) -= JxW_mid * psi_c[qp][j]* dxphi_c(i,c);
+              //Gloc(i*dim + c,j) -= utheta*JxW_mid * psi_c[qp][j]* dxphi_c(i,c);
+              //Gloc(i*dim + c,j) -= JxW_new * psi_c[qp][j]* dxphi_c_new(i,c);
               Dloc(j, i*dim + c) -= JxW_new * psi_c[qp][j]*  dxphi_c_new(i,c);
               //Dloc(j, i*dim + c) -= utheta*JxW_mid * psi_c[qp][j]*  dxphi_c(i,c);
             }

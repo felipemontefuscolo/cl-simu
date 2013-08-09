@@ -1294,7 +1294,6 @@ PetscErrorCode AppCtx::setInitialConditions()
 
 
   // velocidade inicial e pressao inicial
-
   point_iterator point = mesh->pointBegin();
   point_iterator point_end = mesh->pointEnd();
   for (; point != point_end; ++point)
@@ -1529,12 +1528,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
   // WARNING: ADAMS-BASHFORTH IS NOT SELF STARTING
   for(;;)
   {
-    if (maxts==0)
-    {
-      //check initial conditions
-      computeError(Vec_x_0, Vec_up_0,current_time);
-      break;
-    }
+
 
     if ((time_step%print_step)==0)
     {
@@ -1591,13 +1585,26 @@ PetscErrorCode AppCtx::solveTimeProblem()
     Xe(1) = 0;
     x_error += (X-Xe).norm()/maxts;
 
+
+    if (maxts == 0)
+    {
+      computeError(Vec_x_0, Vec_up_0,current_time);
+      break;
+    }
     // * SOLVE THE SYSTEM *
     if (solve_the_sys)
     {
       setUPInitialGuess();
       ierr = SNESSolve(snes,PETSC_NULL,Vec_up_1);        CHKERRQ(ierr);
     }
-    // * SOLVE THE SYSTEM *
+    if (plot_exact_sol)
+    {
+      if (time_step == 0)
+        pressureTimeCorrection(Vec_up_0, Vec_up_1, 0., 1); // press(n) = press(n+1/2) - press(n-1/2)
+      else
+        pressureTimeCorrection(Vec_up_0, Vec_up_1, .5, .5); // press(n) = press(n+1/2) - press(n-1/2)
+      computeError(Vec_x_0, Vec_up_0,current_time);
+    }
 
     printContactAngle(fprint_ca);
     //////if (plot_exact_sol) eh melhor depois da atualização
@@ -1700,9 +1707,6 @@ PetscErrorCode AppCtx::solveTimeProblem()
     {
       VecCopy(Vec_up_1, Vec_up_0);
     }
-
-    if (plot_exact_sol)
-      computeError(Vec_x_0, Vec_up_0,current_time);
 
 
     // compute steady error
@@ -1817,7 +1821,6 @@ PetscErrorCode AppCtx::solveTimeProblem()
   printf("%-21s %-21s %-21s %-21s %-21s %-21s %-21s %-21s %s\n", "# hmean", "u_L2_norm", "p_L2_norm", "grad_u_L2_norm", "grad_p_L2_norm", "u_L2_facet_norm", "u_inf_facet_norm", "u_inf_norm", "p_inf_norm" ); 
   printf("%.15e %.15e %.15e %.15e %.15e %.15e %.15e %.15e %.15e\n\n",Stats.hmean, Stats.u_L2_norm, Stats.p_L2_norm, Stats.grad_u_L2_norm, Stats.grad_p_L2_norm, Stats.u_L2_facet_norm,  Stats.u_inf_facet_norm, Stats.u_inf_norm, Stats.p_inf_norm);
   
-
   ////if (unsteady)
   //{
   //  cout << "\nmean errors: \n";
@@ -2070,6 +2073,44 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
   
 }
 
+
+void AppCtx::pressureTimeCorrection(Vec &Vec_up_1, Vec &Vec_up_0, double a, double b) // p(n+1) = a*p(n+.5) + b* p(n)
+{
+  Vector    Uf(dim);
+  //double    pf;
+  Vector    X(dim);
+  Tensor    R(dim,dim);
+  int       dof;
+  //int       dof;
+  int tag;  
+  double P0, P1, P2;
+
+  if (behaviors & BH_Press_grad_elim)
+  {
+    cout << "FIX ME: NOT SUPPORTED YET!!!!\n";
+    throw;
+  }
+
+  point_iterator point = mesh->pointBegin();
+  point_iterator point_end = mesh->pointEnd();
+  for (; point != point_end; ++point)
+  {
+    // press
+    if (mesh->isVertex(&*point))
+    {
+      getNodeDofs(&*point,DH_UNKS,VAR_P,&dof);
+      
+      VecGetValues(Vec_up_1, 1, &dof, &P1);
+      VecGetValues(Vec_up_0, 1, &dof, &P0);
+      
+      P2 = a*P1 + b*P0;
+      
+      VecSetValues(Vec_up_1, 1, &dof, &P2, INSERT_VALUES);
+    }
+
+  } // end point loop  
+  Assembly(Vec_up_1);
+}
 
 double AppCtx::getMaxVelocity()
 {
