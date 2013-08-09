@@ -1602,8 +1602,10 @@ PetscErrorCode AppCtx::solveTimeProblem()
       if (time_step == 0)
         pressureTimeCorrection(Vec_up_0, Vec_up_1, 0., 1); // press(n) = press(n+1/2) - press(n-1/2)
       else
+      {
         pressureTimeCorrection(Vec_up_0, Vec_up_1, .5, .5); // press(n) = press(n+1/2) - press(n-1/2)
-      computeError(Vec_x_0, Vec_up_0,current_time);
+        computeError(Vec_x_0, Vec_up_0,current_time);
+      }
     }
 
     printContactAngle(fprint_ca);
