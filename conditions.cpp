@@ -2199,6 +2199,7 @@ Vector u_initial(Vector const& X, int tag)
 double p_initial(Vector const& X, int tag)
 {
   return 0*pressure_exact(X,0,tag);
+
 }
 
 Vector v_exact(Vector const& X, double , int ) //(X,t,tag)
