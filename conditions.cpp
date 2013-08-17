@@ -1270,7 +1270,7 @@ Vector solid_veloc(Vector const& X, double t, int tag)
 
 #endif
 
-#if (PROBLEM_TYPE==COUETTE && true)
+#if (PROBLEM_TYPE==COUETTE && false)
 
 double const w_ = 1;
 double const a__= 1;
@@ -1616,6 +1616,174 @@ Tensor feature_proj(Vector const& X, double t, int tag)
 }
 
 #endif
+
+// BOLHAS
+#if (true)
+
+
+double pho(Vector const& X, int tag)
+{
+  if (tag == 100)
+    return .0;
+  else
+    return 0;
+}
+double cos_theta0()
+{
+  return 0.0;
+}
+
+double zeta(double u_norm, double angle)
+{
+  return 0*5.e-1;
+}
+
+double beta_diss()
+{
+  return 0*1.e-4;
+}
+
+double gama(Vector const& X, double t, int tag)
+{
+  return 0*0.01;
+}
+double muu(int tag)
+{
+  if (tag == 100)
+    return 0.1;
+  else
+    return 0.5;
+}
+Vector force(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+
+  Vector f(Vector::Zero(X.size()));
+  Tensor dxU(grad_u_exact(X,t,tag));
+
+  if (tag == 200)
+    f(1) = -1;
+  
+  return f;
+}
+Vector u_exact(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+
+  Vector v(Vector::Zero(X.size()));
+
+  return v;
+}
+double pressure_exact(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+
+  //return  x*cos(w_*t) + y*sin(w_*t);
+  return 0;
+}
+Vector grad_p_exact(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+  Vector dxP(2);
+  dxP(0) = 0;
+  dxP(1) = 0;
+
+  return dxP;
+}
+Tensor grad_u_exact(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+  Tensor dxU(Tensor::Zero(X.size(), X.size()));
+
+  //dxU(0,0) = 0;
+  //dxU(0,1) = cos(w_*t); //-2*y
+  //dxU(1,0) = sin(w_*t);
+  //dxU(1,1) = 0;
+  
+  return dxU;
+}
+Vector traction(Vector const& X, Vector const& normal, double t, int tag)
+{
+  Vector T(Vector::Zero(X.size()));
+
+  //T(0) = -pressure_exact(X,t,tag);
+  //T(1) = muu(tag)*(cos(w_*t) + sin(w_*t));
+
+  //Tensor dxU(grad_u_exact(X,t,tag));
+  //Tensor I(Tensor::Identity(2,2));
+  //
+  //T = (- pressure_exact(X,t,tag)*I +  muu(tag)*(dxU + dxU.transpose()))*normal;
+  //T(0) = 1;
+
+  return T;
+}
+Vector u_initial(Vector const& X, int tag)
+{
+  return u_exact(X,0,tag);
+}
+double p_initial(Vector const& X, int tag)
+{
+  return pressure_exact(X,0,tag);
+}
+
+Vector solid_normal(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+
+  if (tag == 1)
+    N(0) = 1;
+  else if (tag == 2)
+    N(0) = -1;
+  else if (tag == 3)
+    N(1) = -1;
+  else if (tag == 4)
+    N(1) = 1;
+  
+  return N;
+}
+
+Vector v_exact(Vector const& X, double t, int tag) //(X,t,tag)
+{
+  double const tet = 10. * (pi/180.);
+  double const x = X(0);
+  double const y = X(1);
+  Vector v(Vector::Zero(X.size()));
+  //v(0) = +.1*( y );//*(X(0)+0.5)*(X(0)-0.5)/2.;
+  //v(1) = +.1*( 0 );//*(X(1)+0.5)*(X(1)-0.5)/2.;
+  //v(0) = +0.1*(  1 );//*(X(0)+0.5)*(X(0)-0.5)/2.;
+  //v(1) = +0.1*(  0 );//*(X(1)+0.5)*(X(1)-0.5)/2.;
+  //return v * (tag!=1 && tag!=2);
+  v(0) = t*(1-x*x)*(1+y)/4.;
+  v(1) = t*(1-y*y)*(x + t*(1-x*x)/32. + 1)/4.;
+  return v;
+  //return u_exact(X,t,tag);
+}
+
+// posição do contorno
+Vector x_exact(Vector const& X, double t, int tag)
+{
+  Vector r(Vector::Zero(X.size()));
+  return r;
+}
+
+Vector solid_veloc(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+  return N;
+}
+
+Tensor feature_proj(Vector const& X, double t, int tag)
+{
+  return Tensor::Zero(2,2);
+}
+
+#endif
+
 
 #if (PROBLEM_TYPE==PSEUDO_OSC2D)
 

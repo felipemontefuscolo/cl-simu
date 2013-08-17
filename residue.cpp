@@ -148,8 +148,6 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
     MatrixXd            u_coefs_c_new(n_dofs_u_per_cell/dim, dim);        // n+1
     MatrixXd            u_coefs_c_new_trans(dim,n_dofs_u_per_cell/dim);   // n+1
 
-    MatrixXd            v_coefs_c_old(nodes_per_cell, dim);      // mesh velocity;
-    MatrixXd            v_coefs_c_old_trans(dim, nodes_per_cell);      // mesh velocity;
     MatrixXd            v_coefs_c_mid(nodes_per_cell, dim);        // mesh velocity; n
     MatrixXd            v_coefs_c_mid_trans(dim,nodes_per_cell);   // mesh velocity; n
 
@@ -279,7 +277,6 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       dof_handler[DH_UNKS].getVariable(VAR_U).getCellDofs(mapU_c.data(), &*cell);
       dof_handler[DH_UNKS].getVariable(VAR_P).getCellDofs(mapP_c.data(), &*cell);
 
-      VecGetValues(Vec_v_old,   mapM_c.size(), mapM_c.data(), v_coefs_c_old.data());
       VecGetValues(Vec_v_mid,   mapM_c.size(), mapM_c.data(), v_coefs_c_mid.data());
       VecGetValues(Vec_x_0,     mapM_c.size(), mapM_c.data(), x_coefs_c_old.data());
       VecGetValues(Vec_x_1,     mapM_c.size(), mapM_c.data(), x_coefs_c_new.data());
@@ -293,7 +290,6 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       //mesh->getNodesCoords(cell_nodes.begin(), cell_nodes.end(), x_coefs_c.data());
       //x_coefs_c_trans = x_coefs_c_mid_trans;
 
-      v_coefs_c_old_trans = v_coefs_c_old.transpose();
       v_coefs_c_mid_trans = v_coefs_c_mid.transpose();
       x_coefs_c_old_trans = x_coefs_c_old.transpose();
       x_coefs_c_new_trans = x_coefs_c_new.transpose();

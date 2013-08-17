@@ -807,6 +807,17 @@ PetscErrorCode AppCtx::meshAdapt()
       tag_b = mesh->getNodePtr(edge_nodes[1])->getTag();
       tag_e = edge->getTag();
 
+      if (is_in(tag_e, dirichlet_tags)||
+          is_in(tag_e, neumann_tags) ||
+          is_in(tag_e, interface_tags) ||
+          is_in(tag_e, dirichlet_tags) ||
+          is_in(tag_e, solid_tags) ||
+          is_in(tag_e, periodic_tags) ||
+          is_in(tag_e, feature_tags)  )
+        continue;
+        
+        
+
       if (!( tag_a==tag_b && tag_b==tag_e ) && (is_splitting==0))
         continue;
 
@@ -1190,7 +1201,8 @@ PetscErrorCode AppCtx::calcMeshVelocity(Vec const& Vec_x_0, Vec const& Vec_up_0,
       }
       else
       {
-        if (  false &&  (  is_in(tag, neumann_tags) || is_in(tag, dirichlet_tags) || is_in(tag, periodic_tags)   )   )
+        if (  true &&  (  is_in(tag, neumann_tags) || is_in(tag, dirichlet_tags) || is_in(tag, periodic_tags)   )   )
+        //if (  false &&  (  is_in(tag, neumann_tags) || is_in(tag, dirichlet_tags) || is_in(tag, periodic_tags)   )   )
         {
           tmp.setZero();
           VecSetValues(Vec_v_mid, dim, node_dofs_mesh.data(), tmp.data(), INSERT_VALUES);

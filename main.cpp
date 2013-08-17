@@ -704,11 +704,6 @@ PetscErrorCode AppCtx::allocPetscObjs()
   ierr = VecSetSizes(Vec_res_m, PETSC_DECIDE, n_dofs_v_mesh);         CHKERRQ(ierr);
   ierr = VecSetFromOptions(Vec_res_m);                                CHKERRQ(ierr);
 
-  //Vec Vec_v_old;
-  ierr = VecCreate(PETSC_COMM_WORLD, &Vec_v_old);                     CHKERRQ(ierr);
-  ierr = VecSetSizes(Vec_v_old, PETSC_DECIDE, n_dofs_v_mesh);         CHKERRQ(ierr);
-  ierr = VecSetFromOptions(Vec_v_old);                                CHKERRQ(ierr);
-
 
   VectorXi nnz;
   //if(false)
@@ -1236,7 +1231,6 @@ PetscErrorCode AppCtx::setInitialConditions()
   VecZeroEntries(Vec_x_0);
   VecZeroEntries(Vec_x_1);
   VecZeroEntries(Vec_normal);
-  VecZeroEntries(Vec_v_old);
 
 
   copyMesh2Vec(Vec_x_0);
@@ -1668,7 +1662,6 @@ PetscErrorCode AppCtx::solveTimeProblem()
       ///////moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, current_time, Vec_x_1); // Adams-Bashforth
       /////////moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 0.5, current_time, Vec_x_1); // Alguma-coisa
       ///////calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, Vec_v_mid, current_time);
-      VecCopy(Vec_v_mid, Vec_v_old);
       calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, Vec_v_mid, current_time); // Adams-Bashforth
       //calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, Vec_v_mid, 0.0); // Euler
       // move the mesh
@@ -2538,7 +2531,6 @@ void AppCtx::freePetscObjs()
   Destroy(Vec_up_0);
   Destroy(Vec_up_1);
   Destroy(Vec_v_mid);
-  Destroy(Vec_v_old);
   Destroy(Vec_x_0);
   Destroy(Vec_x_1);
   Destroy(Vec_normal);
