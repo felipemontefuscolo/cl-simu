@@ -475,8 +475,8 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
               Gloc(i*dim + c,j) -= JxW_mid * psi_c[qp][j]* dxphi_c(i,c);
               //Gloc(i*dim + c,j) -= utheta*JxW_mid * psi_c[qp][j]* dxphi_c(i,c);
               //Gloc(i*dim + c,j) -= JxW_new * psi_c[qp][j]* dxphi_c_new(i,c);
-              Dloc(j, i*dim + c) -= JxW_new * psi_c[qp][j]*  dxphi_c_new(i,c);
-              //Dloc(j, i*dim + c) -= utheta*JxW_mid * psi_c[qp][j]*  dxphi_c(i,c);
+              //Dloc(j, i*dim + c) -= JxW_new * psi_c[qp][j]*  dxphi_c_new(i,c);
+              Dloc(j, i*dim + c) -= utheta*JxW_mid * psi_c[qp][j]*  dxphi_c(i,c);
             }
 
           }
@@ -489,8 +489,8 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
         }
         for (int i = 0; i < n_dofs_p_per_cell; ++i)
-          //FPloc(i) -= JxW_mid* dxU.trace()*psi_c[qp][i];
-          FPloc(i) -= JxW_new* dxU_new.trace() *psi_c[qp][i];
+          FPloc(i) -= JxW_mid* dxU.trace()*psi_c[qp][i];
+          //FPloc(i) -= JxW_new* dxU_new.trace() *psi_c[qp][i];
 
         // ----------------
         //
@@ -499,8 +499,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
         //  ----------------
         if (behaviors & (BH_bble_condens_PnPn | BH_bble_condens_CR))
         {
-          dxbble =     invFT_c_mid * dLbble[qp];
-          dxbble_new = invFT_c_new * dLbble[qp];
+          dxbble = invFT_c_mid * dLbble[qp];
 
           for (int c = 0; c < dim; c++)
           {
@@ -511,23 +510,20 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
                 delta_cd = c==d;
                 
                 Bbn(c, j*dim + d) += JxW_mid*
-                                     ( has_convec*bble[qp]*utheta *rho*( delta_cd*Uconv_qp.dot(dxphi_c.row(j))  +  dxU(c,d)*phi_c[qp][j] )   // convective
-                                     + unsteady*delta_cd*rho*bble[qp]*phi_c[qp][j]/dt     // time derivative
-                                     + utheta*visc*(delta_cd * dxphi_c.row(j).dot(dxbble) + dxphi_c(j,c)*dxbble(d)) );    // rigidez                
+                                     ( has_convec*bble[qp]*utheta *rho*( delta_cd*Uconv_qp.dot(dxphi_c.row(j)) + dxU(c,d)*phi_c[qp][j] ) // convective
+                                     + unsteady*delta_cd*rho*bble[qp]*phi_c[qp][j]/dt // time derivative
+                                     + utheta*visc*(delta_cd * dxphi_c.row(j).dot(dxbble) + dxphi_c(j,c)*dxbble(d)) ); // rigidez
                 
                 Bnb(j*dim + d, c) += JxW_mid*
-                                     ( has_convec*phi_c[qp][j]*utheta *rho*(  delta_cd*Uconv_qp.dot(dxbble)  )   // convective
-                                     + delta_cd*rho*phi_c[qp][j]*bble[qp]/dt  * unsteady    // time derivative
-                                     + utheta*visc*(delta_cd * dxphi_c.row(j).dot(dxbble) + dxphi_c(j,c)*dxbble(d)) );    // rigidez
+                                     ( has_convec*phi_c[qp][j]*utheta *rho*( delta_cd*Uconv_qp.dot(dxbble) ) // convective
+                                     + delta_cd*rho*phi_c[qp][j]*bble[qp]/dt * unsteady // time derivative
+                                     + utheta*visc*(delta_cd * dxphi_c.row(j).dot(dxbble) + dxphi_c(j,c)*dxbble(d)) ); // rigidez
 
               }
             }
             if (behaviors & BH_bble_condens_PnPn)
               for (int j = 0; j < n_dofs_p_per_cell; ++j)
-              {
                 Gbp(c, j) -= JxW_mid*psi_c[qp][j]*dxbble(c);
-                Dpb(j,c)  -= JxW_new*psi_c[qp][j]*dxbble_new(c);
-              }
           }
 
           for (int c = 0; c < dim; c++)
@@ -536,37 +532,37 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
             {
               delta_cd = c==d;
               iBbb(c, d) += JxW_mid*
-                            ( has_convec*bble[qp]*utheta *rho*( delta_cd*Uconv_qp.dot(dxbble) )   // convective
-                            + delta_cd*rho*bble[qp]*bble[qp]/dt  * unsteady   // time derivative
-                            + utheta*visc*(delta_cd* dxbble.dot(dxbble)  + dxbble(d)*dxbble(c)) ); // rigidez
+                            ( has_convec*bble[qp]*utheta *rho*( delta_cd*Uconv_qp.dot(dxbble) ) // convective
+                            + delta_cd*rho*bble[qp]*bble[qp]/dt * unsteady // time derivative
+                            + utheta*visc*(delta_cd* dxbble.dot(dxbble) + dxbble(d)*dxbble(c)) ); // rigidez
             }
 
             FUb(c) += JxW_mid*
                       ( bble[qp]*rho*(dUdt(c)*unsteady + has_convec*Uconv_qp.dot(dxU.row(c))) + // time derivative + convective
                         visc*dxbble.dot(dxU.row(c) + dxU.col(c).transpose()) - //rigidez
-                        Pqp_new*dxbble(c) -                     // pressão
-                        force_at_mid(c)*bble[qp]   ); // força
+                        Pqp_new*dxbble(c) - // pressão
+                        force_at_mid(c)*bble[qp] ); // força
           }
         }
         else
         if(behaviors & BH_GLS)
         {
-          Res = rho*( dUdt * unsteady +  has_convec*dxU*Uconv_qp) + dxP_new - force_at_mid;
+          Res = rho*( dUdt * unsteady + has_convec*dxU*Uconv_qp) + dxP_new - force_at_mid;
 
           for (int j = 0; j < n_dofs_u_per_cell/dim; ++j)
           {
-            dResdu = unsteady*(rho*phi_c[qp][j]/dt)*I + has_convec*rho*utheta*(  phi_c[qp][j]*dxU + Uconv_qp.dot(dxphi_c.row(j))*I );
+            dResdu = unsteady*(rho*phi_c[qp][j]/dt)*I + has_convec*rho*utheta*( phi_c[qp][j]*dxU + Uconv_qp.dot(dxphi_c.row(j))*I );
 
             for (int i = 0; i < n_dofs_p_per_cell; ++i)
             {
-              vec = dxpsi_c_new.row(i).transpose();
+              vec = dxpsi_c.row(i).transpose();
               vec = dResdu.transpose()*vec;
-              vec = -JxW_new*tauk*  vec;
+              vec = -JxW_mid*tauk* vec;
               for (int d = 0; d < dim; d++)
                 Dloc(i, j*dim + d) += vec(d);
 
               // atençao nos indices
-              vec = JxW_mid*tauk*  has_convec*rho*Uconv_qp.dot(dxphi_c.row(j))* dxpsi_c_new.row(i).transpose();
+              vec = JxW_mid*tauk* has_convec*rho*Uconv_qp.dot(dxphi_c.row(j))* dxpsi_c.row(i).transpose();
               for (int d = 0; d < dim; d++)
                 Cloc(j*dim + d,i) += vec(d);
             }
@@ -574,7 +570,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
             for (int i = 0; i < n_dofs_u_per_cell/dim; ++i)
             {
               // supg term
-              Ten = JxW_mid*tauk* has_convec*(  utheta*rho*phi_c[qp][j]*Res*dxphi_c.row(i) + rho*Uconv_qp.dot(dxphi_c.row(i))*dResdu  );
+              Ten = JxW_mid*tauk* has_convec*( utheta*rho*phi_c[qp][j]*Res*dxphi_c.row(i) + rho*Uconv_qp.dot(dxphi_c.row(i))*dResdu );
               // divergence term
               Ten+= JxW_mid*delk*utheta*dxphi_c.row(i).transpose()*dxphi_c.row(j);
 
@@ -586,19 +582,19 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
           for (int i = 0; i < n_dofs_p_per_cell; ++i)
             for (int j = 0; j < n_dofs_p_per_cell; ++j)
-              Eloc(i,j) -= tauk*JxW_new * dxpsi_c_new.row(i).dot(dxpsi_c_new.row(j));
+              Eloc(i,j) -= tauk*JxW_mid * dxphi_c.row(i).dot(dxphi_c.row(j));
 
 
           for (int i = 0; i < n_dofs_u_per_cell/dim; i++)
           {
-            vec = JxW_mid*(  has_convec*tauk*  rho* Uconv_qp.dot(dxphi_c.row(i)) * Res    +   delk*dxU.trace()*dxphi_c.row(i).transpose() );
+            vec = JxW_mid*( has_convec*tauk* rho* Uconv_qp.dot(dxphi_c.row(i)) * Res + delk*dxU.trace()*dxphi_c.row(i).transpose() );
 
             for (int c = 0; c < dim; c++)
               FUloc(i*dim + c) += vec(c);
 
           }
           for (int i = 0; i < n_dofs_p_per_cell; ++i)
-            FPloc(i) -= JxW_new *tauk* dxpsi_c_new.row(i).dot(Res);
+            FPloc(i) -= JxW_mid *tauk* dxpsi_c.row(i).dot(Res);
         }
 
         if (behaviors & BH_bble_condens_CR)
@@ -611,7 +607,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
               for (int j = 0; j < dim; ++j) // pressure gradient
                 Gnx(i*dim + c,j) -= JxW_mid* (Xqp(j) - Xc(j))*dxphi_c(i,c);
 
-            FPx(c) -= JxW_new* dxU_new.trace()*(Xqp(c) - Xc(c));
+            FPx(c) -= JxW_mid* dxU.trace()*(Xqp(c) - Xc(c));
           }
         }
 
@@ -628,24 +624,24 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
         //iBbb = iBbb.inverse().eval();
         invert(iBbb,dim);
 
-        //Dpb  = (1./utheta)*Gbp.transpose();
-
         FUloc = FUloc - Bnb*iBbb*FUb;
-        FPloc = FPloc - Dpb*iBbb*FUb;
+        FPloc = FPloc - utheta*Gbp.transpose()*iBbb*FUb;
         
+        Dpb = utheta*Gbp.transpose();
+
         // correções com os coeficientes da bolha
 
-        Ubqp = -utheta*iBbb*FUb; // U bolha no tempo n+utheta        
+        Ubqp = -utheta*iBbb*FUb; // U bolha no tempo n+utheta
         
         for (int qp = 0; qp < n_qpts_cell; ++qp)
         {
-          F_c_mid    = x_coefs_c_mid_trans * dLqsi_c[qp];
+          F_c_mid = x_coefs_c_mid_trans * dLqsi_c[qp];
           inverseAndDet(F_c_mid, dim, invF_c_mid,J_mid);
           invFT_c_mid= invF_c_mid.transpose();
 
-          Uqp    = u_coefs_c_mid_trans * phi_c[qp];     //n+utheta
+          Uqp = u_coefs_c_mid_trans * phi_c[qp]; //n+utheta
           dxbble = invFT_c_mid * dLbble[qp];
-          dxUb   = Ubqp*dxbble.transpose();
+          dxUb = Ubqp*dxbble.transpose();
 
           weight = quadr_cell->weight(qp);
           JxW_mid = J_mid*weight;
@@ -654,13 +650,13 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
           {
             for (int i = 0; i < n_dofs_u_per_cell/dim; ++i)
             {
-              Ten = has_convec*JxW_mid*rho*utheta*phi_c[qp][i]* phi_c[qp][j] * dxUb;  // advecção
+              Ten = has_convec*JxW_mid*rho*utheta*phi_c[qp][i]* phi_c[qp][j] * dxUb; // advecção
 
               for (int c = 0; c < dim; ++c)
                 for (int d = 0; d < dim; ++d)
                   Aloc(i*dim + c, j*dim + d) += Ten(c,d);
             }
-            Ten = has_convec*JxW_mid*  rho*utheta* bble[qp] * phi_c[qp][j] *dxUb; // advecção
+            Ten = has_convec*JxW_mid* rho*utheta* bble[qp] * phi_c[qp][j] *dxUb; // advecção
             for (int c = 0; c < dim; ++c)
               for (int d = 0; d < dim; ++d)
                 Bbn(c, j*dim + d) += Ten(c,d);
@@ -670,7 +666,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
         Aloc -= Bnb*iBbb*Bbn;
         Gloc -= Bnb*iBbb*Gbp;
         Dloc -= Dpb*iBbb*Bbn;
-        Eloc = -Dpb*iBbb*Gbp;        
+        Eloc = -Dpb*iBbb*Gbp;
         
       }
       if(behaviors & BH_GLS)
@@ -681,8 +677,8 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       {
         Ubqp.setZero();
         //for (int i = 0; i < Gnx.cols(); ++i)
-        //  for (int j = 0; j < Gnx.rows(); ++j)
-        //    Ubqp(i) += Gnx(j,i)*u_coefs_c_new(j);
+        // for (int j = 0; j < Gnx.rows(); ++j)
+        // Ubqp(i) += Gnx(j,i)*u_coefs_c_new(j);
         //Ubqp /= -bble_integ;
         //Ubqp *= utheta;
 
@@ -700,13 +696,13 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
         for (int qp = 0; qp < n_qpts_cell; ++qp)
         {
-          F_c_mid    = x_coefs_c_mid_trans * dLqsi_c[qp];
+          F_c_mid = x_coefs_c_mid_trans * dLqsi_c[qp];
           inverseAndDet(F_c_mid, dim, invF_c_mid,J_mid);
           invFT_c_mid= invF_c_mid.transpose();
 
-          Uqp    = u_coefs_c_mid_trans * phi_c[qp];     //n+utheta
+          Uqp = u_coefs_c_mid_trans * phi_c[qp]; //n+utheta
           dxbble = invFT_c_mid * dLbble[qp];
-          dxUb   = Ubqp*dxbble.transpose();
+          dxUb = Ubqp*dxbble.transpose();
 
           weight = quadr_cell->weight(qp);
           JxW_mid = J_mid*weight;
@@ -715,13 +711,13 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
           {
             for (int i = 0; i < n_dofs_u_per_cell/dim; ++i)
             {
-              Ten = has_convec*JxW_mid*rho*utheta*phi_c[qp][i]* phi_c[qp][j] * dxUb;  // advecção
+              Ten = has_convec*JxW_mid*rho*utheta*phi_c[qp][i]* phi_c[qp][j] * dxUb; // advecção
 
               for (int c = 0; c < dim; ++c)
                 for (int d = 0; d < dim; ++d)
                   Aloc(i*dim + c, j*dim + d) += Ten(c,d);
             }
-            Ten = has_convec*JxW_mid*  rho*utheta* bble[qp] * phi_c[qp][j] *dxUb; // advecção
+            Ten = has_convec*JxW_mid* rho*utheta* bble[qp] * phi_c[qp][j] *dxUb; // advecção
             for (int c = 0; c < dim; ++c)
               for (int d = 0; d < dim; ++d)
                 Bbn(c, j*dim + d) += Ten(c,d);
@@ -730,9 +726,9 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
         double const a = 1./(bble_integ*bble_integ);
         double const b = 1./bble_integ;
-        Aloc += utheta*a*Gnx*iBbb*Gnx.transpose() - utheta*b*Bnb*Gnx.transpose() - b*Gnx*Bbn;        
+        Aloc += utheta*a*Gnx*iBbb*Gnx.transpose() - utheta*b*Bnb*Gnx.transpose() - b*Gnx*Bbn;
         
-        FUloc +=  a*Gnx*iBbb*FPx - b*Bnb*FPx - b*Gnx*FUb;
+        FUloc += a*Gnx*iBbb*FPx - b*Bnb*FPx - b*Gnx*FUb;
       }
 
 
