@@ -1623,10 +1623,11 @@ Tensor feature_proj(Vector const& X, double t, int tag)
 
 double pho(Vector const& X, int tag)
 {
-  if (tag == 100)
-    return .0;
-  else
-    return 0;
+  //if (tag == 100)
+  //  return .0;
+  //else
+  //  return 0;
+  return 1;
 }
 double cos_theta0()
 {
@@ -1645,7 +1646,7 @@ double beta_diss()
 
 double gama(Vector const& X, double t, int tag)
 {
-  return 0*0.01;
+  return 0*0.1;
 }
 double muu(int tag)
 {
@@ -1653,6 +1654,7 @@ double muu(int tag)
     return 0.1;
   else
     return 0.5;
+  //return 1;
 }
 Vector force(Vector const& X, double t, int tag)
 {
@@ -1663,7 +1665,7 @@ Vector force(Vector const& X, double t, int tag)
   Tensor dxU(grad_u_exact(X,t,tag));
 
   if (tag == 200)
-    f(1) = -1;
+    f(1) = -1 + 1./(50.*y+1);
   
   return f;
 }

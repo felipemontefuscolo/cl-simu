@@ -807,14 +807,14 @@ PetscErrorCode AppCtx::meshAdapt()
       tag_b = mesh->getNodePtr(edge_nodes[1])->getTag();
       tag_e = edge->getTag();
 
-      if (is_in(tag_e, dirichlet_tags)||
-          is_in(tag_e, neumann_tags) ||
-          is_in(tag_e, interface_tags) ||
-          is_in(tag_e, dirichlet_tags) ||
-          is_in(tag_e, solid_tags) ||
-          is_in(tag_e, periodic_tags) ||
-          is_in(tag_e, feature_tags)  )
-        continue;
+      //if (is_in(tag_e, dirichlet_tags)||
+      //    is_in(tag_e, neumann_tags) ||
+      //    is_in(tag_e, interface_tags) ||
+      //    is_in(tag_e, dirichlet_tags) ||
+      //    is_in(tag_e, solid_tags) ||
+      //    is_in(tag_e, periodic_tags) ||
+      //    is_in(tag_e, feature_tags)  )
+      //  continue;
         
         
 
