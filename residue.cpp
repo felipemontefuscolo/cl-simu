@@ -396,7 +396,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
         dxpsi_c     = dLpsi_c[qp] * invF_c_mid;
         dxqsi_c     = dLqsi_c[qp] * invF_c_mid;
 
-        dxP_new  = dxpsi_c_new.transpose() * p_coefs_c_new;
+        dxP_new  = dxpsi_c.transpose() * p_coefs_c_new;
         dxU      = u_coefs_c_mid_trans * dxphi_c;       // n+utheta
         dxU_old  = u_coefs_c_old_trans * dLphi_c[qp] * invF_c_old;       // n
         dxU_new  = u_coefs_c_new_trans * dLphi_c[qp] * invF_c_new;       // n+1
@@ -595,6 +595,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
           }
           for (int i = 0; i < n_dofs_p_per_cell; ++i)
             FPloc(i) -= JxW_mid *tauk* dxpsi_c.row(i).dot(Res);
+            //FPloc(i) -= JxW_mid *tauk* dxpsi_c.row(i).dot(dxP_new - force_at_mid); // somente laplaciano da pressao
         }
 
         if (behaviors & BH_bble_condens_CR)

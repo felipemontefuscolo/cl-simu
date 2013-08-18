@@ -1356,8 +1356,8 @@ PetscErrorCode AppCtx::setInitialConditions()
       if (ale)
       {
         //double tt = time_step==0? dt : current_time;
-        calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, Vec_v_mid, 0.0); // Euler (tem que ser esse no começo)
-        //calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, Vec_v_mid, 0.0); // Adams-Bashforth
+        //calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, Vec_v_mid, 0.0); // Euler (tem que ser esse no começo)
+        calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, Vec_v_mid, 0.0); // Adams-Bashforth
         // move the mesh
         VecWAXPY(Vec_x_1, dt, Vec_v_mid, Vec_x_0); // Vec_x_1 = Vec_v_mid*dt + Vec_x_0
 
@@ -1382,11 +1382,11 @@ PetscErrorCode AppCtx::setInitialConditions()
           VecRestoreArray(Vec_res, &xarray);
         }
 
-        // initial guess for the next time step; u(n+1) = 2*u(n) - u(n-1)
-        VecCopy(Vec_up_1, Vec_res);
-        VecScale(Vec_res,2.);
-        VecAXPY(Vec_res, -1., Vec_up_0);
-        VecCopy(Vec_res, Vec_up_1); // u(n+1) = 2*u(n) - u(n-1)
+        //// initial guess for the next time step; u(n+1) = 2*u(n) - u(n-1)
+        //VecCopy(Vec_up_1, Vec_res);
+        //VecScale(Vec_res,2.);
+        //VecAXPY(Vec_res, -1., Vec_up_0);
+        //VecCopy(Vec_res, Vec_up_1); // u(n+1) = 2*u(n) - u(n-1)
 
       }
     }

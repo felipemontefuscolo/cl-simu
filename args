@@ -1,19 +1,19 @@
 -dim 2 				        # cell dimension (= space dimension)
--dt 0.125e-1 0.0625e-1 0.03125e-1 0.015625e-1 0.0078125e-1  # time step 4 2 1 0.5 0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04    .1 0.05 0.025 0.0125 0.00625 0.003125 0.0015625 0.00078125 0.000390625 0.0001953125 9.765625e-05
--finaltime 1           # the simulation ends at this time.
+-dt 0.0078125e-2   # time step 4 2 1 0.5 0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04 4.8828125e-04 2.44140625e-04 1.220703125e-04
+-finaltime .5           # the simulation ends at this time.
 -maxts -10              # maximum number of time steps
 -renumber_dofs 0        # dofs renumbering
 -print_step 99999999999999 1          # print step
 -has_convec 1           # convective term: true or false CONSIDERE COLOCAR utheta=1 se desativar isto.
 -unsteady   1           # steady or unsteady problem
 -boundary_smoothing 0
--force_mesh_velocity 1  # imposes the mesh velocity of boundary grid
+-force_mesh_velocity 0  # imposes the mesh velocity of boundary grid
 -nonlinear_elasticity 0 # non-linear term in the elasticity problem
 -mesh_adapt 0           # 1 to enable mesh adaption
 -fprint_ca 0            # print contact angle at file ContactHistory
 beta1 0.0               # Vmesh = bet1 * Ufluid  +  bet2 * Uelastic
 beta2 1.0
--plot_es 1              # plot exact solution: true or false
+-plot_es 0              # plot exact solution: true or false
 -family_files 1         # plot output as 001, 002, 003, ...
 -sst -1.e-7             # steady state tol (Unew-Uold)/(Unew)
 -utheta .5              # time discretization theta method (momentum)
@@ -58,8 +58,8 @@ snes_test_display 1 # compare f.e. jacobian with f.d. jacobian
 snes_monitor_cancel 0 # cancela monitoramento
 -snes_monitor stdout
 snes_converged_reason 1
--snes_stol 1.e-13  # <1e-08>: Stop if step length less than
--snes_rtol 1.e-13  # <1e-08>: Stop if decrease in function norm less than
+-snes_stol 1.e-11  # <1e-08>: Stop if step length less than
+-snes_rtol 1.e-11  # <1e-08>: Stop if decrease in function norm less than
 ksp_monitor stdout
 -snes_max_it 10
 mat_no_inode 1
@@ -94,7 +94,6 @@ sloshing (5;0;2;3,4;20,21)
 ramp ( ; ;2;3;20,21)
 
 stokes donea dir_tags 2 neum_tags 1
-ramp:        interf_tags 2 solid_tags 3 triple_tags 20,21
 russa:       interf_tags 2 solid_tags 3 triple_tags 20,21
 satic drop:  interf_tags 2 neum_tags 2 (debug)
 kovasznay    dir_tags 2 neum_tags 1    serve tambem para #Anything3D
@@ -105,17 +104,18 @@ gerbeau:     interf_tags 3 solid_tags 21,22,23,24,25,26  periodic_tags 4,5 tripl
 half osc     interf_tags 2 solid_tags 3,4 dir_tags 5
 micro        interf_tags 3,4 solid_tags 20,21 triple_tags 16,17,18,19
 pseudo_osc   dir_tags 2 neum_tags 3
-traco        dir_tags 1,2 -neum_tags 1,2
+traco        dir_tags 1,2 neum_tags 1,2
 zeta3d       dir_tags 1 triple_tags 2 interf_tags 3 solid_tags 4,5,6 feature_tags 7,8,9
 zeta3d       dir_tags 1,2,3,4,5,6,7,8,9
+half2d:      -dir_tags 1 -interf_tags 2 -solid_tags 3 -triple_tags 21 -feature_tags 4,22
 
 
 ############################################################################
 
--function_space 1 # P1P1 (or Q1Q1) GLS stabilization
+function_space 1 # P1P1 (or Q1Q1) GLS stabilization
 function_space 2 # P1+P1 with bubble condensation
 function_space 3 # P2+Pm1 with bubble condensation and pressure gradient elimination
-function_space 4 # P2P1 (or Q2Q1)
+-function_space 4 # P2P1 (or Q2Q1)
 function_space 5 # P1+P1
 function_space 6 # P2P0
 function_space 7 # P2+Pm1 full
@@ -177,8 +177,12 @@ fin  results/microchannel/micro.msh
 fout results/microchannel/micro.vtk
 fin  results/traco/mesh/drop.msh
 fout results/traco/mesh/drop.vtk
--fin  results/couette/2d/mesh/couette.msh
--fout results/couette/2d/mesh/couette.vtk
+fin  results/couette/2d/mesh/couette.msh
+fout results/couette/2d/mesh/couette.vtk
+-fin  results/angle/2d/mesh/half.msh
+-fout results/angle/2d/mesh/half.vtk
+
+
 
 
 dt 0.25            # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04
