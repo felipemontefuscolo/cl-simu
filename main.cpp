@@ -816,7 +816,7 @@ PetscErrorCode AppCtx::allocPetscObjs()
   // descomente abaixo para sistemas lineares
   //ierr = SNESSetType(snes_m, SNESKSPONLY);                                               CHKERRQ(ierr);
 
-  SNESGetSNESLineSearch(snes_m,&linesearch);
+  SNESGetLineSearch(snes_m,&linesearch);
   SNESLineSearchSetType(linesearch,SNESLINESEARCHBASIC);
 
   ierr = SNESGetKSP(snes_m,&ksp_m);                                                  CHKERRQ(ierr);
@@ -1401,8 +1401,8 @@ PetscErrorCode AppCtx::checkSnesConvergence(SNES snes, PetscInt it,PetscReal xno
 {
   PetscErrorCode ierr;
 
-  ierr = SNESDefaultConverged(snes,it,xnorm,pnorm,fnorm,reason,NULL); CHKERRQ(ierr);
-
+  ierr = SNESConvergedDefault(snes,it,xnorm,pnorm,fnorm,reason,NULL); CHKERRQ(ierr);
+  
   // se não convergiu, não terminou ou não é um método ale, retorna
   if (*reason<=0 || !ale)
   {
@@ -1417,7 +1417,7 @@ PetscErrorCode AppCtx::checkSnesConvergence(SNES snes, PetscInt it,PetscReal xno
     }
     else
     {
-
+  
       //Vec *Vec_up_k = &Vec_up_1;
       ////SNESGetSolution(snes,Vec_up_k);
       //
@@ -1431,12 +1431,12 @@ PetscErrorCode AppCtx::checkSnesConvergence(SNES snes, PetscInt it,PetscReal xno
       //
       //*reason = SNES_CONVERGED_ITERATING;
       //++converged_times;
-
+  
       return ierr;
     }
   }
-
-
+  
+  
 /*
   converged
   SNES_CONVERGED_FNORM_ABS         =  2,  ||F|| < atol

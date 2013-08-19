@@ -1047,7 +1047,7 @@ PetscErrorCode AppCtx::meshAdapt()
 
   ierr = SNESSetFunction(snes_m, Vec_res_m, FormFunction_mesh, this);                    CHKERRQ(ierr);
   ierr = SNESSetJacobian(snes_m, Mat_Jac_m, Mat_Jac_m, FormJacobian_mesh, this);         CHKERRQ(ierr);
-  ierr = SNESGetSNESLineSearch(snes_m,&linesearch);                                      CHKERRQ(ierr);
+  ierr = SNESGetLineSearch(snes_m,&linesearch);                                      CHKERRQ(ierr);
   ierr = SNESLineSearchSetType(linesearch,SNESLINESEARCHBASIC);                          CHKERRQ(ierr);
   ierr = SNESGetKSP(snes_m,&ksp_m);                                                  CHKERRQ(ierr);
   ierr = KSPGetPC(ksp_m,&pc_m);                                                      CHKERRQ(ierr);
