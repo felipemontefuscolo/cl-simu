@@ -1600,7 +1600,11 @@ PetscErrorCode AppCtx::solveTimeProblem()
     if (plot_exact_sol)
     {
       if (time_step == 0)
+      {
         pressureTimeCorrection(Vec_up_0, Vec_up_1, 0., 1); // press(n) = press(n+1/2) - press(n-1/2)
+        if (maxts <= 1)
+          computeError(Vec_x_0, Vec_up_0,current_time);
+      }
       else
       {
         pressureTimeCorrection(Vec_up_0, Vec_up_1, .5, .5); // press(n) = press(n+1/2) - press(n-1/2)

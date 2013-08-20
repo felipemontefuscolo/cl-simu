@@ -1165,12 +1165,12 @@ PetscErrorCode AppCtx::calcMeshVelocity(Vec const& Vec_x_0, Vec const& Vec_up_0,
 
       if (force_mesh_velocity)
       {
-        //k1 = v_exact(X0,tt,tag);
-        //k2 = v_exact(X0+0.5*k1*dt,tt+0.5*dt,tag);
-        //k3 = v_exact(X0+0.5*k2*dt,tt+0.5*dt,tag);
-        //k4 = v_exact(X0+k3*dt,tt+dt,tag);
-        //tmp =  (k1 + 2.*(k2+k3) + k4)/6.; // velocity
-        tmp = v_exact(X0,tt,tag);
+        k1 = v_exact(X0,tt,tag);
+        k2 = v_exact(X0+0.5*k1*dt,tt+0.5*dt,tag);
+        k3 = v_exact(X0+0.5*k2*dt,tt+0.5*dt,tag);
+        k4 = v_exact(X0+k3*dt,tt+dt,tag);
+        tmp =  (k1 + 2.*(k2+k3) + k4)/6.; // velocity
+        //tmp = v_exact(X0,tt,tag);
         
         //if (!mesh->isVertex(&*point)) // APAGAR TEMP ERASE-ME ... este codigo é só para não entortar a malha
         //{

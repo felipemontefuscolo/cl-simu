@@ -1,8 +1,8 @@
 options_left
 -dim 2 				        # cell dimension (= space dimension)
--dt 1 0.125e-1 0.0625e-1 0.03125  # time step 4 2 1 0.5 0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04 4.8828125e-04 2.44140625e-04 1.220703125e-04
--finaltime .5           # the simulation ends at this time.
--maxts -10              # maximum number of time steps
+-dt 0.0078125e-3 0.00390625e-3  # time step 4 2 1 0.5 0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04 4.8828125e-04 2.44140625e-04 1.220703125e-04
+-finaltime 1e-3           # the simulation ends at this time.
+-maxts -1              # maximum number of time steps
 -renumber_dofs 0        # dofs renumbering
 -print_step 99999999999999 1          # print step
 -has_convec 1           # convective term: true or false CONSIDERE COLOCAR utheta=1 se desativar isto.
@@ -60,8 +60,8 @@ snes_test_display 1 # compare f.e. jacobian with f.d. jacobian
 snes_monitor_cancel 0 # cancela monitoramento
 -snes_monitor stdout
 snes_converged_reason 1
-snes_stol 1.e-11  # <1e-08>: Stop if step length less than
-snes_rtol 1.e-11  # <1e-08>: Stop if decrease in function norm less than
+-snes_stol 1.e-11  # <1e-08>: Stop if step length less than
+-snes_rtol 1.e-11  # <1e-08>: Stop if decrease in function norm less than
 ksp_monitor stdout
 -snes_max_it 10
 mat_no_inode 1
