@@ -1270,7 +1270,7 @@ Vector solid_veloc(Vector const& X, double t, int tag)
 
 #endif
 
-#if (PROBLEM_TYPE==COUETTE && false)
+#if (PROBLEM_TYPE==COUETTE && true)
 
 double const w_ = 1;
 double const a__= 1;
@@ -1415,10 +1415,10 @@ Vector v_exact(Vector const& X, double t, int tag) //(X,t,tag)
   //v(0) = +0.1*(  1 );//*(X(0)+0.5)*(X(0)-0.5)/2.;
   //v(1) = +0.1*(  0 );//*(X(1)+0.5)*(X(1)-0.5)/2.;
   //return v * (tag!=1 && tag!=2);
-  v(0) = t*(1-x*x)*(1+y)/4.;
-  v(1) = t*(1-y*y)*(x + t*(1-x*x)/32. + 1)/4.;
-  //v(0) = 0.2*( x*x*sin(w_*t) + y*y*cos(w_*t) );
-  //v(1) = 0.2*(-y*x*sin(w_*t) + x*y*cos(w_*t) );
+  //v(0) = t*(1-x*x)*(1+y)/4.;
+  //v(1) = t*(1-y*y)*(x + t*(1-x*x)/32. + 1)/4.;
+  v(0) = 1*( x*x*sin(w_*t) + y*y*cos(w_*t) );
+  v(1) = 1*(-y*x*sin(w_*t) + x*y*cos(w_*t) );
   return v;
   //return u_exact(X,t,tag);
 }
@@ -2815,7 +2815,7 @@ Tensor feature_proj(Vector const& X, double t, int tag)
 #endif
 
 // COUETTE_QUAD
-#if (true)
+#if (false)
 
 double const w_ = 1;
 double const a__= 1;
