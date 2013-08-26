@@ -4,8 +4,9 @@
 *.so
 *.d
 *.vtk
+*.png
 main
 octave-core
 wx2cpp
 ContactHistory
-results
+
