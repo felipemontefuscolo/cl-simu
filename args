@@ -8,13 +8,13 @@ options_left
 -has_convec 1           # convective term: true or false CONSIDERE COLOCAR utheta=1 se desativar isto.
 -unsteady   1           # steady or unsteady problem
 -boundary_smoothing 0
--force_mesh_velocity 1  # imposes the mesh velocity of boundary grid
+-force_mesh_velocity 0  # imposes the mesh velocity of boundary grid
 -nonlinear_elasticity 0 # non-linear term in the elasticity problem
--mesh_adapt 0           # 1 to enable mesh adaption
+-mesh_adapt 1           # 1 to enable mesh adaption
 -fprint_ca 0            # print contact angle at file ContactHistory
 beta1 0.0               # Vmesh = bet1 * Ufluid  +  bet2 * Uelastic
 beta2 1.0
--plot_es 1              # plot exact solution: true or false
+-plot_es 0              # plot exact solution: true or false
 -family_files 1         # plot output as 001, 002, 003, ...
 -sst -1.e-7             # steady state tol (Unew-Uold)/(Unew)
 -utheta .5              # time discretization theta method (momentum)
@@ -70,7 +70,7 @@ mat_no_inode 1
 -print_to_matlab 0  # prints jacobian to matlab
 -force_dirichlet 1  # forces dirichlet b.c.
 -fp_trap 1           # stop on floating-point exceptions
-on_error_abort 1
+-on_error_abort 1
 
 ######THREADS  #ativar os 3 primeiros somente
 vec_type seqpthread
@@ -106,16 +106,16 @@ gerbeau:     interf_tags 3 solid_tags 21,22,23,24,25,26  periodic_tags 4,5 tripl
 half osc     interf_tags 2 solid_tags 3,4 dir_tags 5
 micro        interf_tags 3,4 solid_tags 20,21 triple_tags 16,17,18,19
 pseudo_osc   dir_tags 2 neum_tags 3
-traco        dir_tags 1,2 -neum_tags 1,2
+traco        dir_tags 1,2 neum_tags 1,2
 zeta3d       dir_tags 1 triple_tags 2 interf_tags 3 solid_tags 4,5,6 feature_tags 7,8,9
 zeta3d       dir_tags 1,2,3,4,5,6,7,8,9
 half2d:      dir_tags 1 interf_tags 2 solid_tags 3 triple_tags 21 feature_tags 4,22
-
+bolhas       -dir_tags 33 -interf_tags 5 -solid_tags 1,2,3 -neum_tags 4
 
 ############################################################################
 
--function_space 1 # P1P1 (or Q1Q1) GLS stabilization
-function_space 2 # P1+P1 with bubble condensation
+function_space 1 # P1P1 (or Q1Q1) GLS stabilization
+-function_space 2 # P1+P1 with bubble condensation
 function_space 3 # P2+Pm1 with bubble condensation and pressure gradient elimination
 function_space 4 # P2P1 (or Q2Q1)
 function_space 5 # P1+P1
@@ -179,12 +179,14 @@ fin  results/microchannel/micro.msh
 fout results/microchannel/micro.vtk
 fin  results/traco/mesh/drop.msh
 fout results/traco/mesh/drop.vtk
--fin  results/couette/2d/mesh/couette.msh
--fout results/couette/2d/mesh/couette.vtk
+fin  results/couette/2d/mesh/couette.msh
+fout results/couette/2d/mesh/couette.vtk
 fin  results/angle/2d/mesh/half.msh
 fout results/angle/2d/mesh/half.vtk
-
-
+fin  results/couette/2d/mesh/couette.msh
+fout results/couette/2d/mesh/couette.vtk
+-fin  results/bolhas/tube.msh
+-fout results/bolhas/tube.vtk
 
 
 dt 0.25            # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04

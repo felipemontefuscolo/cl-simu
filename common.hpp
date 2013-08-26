@@ -589,7 +589,7 @@ public:
   SNES                snes_m;
   KSP    			        ksp_m;
   PC	   			        pc_m;
-  Vec                 Vec_res_m, Vec_x_0, Vec_x_1, Vec_v_mid, Vec_v_old;
+  Vec                 Vec_res_m, Vec_x_0, Vec_x_1, Vec_v_mid;
   SNESLineSearch      linesearch;
   
 };
