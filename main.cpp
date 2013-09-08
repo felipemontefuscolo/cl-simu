@@ -31,12 +31,13 @@ PetscErrorCode FormFunction_mesh(SNES snes, Vec Vec_up_1, Vec Vec_fun, void *ptr
 class AppCtx;
 class Statistics;
 
-template<int Coord>
 class GetDataVelocity : public DefaultGetDataVtk
 {
 public:
   GetDataVelocity(double *q_array_, AppCtx const& user_) : user(user_), q_array(q_array_){}
-  double get_data_r(int nodeid) const;
+  //double get_data_r(int nodeid) const;
+  void get_vec(int id, Real * vec_out) const;
+  int vec_ncomps() const { return user.mesh->spaceDim(); }
   AppCtx const& user;
   double *q_array;
   virtual ~GetDataVelocity() {}
@@ -63,24 +64,24 @@ public:
 };
 
 
-template<int Coord>
 class GetDataNormal : public DefaultGetDataVtk
 {
 public:
   GetDataNormal(double *q_array_, AppCtx const& user_) : user(user_), q_array(q_array_){}
-  double get_data_r(int nodeid) const;
+  void get_vec(int id, Real * vec_out) const;
+  int vec_ncomps() const { return user.mesh->spaceDim(); }
   AppCtx const& user;
   double *q_array;
   virtual ~GetDataNormal() {}
 };
 
 
-template<int Coord>
 class GetDataMeshVel : public DefaultGetDataVtk
 {
 public:
   GetDataMeshVel(double *q_array_, AppCtx const& user_) : user(user_), q_array(q_array_){}
-  double get_data_r(int nodeid) const;
+  void get_vec(int id, Real * vec_out) const;
+  int vec_ncomps() const { return user.mesh->spaceDim(); }
   AppCtx const& user;
   double *q_array;
   virtual ~GetDataMeshVel() {}
@@ -1553,28 +1554,21 @@ PetscErrorCode AppCtx::solveTimeProblem()
         VecGetArray(Vec_normal, &nml_array);
         VecGetArray(Vec_v_mid, &v_array);
         vtk_printer.writeVtk();
-        vtk_printer.addNodeScalarVtk("ux",  GetDataVelocity<0>(q_array, *this));
-        vtk_printer.addNodeScalarVtk("uy",  GetDataVelocity<1>(q_array, *this));
-        if (dim==3)
-          vtk_printer.addNodeScalarVtk("uz",   GetDataVelocity<2>(q_array, *this));
-
-        vtk_printer.addNodeScalarVtk("nx",  GetDataNormal<0>(nml_array, *this));
-        vtk_printer.addNodeScalarVtk("ny",  GetDataNormal<1>(nml_array, *this));
-        if (dim==3)
-          vtk_printer.addNodeScalarVtk("nz",   GetDataNormal<2>(nml_array, *this));
-
-        if (shape_psi_c->discontinuous())
-          vtk_printer.addCellScalarVtk("pressure", GetDataPressCellVersion(q_array, *this));
-        else
-          vtk_printer.addNodeScalarVtk("pressure", GetDataPressure(q_array, *this));
-
-        vtk_printer.addNodeScalarVtk("vx",  GetDataMeshVel<0>(v_array, *this));
-        vtk_printer.addNodeScalarVtk("vy",  GetDataMeshVel<1>(v_array, *this));
-        if (dim==3)
-          vtk_printer.addNodeScalarVtk("vz",   GetDataMeshVel<2>(v_array, *this));
-
+        
+        /* ---- nodes data ---- */
+        vtk_printer.addNodeVectorVtk("u", GetDataVelocity(q_array, *this));
+        vtk_printer.addNodeVectorVtk("normal",  GetDataNormal(nml_array, *this));
+        vtk_printer.addNodeVectorVtk("v",  GetDataMeshVel(v_array, *this));
         vtk_printer.printPointTagVtk();
-        vtk_printer.addCellIntVtk("cell_tag", GetDataCellTag(*this));
+        
+        if (!shape_psi_c->discontinuous())
+          vtk_printer.addNodeScalarVtk("pressure", GetDataPressure(q_array, *this));
+        else
+          vtk_printer.addCellScalarVtk("pressure", GetDataPressCellVersion(q_array, *this));
+
+        
+        vtk_printer.addCellIntVtk("cell_tag", GetDataCellTag(*this));        
+        
 
         //vtk_printer.printPointTagVtk("point_tag");
         VecRestoreArray(Vec_up_0, &q_array);
@@ -1754,6 +1748,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
   //
 
   // print again
+  if (family_files)
   {
     double  *q_array;
     double  *nml_array;
@@ -1762,28 +1757,21 @@ PetscErrorCode AppCtx::solveTimeProblem()
     VecGetArray(Vec_normal, &nml_array);
     VecGetArray(Vec_v_mid, &v_array);
     vtk_printer.writeVtk();
-    vtk_printer.addNodeScalarVtk("ux",  GetDataVelocity<0>(q_array, *this));
-    vtk_printer.addNodeScalarVtk("uy",  GetDataVelocity<1>(q_array, *this));
-    if (dim==3)
-      vtk_printer.addNodeScalarVtk("uz",   GetDataVelocity<2>(q_array, *this));
-
-    vtk_printer.addNodeScalarVtk("nx",  GetDataNormal<0>(nml_array, *this));
-    vtk_printer.addNodeScalarVtk("ny",  GetDataNormal<1>(nml_array, *this));
-    if (dim==3)
-      vtk_printer.addNodeScalarVtk("nz",   GetDataNormal<2>(nml_array, *this));
-
-    if (shape_psi_c->discontinuous())
-      vtk_printer.addCellScalarVtk("pressure", GetDataPressCellVersion(q_array, *this));
-    else
-      vtk_printer.addNodeScalarVtk("pressure", GetDataPressure(q_array, *this));
-
-    vtk_printer.addNodeScalarVtk("vx",  GetDataMeshVel<0>(v_array, *this));
-    vtk_printer.addNodeScalarVtk("vy",  GetDataMeshVel<1>(v_array, *this));
-    if (dim==3)
-      vtk_printer.addNodeScalarVtk("vz",   GetDataMeshVel<2>(v_array, *this));
-
+    
+    /* ---- nodes data ---- */
+    vtk_printer.addNodeVectorVtk("u", GetDataVelocity(q_array, *this));
+    vtk_printer.addNodeVectorVtk("normal",  GetDataNormal(nml_array, *this));
+    vtk_printer.addNodeVectorVtk("v",  GetDataMeshVel(v_array, *this));
     vtk_printer.printPointTagVtk();
-    vtk_printer.addCellIntVtk("cell_tag", GetDataCellTag(*this));
+    
+    if (!shape_psi_c->discontinuous())
+      vtk_printer.addNodeScalarVtk("pressure", GetDataPressure(q_array, *this));
+    else
+      vtk_printer.addCellScalarVtk("pressure", GetDataPressCellVersion(q_array, *this));
+
+    
+    vtk_printer.addCellIntVtk("cell_tag", GetDataCellTag(*this));        
+    
 
     //vtk_printer.printPointTagVtk("point_tag");
     VecRestoreArray(Vec_up_0, &q_array);
@@ -2562,19 +2550,15 @@ void AppCtx::freePetscObjs()
   SNESDestroy(&snes_m);
 }
 
-
-template<int Coord>
-double GetDataVelocity<Coord>::get_data_r(int nodeid) const
+void GetDataVelocity::get_vec(int id, Real * vec_out) const
 {
-  Point const* point = user.mesh->getNodePtr(nodeid);
-  double U;
-  VectorXi dofs(user.dim);
+  Point const* point = user.mesh->getNodePtr(id);
+  std::vector<int> dofs(user.dim);
 
   user.getNodeDofs(&*point, DH_UNKS, VAR_U, dofs.data());
 
-  U = q_array[*(dofs.data()+Coord)];
-
-  return U;
+  for (int i = 0; i < user.dim; ++i)
+    vec_out[i] = q_array[*(dofs.data()+i)];
 }
 
 double GetDataPressure::get_data_r(int nodeid) const
@@ -2611,32 +2595,26 @@ double GetDataPressCellVersion::get_data_r(int cellid) const
   return q_array[dof[0]];
 }
 
-template<int Coord>
-double GetDataNormal<Coord>::get_data_r(int nodeid) const
+void GetDataNormal::get_vec(int id, Real * vec_out) const
 {
-  Point const* point = user.mesh->getNodePtr(nodeid);
-  double N;
-  VectorXi dofs(user.dim);
+  Point const* point = user.mesh->getNodePtr(id);
+  vector<int> dofs(user.dim);
 
   user.getNodeDofs(&*point, DH_MESH, VAR_M, dofs.data());
 
-  VecGetValues(user.Vec_normal, 1, dofs.data()+Coord, &N);
-
-  return N;
+  for (int i = 0; i < user.dim; ++i)
+    vec_out[i] = q_array[*(dofs.data()+i)];
 }
 
-template<int Coord>
-double GetDataMeshVel<Coord>::get_data_r(int nodeid) const
+void GetDataMeshVel::get_vec(int id, Real * vec_out) const
 {
-  Point const* point = user.mesh->getNodePtr(nodeid);
-  double U;
-  VectorXi dofs(user.dim);
+  Point const* point = user.mesh->getNodePtr(id);
+  vector<int> dofs(user.dim);
 
   user.getNodeDofs(&*point, DH_MESH, VAR_M, dofs.data());
 
-  U = q_array[*(dofs.data()+Coord)];
-
-  return U;
+  for (int i = 0; i < user.dim; ++i)
+    vec_out[i] = q_array[*(dofs.data()+i)];
 }
 
 int GetDataCellTag::get_data_i(int cellid) const
