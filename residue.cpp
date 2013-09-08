@@ -134,7 +134,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
   
   // LOOP NAS CÉLULAS
 #ifdef FEP_HAS_OPENMP
-  FEP_PRAGMA_OMP(parallel default(none) shared(Vec_up_k,Vec_fun,cout))
+  FEP_PRAGMA_OMP(parallel default(none) shared(Vec_up_k,Vec_fun,cout,null_space_press_dof,JJ))
 #endif
   {
     VectorXd          FUloc(n_dofs_u_per_cell);
@@ -307,7 +307,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       Dloc.setZero();      
       FUloc.setZero();
       FPloc.setZero();
-
+      Eloc.setZero();
 
       if (behaviors & BH_bble_condens_PnPn) // reset matrices
       {
@@ -764,10 +764,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
         MatSetValues(*JJ, mapU_c.size(), mapU_c.data(), mapU_c.size(), mapU_c.data(), Aloc.data(),  ADD_VALUES);
         MatSetValues(*JJ, mapU_c.size(), mapU_c.data(), mapP_c.size(), mapP_c.data(), Gloc.data(),  ADD_VALUES);
         MatSetValues(*JJ, mapP_c.size(), mapP_c.data(), mapU_c.size(), mapU_c.data(), Dloc.data(),  ADD_VALUES);
-        if (pres_pres_block)
-        {
-          MatSetValues(*JJ, mapP_c.size(), mapP_c.data(), mapP_c.size(), mapP_c.data(), Eloc.data(),  ADD_VALUES);
-        }        
+        MatSetValues(*JJ, mapP_c.size(), mapP_c.data(), mapP_c.size(), mapP_c.data(), Eloc.data(),  ADD_VALUES);
       }
     }
 
@@ -1480,7 +1477,7 @@ PetscErrorCode AppCtx::formFunction_mesh(SNES /*snes_m*/, Vec Vec_v, Vec Vec_fun
 
 
 #ifdef FEP_HAS_OPENMP
-  FEP_PRAGMA_OMP(parallel default(none) shared(Vec_v, Vec_fun, cout))
+  FEP_PRAGMA_OMP(parallel default(none) shared(Vec_v, Vec_fun, cout, JJ))
 #endif
   {
     bool const non_linear = nonlinear_elasticity;

@@ -5,6 +5,12 @@
 *.d
 *.vtk
 *.png
+*.svg
+*.msh
+*.avi
+results/*.dat
+results/*.txt
+results/*.pdf
 main
 octave-core
 wx2cpp

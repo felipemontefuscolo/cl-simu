@@ -613,44 +613,63 @@ void AppCtx::dofsUpdate()
   //if (renumber_dofs)
   //  dof_handler[DH_UNKS].CuthillMcKeeRenumber();
 
+  std::vector<int> dofs1;
+  std::vector<int> dofs2;
+
+  int dofs_a[10];
+  int dofs_b[10];
+
   // apply periodic boundary conditions here
-  for (int i = 0; i < (int)periodic_tags.size(); i+=2)
   {
     if ((mesh_cell_type != TRIANGLE3) && (mesh_cell_type != TETRAHEDRON4))
     {
       std::cout << "Periodic boundary conditions is not allowed with high order mesh\n";
       throw;
     }
+    
+      point_iterator point1 = mesh->pointBegin();
+      point_iterator point1_end = mesh->pointEnd();
+      point_iterator point2, point2_end;
 
-    int const tag1 = periodic_tags[i];
-    int const tag2 = periodic_tags[i+1];
-
-    point_iterator point1 = mesh->pointBegin();
-    point_iterator point1_end = mesh->pointEnd();
-    point_iterator point2, point2_end;
-
-    for (; point1 != point1_end; ++point1)
-    {
-      if (tag1 != point1->getTag())
-        continue;
-
-      point2 = mesh->pointBegin();
-      point2_end = mesh->pointEnd();
-      for (; point2 != point2_end; ++point2)
+      for (; point1 != point1_end; ++point1)
       {
-        if (tag2 != point2->getTag())
-          continue;
-
-        if (isPeriodic(&*point1, &*point2, dim))
+        for (int i = 0; i < (int)periodic_tags.size(); i+=2)
         {
-          dof_handler[DH_UNKS].getVariable(VAR_U).linkVertexDofs(&*point1, &*point2);
-          dof_handler[DH_UNKS].getVariable(VAR_P).linkVertexDofs(&*point1, &*point2);
 
+          int const tag1 = periodic_tags[i];
+          int const tag2 = periodic_tags[i+1];
+
+          if (tag1 != point1->getTag())
+            continue;
+
+          point2 = mesh->pointBegin();
+          point2_end = mesh->pointEnd();
+          for (; point2 != point2_end; ++point2)
+          {
+            if (tag2 != point2->getTag())
+              continue;
+
+            if (isPeriodic(&*point1, &*point2, dim))
+            {
+              for (int var = 0; var < 2; ++var)
+              {
+                int ndpv = dof_handler[DH_UNKS].getVariable(var).numDofsPerVertex();
+
+                dof_handler[DH_UNKS].getVariable(var).getVertexDofs(dofs_a, &*point1);
+                dof_handler[DH_UNKS].getVariable(var).getVertexDofs(dofs_b, &*point2);
+                for (int k = 0; k < ndpv; ++k)
+                {
+                  dofs1.push_back(dofs_a[k]);
+                  dofs2.push_back(dofs_b[k]);
+                }
+              }
+
+            }
+          }
         }
       }
-    }
   }
-  dof_handler[DH_UNKS].removeDofsGaps();
+  dof_handler[DH_UNKS].linkDofs(dofs1.size(), dofs1.data(), dofs2.data());
   n_unknowns = dof_handler[DH_UNKS].numDofs();
 
   dof_handler[DH_MESH].SetUp();
@@ -705,30 +724,31 @@ PetscErrorCode AppCtx::allocPetscObjs()
   ierr = VecSetFromOptions(Vec_res_m);                                CHKERRQ(ierr);
 
 
-  VectorXi nnz;
+  std::vector<int> nnz;
   //if(false)
   {
-    std::vector<std::set<int> > table;
+    nnz.resize(n_unknowns,0);
+    
+    std::vector<SetVector<int> > table;
     dof_handler[DH_UNKS].getSparsityTable(table); // TODO: melhorar desempenho, função mt lenta
 
-    nnz.resize(n_unknowns);
 
     //FEP_PRAGMA_OMP(parallel for)
     for (int i = 0; i < n_unknowns; ++i)
       nnz[i] = table[i].size();
 
-    // removendo a diagonal nula
-    if (!pres_pres_block)
-    {
-      int const n_p_dofs_total = dof_handler[DH_UNKS].getVariable(VAR_P).totalSize();
-      //FEP_PRAGMA_OMP(parallel for)
-      for (int i = 0; i < n_p_dofs_total; ++i)
-      {
-        int const dof = dof_handler[DH_UNKS].getVariable(VAR_P).data()[i];
-        if (dof >= 0)
-          ++nnz[dof];
-      }
-    }
+    //// removendo a diagonal nula, pois o petsc da erro se for 0
+    //if (!pres_pres_block)
+    //{
+    //  int const n_p_dofs_total = dof_handler[DH_UNKS].getVariable(VAR_P).totalSize();
+    //  //FEP_PRAGMA_OMP(parallel for)
+    //  for (int i = 0; i < n_p_dofs_total; ++i)
+    //  {
+    //    int const dof = dof_handler[DH_UNKS].getVariable(VAR_P).data()[i];
+    //    if (dof >= 0)
+    //      ++nnz[dof];
+    //  }
+    //}
 
 
   }
@@ -741,8 +761,8 @@ PetscErrorCode AppCtx::allocPetscObjs()
   ierr = MatSetSizes(Mat_Jac, PETSC_DECIDE, PETSC_DECIDE, n_unknowns, n_unknowns);   CHKERRQ(ierr);
   ierr = MatSetFromOptions(Mat_Jac);                                                 CHKERRQ(ierr);
   //ierr = MatSeqAIJSetPreallocation(Mat_Jac, 0, nnz.data());                          CHKERRQ(ierr);
-  max_nz = nnz.maxCoeff();
-  ierr = MatSeqAIJSetPreallocation(Mat_Jac,  max_nz, NULL);       CHKERRQ(ierr);
+  //max_nz = nnz.maxCoeff();
+  ierr = MatSeqAIJSetPreallocation(Mat_Jac, 0, nnz.data());       CHKERRQ(ierr);
   //ierr = MatSetOption(Mat_Jac,MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE);                  CHKERRQ(ierr);
   ierr = MatSetOption(Mat_Jac,MAT_NEW_NONZERO_ALLOCATION_ERR,PETSC_FALSE); CHKERRQ(ierr);
 
@@ -777,13 +797,13 @@ PetscErrorCode AppCtx::allocPetscObjs()
   //  ------------------------------------------------------------------
   //  ----------------------- Mesh -------------------------------------
   //  ------------------------------------------------------------------
-  nnz.setZero();
+  nnz.clear();
   int n_mesh_dofs = dof_handler[DH_MESH].numDofs();
   {
-    std::vector<std::set<int> > table;
+    std::vector<SetVector<int> > table;
     dof_handler[DH_MESH].getSparsityTable(table); // TODO: melhorar desempenho, função mt lenta
 
-    nnz.resize(n_mesh_dofs);
+    nnz.resize(n_mesh_dofs, 0);
 
     //FEP_PRAGMA_OMP(parallel for)
     for (int i = 0; i < n_mesh_dofs; ++i)
@@ -798,8 +818,8 @@ PetscErrorCode AppCtx::allocPetscObjs()
   ierr = MatSetSizes(Mat_Jac_m, PETSC_DECIDE, PETSC_DECIDE, n_mesh_dofs, n_mesh_dofs);   CHKERRQ(ierr);
   //ierr = MatSetFromOptions(Mat_Jac_m);                                                 CHKERRQ(ierr);
   //ierr = MatSeqAIJSetPreallocation(Mat_Jac_m, 0, nnz.data());                          CHKERRQ(ierr);
-  max_nz_m = nnz.maxCoeff();
-  ierr = MatSeqAIJSetPreallocation(Mat_Jac_m,  max_nz_m, NULL);         CHKERRQ(ierr);
+  //max_nz_m = nnz.maxCoeff();
+  ierr = MatSeqAIJSetPreallocation(Mat_Jac_m,  0, nnz.data());         CHKERRQ(ierr);
   //ierr = MatSetOption(Mat_Jac_m,MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE);                  CHKERRQ(ierr);
   ierr = MatSetOption(Mat_Jac_m,MAT_NEW_NONZERO_ALLOCATION_ERR,PETSC_FALSE);             CHKERRQ(ierr);
   ierr = MatSetOption(Mat_Jac_m,MAT_SYMMETRIC,PETSC_TRUE);                               CHKERRQ(ierr);
@@ -878,8 +898,8 @@ void AppCtx::matrixColoring()
     MatSetValues(Mat_Jac, mapU_c.size(), mapU_c.data(), mapU_c.size(), mapU_c.data(), Aloc.data(), ADD_VALUES);
     MatSetValues(Mat_Jac, mapU_c.size(), mapU_c.data(), mapP_c.size(), mapP_c.data(), Gloc.data(), ADD_VALUES);
     MatSetValues(Mat_Jac, mapP_c.size(), mapP_c.data(), mapU_c.size(), mapU_c.data(), Dloc.data(), ADD_VALUES);
-    if (pres_pres_block)
-      MatSetValues(Mat_Jac, mapP_c.size(), mapP_c.data(), mapP_c.size(), mapP_c.data(), Eloc.data(), ADD_VALUES);
+    //if (pres_pres_block)
+    MatSetValues(Mat_Jac, mapP_c.size(), mapP_c.data(), mapP_c.size(), mapP_c.data(), Eloc.data(), ADD_VALUES);
 
   }
 
@@ -888,19 +908,17 @@ void AppCtx::matrixColoring()
   //  for (int j = 0; j < n_unknowns; ++j)
   //    MatSetValue(Mat_Jac, i, j, 0.0, ADD_VALUES);
 
-  if (!pres_pres_block)
-  {
-    int const n_p_dofs_total = dof_handler[DH_UNKS].getVariable(VAR_P).totalSize();
-    for (int i = 0; i < n_p_dofs_total; ++i)
-    {
-      const double zero = 0.0;
-      int const dof = dof_handler[DH_UNKS].getVariable(VAR_P).data()[i];
-      if (dof>=0)
-        MatSetValue(Mat_Jac, dof, dof, zero, ADD_VALUES);
-    }
-  }
-
-
+  //if (!pres_pres_block)
+  //{
+  //  int const n_p_dofs_total = dof_handler[DH_UNKS].getVariable(VAR_P).totalSize();
+  //  for (int i = 0; i < n_p_dofs_total; ++i)
+  //  {
+  //    const double zero = 0.0;
+  //    int const dof = dof_handler[DH_UNKS].getVariable(VAR_P).data()[i];
+  //    if (dof>=0)
+  //      MatSetValue(Mat_Jac, dof, dof, zero, ADD_VALUES);
+  //  }
+  //}
 
   Assembly(Mat_Jac);
   //MatSetOption(Mat_Jac,MAT_NEW_NONZERO_LOCATIONS,PETSC_FALSE);
@@ -1396,7 +1414,7 @@ PetscErrorCode AppCtx::checkSnesConvergence(SNES snes, PetscInt it,PetscReal xno
   PetscErrorCode ierr;
 
   ierr = SNESConvergedDefault(snes,it,xnorm,pnorm,fnorm,reason,NULL); CHKERRQ(ierr);
-  
+
   // se não convergiu, não terminou ou não é um método ale, retorna
   if (*reason<=0 || !ale)
   {
@@ -1411,7 +1429,7 @@ PetscErrorCode AppCtx::checkSnesConvergence(SNES snes, PetscInt it,PetscReal xno
     }
     else
     {
-  
+
       //Vec *Vec_up_k = &Vec_up_1;
       ////SNESGetSolution(snes,Vec_up_k);
       //
@@ -1425,12 +1443,12 @@ PetscErrorCode AppCtx::checkSnesConvergence(SNES snes, PetscInt it,PetscReal xno
       //
       //*reason = SNES_CONVERGED_ITERATING;
       //++converged_times;
-  
+
       return ierr;
     }
   }
-  
-  
+
+
 /*
   converged
   SNES_CONVERGED_FNORM_ABS         =  2,  ||F|| < atol
@@ -1817,9 +1835,9 @@ PetscErrorCode AppCtx::solveTimeProblem()
   SNESGetLinearSolveIterations(snes,&lits);
 
   cout << "Greatest error reached during the simulation:" << endl;
-  printf("%-21s %-21s %-21s %-21s %-21s %-21s %-21s %-21s %s\n", "# hmean", "u_L2_norm", "p_L2_norm", "grad_u_L2_norm", "grad_p_L2_norm", "u_L2_facet_norm", "u_inf_facet_norm", "u_inf_norm", "p_inf_norm" ); 
+  printf("%-21s %-21s %-21s %-21s %-21s %-21s %-21s %-21s %s\n", "# hmean", "u_L2_norm", "p_L2_norm", "grad_u_L2_norm", "grad_p_L2_norm", "u_L2_facet_norm", "u_inf_facet_norm", "u_inf_norm", "p_inf_norm" );
   printf("%.15e %.15e %.15e %.15e %.15e %.15e %.15e %.15e %.15e\n\n",Stats.hmean, Stats.u_L2_norm, Stats.p_L2_norm, Stats.grad_u_L2_norm, Stats.grad_p_L2_norm, Stats.u_L2_facet_norm,  Stats.u_inf_facet_norm, Stats.u_inf_norm, Stats.p_inf_norm);
-  
+
   ////if (unsteady)
   //{
   //  cout << "\nmean errors: \n";
@@ -1934,7 +1952,7 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
       grad_p_L2_norm   += (grad_p_exact(Xqp, tt, tag) - dxP).squaredNorm()*JxW;
       u_inf_norm       = max(u_inf_norm, (u_exact(Xqp, tt, tag) - Uqp).norm());
       p_inf_norm       = max(p_inf_norm, fabs(pressure_exact(Xqp, tt, tag) - Pqp));
-      
+
       volume += JxW;
     } // fim quadratura
 
@@ -2055,7 +2073,7 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
     cout << endl;
     //cout << "errors computed at last time step: "<< endl;
     //cout << "# hmean               u_L2_norm         p_L2_norm         grad_u_L2_norm    grad_p_L2_norm   u_L2_facet_norm    u_inf_facet_norm" << endl;
-    printf("%-21s %-21s %-21s %-21s %-21s %-21s %s\n", "# hmean", "u_L2_norm", "p_L2_norm", "grad_u_L2_norm", "grad_p_L2_norm", "u_L2_facet_norm", "u_inf_facet_norm" );    
+    printf("%-21s %-21s %-21s %-21s %-21s %-21s %s\n", "# hmean", "u_L2_norm", "p_L2_norm", "grad_u_L2_norm", "grad_p_L2_norm", "u_L2_facet_norm", "u_inf_facet_norm" );
     printf("%.15e %.15e %.15e %.15e %.15e %.15e %.15e\n\n",hmean, u_L2_norm, p_L2_norm, grad_u_L2_norm, grad_p_L2_norm, u_L2_facet_norm,  u_inf_facet_norm);
   }
 
@@ -2069,7 +2087,7 @@ void AppCtx::computeError(Vec const& Vec_x, Vec &Vec_up, double tt)
   Stats.add_u_L2_facet_norm  (u_L2_facet_norm );
   Stats.add_u_inf_facet_norm (u_inf_facet_norm);
 
-  
+
 }
 
 
@@ -2081,7 +2099,7 @@ void AppCtx::pressureTimeCorrection(Vec &Vec_up_1, Vec &Vec_up_0, double a, doub
   Tensor    R(dim,dim);
   int       dof;
   //int       dof;
-  int tag;  
+  int tag;
   double P0, P1, P2;
 
   if (behaviors & BH_Press_grad_elim)
@@ -2098,16 +2116,16 @@ void AppCtx::pressureTimeCorrection(Vec &Vec_up_1, Vec &Vec_up_0, double a, doub
     if (mesh->isVertex(&*point))
     {
       getNodeDofs(&*point,DH_UNKS,VAR_P,&dof);
-      
+
       VecGetValues(Vec_up_1, 1, &dof, &P1);
       VecGetValues(Vec_up_0, 1, &dof, &P0);
-      
+
       P2 = a*P1 + b*P0;
-      
+
       VecSetValues(Vec_up_1, 1, &dof, &P2, INSERT_VALUES);
     }
 
-  } // end point loop  
+  } // end point loop
   Assembly(Vec_up_1);
 }
 
