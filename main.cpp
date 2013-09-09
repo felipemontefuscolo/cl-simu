@@ -134,6 +134,7 @@ void AppCtx::loadMesh()
   vtk_printer.attachMesh(mesh.get());
   vtk_printer.isFamily(family_files);
   vtk_printer.setOutputFileName(filename_out.c_str());
+  vtk_printer.setBinaryOutput( true);
 
   meshAliasesUpdate();
 
@@ -1354,7 +1355,7 @@ PetscErrorCode AppCtx::setInitialConditions()
   if (ale)
   {
     printf("Initial conditions:\n");
-    for (int i = 0; i < 5; ++i)
+    for (int i = 0; i < 1; ++i)
     {
       printf("\tIterations %d\n", i);
       // * SOLVE THE SYSTEM *
@@ -1557,8 +1558,8 @@ PetscErrorCode AppCtx::solveTimeProblem()
         
         /* ---- nodes data ---- */
         vtk_printer.addNodeVectorVtk("u", GetDataVelocity(q_array, *this));
-        vtk_printer.addNodeVectorVtk("normal",  GetDataNormal(nml_array, *this));
-        vtk_printer.addNodeVectorVtk("v",  GetDataMeshVel(v_array, *this));
+        //vtk_printer.addNodeVectorVtk("normal",  GetDataNormal(nml_array, *this));
+        //vtk_printer.addNodeVectorVtk("v",  GetDataMeshVel(v_array, *this));
         vtk_printer.printPointTagVtk();
         
         if (!shape_psi_c->discontinuous())

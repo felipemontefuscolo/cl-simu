@@ -421,9 +421,9 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
           //~ cout << "x coefs mid:" << endl;
           //~ cout << x_coefs_c_mid_trans.transpose() << endl;
         //~ }
-        if (J_mid < 1.e-10)
+        if (J_mid < 1.e-14)
         {
-          //FEP_PRAGMA_OMP(critical)
+          FEP_PRAGMA_OMP(critical)
           //if (tid==0)
           {
             printf("in formCellFunction:\n");

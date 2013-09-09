@@ -1,10 +1,10 @@
 options_left
 -dim 2 				        # cell dimension (= space dimension)
--dt 0.1e-0 0.0625e-3 0.03125e-3 0.015625e-3 0.0078125e-3 0.00390625e-3  # time step 4 2 1 0.5 0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04 4.8828125e-04 2.44140625e-04 1.220703125e-04
--finaltime -1e-1           # the simulation ends at this time.
--maxts 2              # maximum number of time steps
+-dt 2e-07 4.4603e-07    # time step 4 2 1 0.5 0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04 4.8828125e-04 2.44140625e-04 1.220703125e-04
+-finaltime 1e-2           # the simulation ends at this time.
+-maxts -1              # maximum number of time steps
 -renumber_dofs 0        # dofs renumbering
--print_step 1 99999999999999 1          # print step
+-print_step 10 99999999999999 1          # print step
 -has_convec 1           # convective term: true or false CONSIDERE COLOCAR utheta=1 se desativar isto.
 -unsteady   1           # steady or unsteady problem
 -boundary_smoothing 0
@@ -19,7 +19,7 @@ beta2 1.0
 -sst -1.e-7             # steady state tol (Unew-Uold)/(Unew)
 -utheta .5              # time discretization theta method (momentum)
 vtheta 1.0              # time discretization theta method (mesh velocity)
--quadr_c 2              # quadrature degree (cell) // 2D: 3 para ME e TH2, 2 para GLS .... 3D
+-quadr_c 3              # quadrature degree (cell) // 2D: 3 para ME e TH2, 2 para GLS .... 3D
 -quadr_f 3              # quadrature degree (facet)
 -quadr_r 2              # quadrature degree (corner)
 -quadr_e 8              # quadrature degree (exact)
@@ -185,8 +185,8 @@ fin  results/angle/2d/mesh/half.msh
 fout results/angle/2d/mesh/half.vtk
 fin  results/couette/2d/mesh/couette.msh
 fout results/couette/2d/mesh/couette.vtk
--fin  results/bolhas/tube.msh
--fout results/bolhas/test.vtk
+fin  results/bolhas/santiago.msh
+fout results/bolhas/test.vtk
 
 
 dt 0.25            # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04

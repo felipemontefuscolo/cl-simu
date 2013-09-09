@@ -1135,6 +1135,8 @@ PetscErrorCode AppCtx::meshAdapt()
 
   checkConsistencyTri(&*mesh);
 
+  printf("\nMesh adapted.\n\n");
+
   PetscFunctionReturn(0);
 }
 
