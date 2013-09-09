@@ -569,10 +569,11 @@ void AppCtx::dofsCreate()
   dof_handler[DH_UNKS].setMesh(mesh.get());
   dof_handler[DH_UNKS].addVariable("velo",  shape_phi_c.get(), dim);
   dof_handler[DH_UNKS].addVariable("pres",  shape_psi_c.get(), 1);
-  Matrix<bool, Dynamic, Dynamic> blocks(2,2);
-  blocks.setOnes();
-  blocks(1,1)=pres_pres_block;
-  dof_handler[DH_UNKS].setVariablesRelationship(blocks.data());
+  dof_handler[DH_UNKS].getVariable(VAR_P).setType(SPLITTED_BY_REGION_CELL,0,0);
+  //Matrix<bool, Dynamic, Dynamic> blocks(2,2);
+  //blocks.setOnes();
+  //blocks(1,1)=pres_pres_block;
+  //dof_handler[DH_UNKS].setVariablesRelationship(blocks.data());
 
   // mesh velocity
   dof_handler[DH_MESH].setMesh(mesh.get());
@@ -935,8 +936,8 @@ void AppCtx::printMatlabLoader()
   fprintf(fp, "clear zzz;\n"               );
   fprintf(fp, "B=Jac;\n"                   );
   fprintf(fp, "B(B!=0)=1;\n"               );
-  fprintf(fp, "nU = %d;\n",dof_handler[DH_UNKS].getVariable(VAR_U).numDofs() );
-  fprintf(fp, "nP = %d;\n",dof_handler[DH_UNKS].getVariable(VAR_P).numDofs() );
+  fprintf(fp, "nU = %d;\n",dof_handler[DH_UNKS].getVariable(VAR_U).numPositiveDofs() );
+  fprintf(fp, "nP = %d;\n",dof_handler[DH_UNKS].getVariable(VAR_P).numPositiveDofs() );
   fprintf(fp, "nT = nU + nP;\n"            );
   fprintf(fp, "K=Jac(1:nU,1:nU);\n"        );
   fprintf(fp, "G=Jac(1:nU,nU+1:nT);\n"     );
@@ -2656,8 +2657,8 @@ int main(int argc, char **argv)
   // print info
   cout << "mesh: " << user.filename << endl;
   user.mesh->printInfo();
-  cout << "\n# velocity unknows: " << user.dof_handler[DH_UNKS].getVariable(VAR_U).numDofs();
-  cout << "\n# preassure unknows: " << user.dof_handler[DH_UNKS].getVariable(VAR_P).numDofs() << endl;
+  cout << "\n# velocity unknows: " << user.dof_handler[DH_UNKS].getVariable(VAR_U).numPositiveDofs();
+  cout << "\n# preassure unknows: " << user.dof_handler[DH_UNKS].getVariable(VAR_P).numPositiveDofs() << endl;
   user.mesh->printStatistics();
   user.mesh->timer.printTimes();
 

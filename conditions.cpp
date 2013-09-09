@@ -1647,7 +1647,7 @@ double beta_diss()
 
 double gama(Vector const& X, double t, int tag)
 {
-  return 0*0.1;
+  return 0.1;
 }
 double muu(int tag)
 {
@@ -1665,8 +1665,8 @@ Vector force(Vector const& X, double t, int tag)
   Vector f(Vector::Zero(X.size()));
   Tensor dxU(grad_u_exact(X,t,tag));
 
-  if (tag == 200)
-    f(1) = -1 + 1./(50.*y+1);
+  //if (tag == 200)
+  //  f(1) = -1 + 1./(50.*y+1);
   
   return f;
 }
