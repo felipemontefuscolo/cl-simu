@@ -4,9 +4,9 @@ OBJECTS	+= main.o conditions.o mesh.o residue.o
 #PETSC_ARCH=arch-linux2-cxx-debug
 PETSC_ARCH =arch-linux2-cxx-opt
 
-CFLAGS   = -Wall -Wextra
+CFLAGS   = -g -Wall -Wextra
 FFLAGS   =
-CPPFLAGS = -I. -I${FEPIC_DIR} $(FEP_INCLUDE) -Wall -Wextra -fopenmp -m64 -msse2 -L$(FEP_LIBS_DIR) -lfepic $(FEP_LDFLAGS)
+CPPFLAGS = -g -I. -I${FEPIC_DIR} $(FEP_INCLUDE) -Wall -Wextra -fopenmp -m64 -msse2 -L$(FEP_LIBS_DIR) -lfepic $(FEP_LDFLAGS)
 FPPFLAGS =
 
 .PHONY: all clean

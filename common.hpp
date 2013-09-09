@@ -578,14 +578,12 @@ public:
   // petsc vectors
   Vec                 Vec_res, Vec_up_0, Vec_up_1, Vec_normal/**/;
   Mat                 Mat_Jac;
-  int                 max_nz;
   SNES                snes;         /* nonlinear solver context */
   KSP    			        ksp;
   PC	   			        pc;
 
   // mesh
   Mat                 Mat_Jac_m;
-  int                 max_nz_m;
   SNES                snes_m;
   KSP    			        ksp_m;
   PC	   			        pc_m;

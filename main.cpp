@@ -820,7 +820,6 @@ PetscErrorCode AppCtx::allocPetscObjs()
   ierr = MatSetSizes(Mat_Jac_m, PETSC_DECIDE, PETSC_DECIDE, n_mesh_dofs, n_mesh_dofs);   CHKERRQ(ierr);
   //ierr = MatSetFromOptions(Mat_Jac_m);                                                 CHKERRQ(ierr);
   //ierr = MatSeqAIJSetPreallocation(Mat_Jac_m, 0, nnz.data());                          CHKERRQ(ierr);
-  //max_nz_m = nnz.maxCoeff();
   ierr = MatSeqAIJSetPreallocation(Mat_Jac_m,  0, nnz.data());         CHKERRQ(ierr);
   //ierr = MatSetOption(Mat_Jac_m,MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE);                  CHKERRQ(ierr);
   ierr = MatSetOption(Mat_Jac_m,MAT_NEW_NONZERO_ALLOCATION_ERR,PETSC_FALSE);             CHKERRQ(ierr);

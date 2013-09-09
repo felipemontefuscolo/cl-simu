@@ -1032,19 +1032,43 @@ PetscErrorCode AppCtx::meshAdapt()
   ierr = VecSetSizes(Vec_res_m, PETSC_DECIDE, n_dofs_v_mesh);         CHKERRQ(ierr);
   ierr = VecSetFromOptions(Vec_res_m);
 
+  std::vector<int> nnz;
+  //if(false)
+  {
+    nnz.resize(n_unknowns,0);
+    std::vector<SetVector<int> > table;
+    dof_handler[DH_UNKS].getSparsityTable(table); // TODO: melhorar desempenho, função mt lenta
+    //FEP_PRAGMA_OMP(parallel for)
+    for (int i = 0; i < n_unknowns; ++i)
+      nnz[i] = table[i].size();
+  }
+
   //Mat Mat_Jac;
   ierr = MatCreate(PETSC_COMM_WORLD, &Mat_Jac);                                      CHKERRQ(ierr);
   ierr = MatSetSizes(Mat_Jac, PETSC_DECIDE, PETSC_DECIDE, n_unknowns, n_unknowns);   CHKERRQ(ierr);
   ierr = MatSetFromOptions(Mat_Jac);                                                 CHKERRQ(ierr);
-  ierr = MatSeqAIJSetPreallocation(Mat_Jac,  max_nz, NULL);                          CHKERRQ(ierr);
+  ierr = MatSeqAIJSetPreallocation(Mat_Jac,  0, nnz.data());                         CHKERRQ(ierr);
   ierr = MatSetOption(Mat_Jac,MAT_NEW_NONZERO_ALLOCATION_ERR,PETSC_FALSE);           CHKERRQ(ierr);
 
-  //Mat Mat_Jac_m;
+
+  // mesh
+  nnz.clear();
   int n_mesh_dofs = dof_handler[DH_MESH].numDofs();
+  {
+    std::vector<SetVector<int> > table;
+    dof_handler[DH_MESH].getSparsityTable(table); // TODO: melhorar desempenho, função mt lenta
+
+    nnz.resize(n_mesh_dofs, 0);
+
+    //FEP_PRAGMA_OMP(parallel for)
+    for (int i = 0; i < n_mesh_dofs; ++i)
+      nnz[i] = table[i].size();
+
+  }
   ierr = MatCreate(PETSC_COMM_WORLD, &Mat_Jac_m);                                        CHKERRQ(ierr);
   ierr = MatSetType(Mat_Jac_m,MATSEQAIJ);                                                CHKERRQ(ierr);
   ierr = MatSetSizes(Mat_Jac_m, PETSC_DECIDE, PETSC_DECIDE, n_mesh_dofs, n_mesh_dofs);   CHKERRQ(ierr);
-  ierr = MatSeqAIJSetPreallocation(Mat_Jac_m,  max_nz_m, NULL);                          CHKERRQ(ierr);
+  ierr = MatSeqAIJSetPreallocation(Mat_Jac_m,  0, nnz.data());                           CHKERRQ(ierr);
   ierr = MatSetOption(Mat_Jac_m,MAT_NEW_NONZERO_ALLOCATION_ERR,PETSC_FALSE);             CHKERRQ(ierr);
   ierr = MatSetOption(Mat_Jac_m,MAT_SYMMETRIC,PETSC_TRUE);                               CHKERRQ(ierr);
 
