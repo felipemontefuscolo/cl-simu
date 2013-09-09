@@ -3,30 +3,29 @@
 // This file is intended to generate a mesh for the simulation of 
 // bubbles immersed in a fluid inside a tube
 
+dgh = 133e-6;
+dw  = 100e-6;
+dgv = 300e-6;
+
+
 L=1.00;    				// Global scale factor
-lc = L/5;				// Factor for the mesh refinement
-width  = 1*L;			// Tube width
-height = 3*L;			// Tube height
-R = 0.2*L; 				// Radius of the bubbles
-N = 5;					// Number of bubbles in the tube
+lc = L/65;				// Factor for the mesh refinement
+width  = 600e-6;			// Tube width
+height = 0.03;			// Tube height
+R = dw/2; 				// Radius of the bubbles
+N = 3;					// Number of bubbles in the tube
 
 // Comment : Here you can give the exact coordinates of the central points 
 // of the bubbles
 // Point(x) = { coord_x , coord_y, coord_z, lc} , x \in 1..N
 Cx = 0.4;
 Cx_aux = 0;
-For t In {1:N}
-	//Point(t) = {Cx*L, (19.5-(t-1))*L, 0, lc};
-  Point(t) = {Cx*L, ((t-1)/2+2*R)*L, 0, lc};		
-	
-	If( Cx == 0.4 )
-		Cx_aux = 0.6;
-	EndIf
-	If( Cx == 0.6 )
-		Cx_aux = 0.4;
-	EndIf	
-	Cx = Cx_aux;	
-EndFor
+
+Point(1) = {dgh+dw/2,   dgv,  0, lc};
+Point(2) = {2*dgh+dw,   dgv,  0, lc};
+Point(3) = {1.5*dgh+dw, 2*dgv,0, lc};
+
+
 
 physicalTagWall_l = 1;
 physicalTagWall_r = 2;
@@ -94,6 +93,5 @@ EndFor
 Physical Surface(physicalTagInsideBubble) = {2:N+1};
 Physical Point(physicalTagFixedPoints) = {3*N+1:3*N+4};
 
-Reverse Surface { 1:6 };
 
 

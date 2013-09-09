@@ -1,0 +1,1 @@
+/var/lib/torque/mom_priv/jobs/18963.lcadcs.lcad.icmc.usp.br.SC: line 8: -o: command not found

@@ -2646,6 +2646,23 @@ int main(int argc, char **argv)
   if (erro)
     return 1;
 
+#ifdef FEP_HAS_OPENMP
+  {
+    int nthreads = 0;
+    #pragma omp parallel
+    {
+      #pragma omp critical
+      nthreads = omp_get_num_threads();
+    }
+    printf("OpenMP version:\n");
+    printf("num threads: %d\n", nthreads);
+  }
+#else
+  {
+    printf("Serial version.\n");
+  }
+#endif
+
 
   user.loadMesh();
   user.loadDofs();
