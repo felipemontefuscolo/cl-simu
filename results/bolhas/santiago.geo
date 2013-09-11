@@ -113,5 +113,5 @@ EndFor
 Physical Surface(physicalTagInsideBubble) = {2:N+1};
 Physical Point(physicalTagFixedPoints) = {3*N+1:3*N+4};
 
-//Reverse Surface { 1:N+1 };
+Reverse Surface { 1:N+1 };
 

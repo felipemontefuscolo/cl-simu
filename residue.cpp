@@ -38,7 +38,7 @@ D determinant(T const& a, int dim)
 }
 
 template<class TensorType, class Double>
-void invert(TensorType & a, int dim)
+void invert_a(TensorType & a, int dim)
 {
   if (dim==1)
   {
@@ -1098,11 +1098,11 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
   // LOOP NAS FACES DO CONTORNO (free surface)
   //~ FEP_PRAGMA_OMP(parallel default(none) shared(Vec_up_k,Vec_fun,cout))
   {
-    typedef ead::DFad<double, 30>  adouble;
-    typedef marray::Array<adouble, 2>      AMatrix;
-    typedef marray::Array<adouble, 1>      AVec;
-    typedef marray::Array<double, 2>       MMatrix;
-    typedef marray::Array<double, 1>       MVec;
+    typedef ead::DFad<double, 30>      adouble;
+    typedef marray::Array<adouble, 2>  AMatrix;
+    typedef marray::Array<adouble, 1>  AVec;
+    typedef marray::Array<double, 2>   MMatrix;
+    typedef marray::Array<double, 1>   MVec;
 
     int              tag;
     bool             is_neumann;
@@ -1217,6 +1217,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
       for (int k = 0; k < x_coefs_f_mid.size(); ++k)
         x_coefs_f_mid[k] = utheta*x_coefs_f_new[k] + (1.-utheta)*x_coefs_f_old[k];
+        //x_coefs_f_mid[k] = u_coefs_f_old[k]*dt/2. + x_coefs_f_old[k];
   
       //x_coefs_f_mid = x_coefs_f_old + u_coefs_f_mid*dt;
 
@@ -1233,9 +1234,11 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       {
       
         for (int i = 0; i < F_f_mid.dim(0); ++i)
-          for (int j = 0; j < F_f_mid.dim(1); ++j)
+          for (int j = 0; j < F_f_mid.dim(1); ++j) {
+            F_f_mid.get(i,j) = 0;
             for (int k = 0; k < x_coefs_f_mid.dim(0); ++k)
               F_f_mid.get(i,j) += x_coefs_f_mid(k,i) * dLqsi_f[qp](k,j);
+          }
 
         //if (dim==2)
         //{
@@ -1249,25 +1252,51 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
         //  normal = cross(F_f_mid.col(0), F_f_mid.col(1));
         //  normal.normalize();
         //}
-        
-        CONTRACT3(i,j,k, fff_f_mid.dim(0), fff_f_mid.dim(1), F_f_mid.dim(0))
-          fff_f_mid(i,j)  = F_f_mid(k,i)*F_f_mid(k,j);
+          
+        for (int i = 0; i < fff_f_mid.dim(0); ++i)
+          for (int j = 0; j < fff_f_mid.dim(1); ++j) {
+            fff_f_mid(i,j) = 0.;
+            for (int k = 0; k < F_f_mid.dim(0); ++k)
+              fff_f_mid(i,j)  += F_f_mid(k,i)*F_f_mid(k,j);
+          }
+
         J_mid     = sqrt(determinant<adouble, AMatrix>(fff_f_mid, dim-1));
-        invert( fff_f_mid, fff_f_mid.dim(0) );
-        CONTRACT3(i,j,k, fff_f_mid.dim(0), fff_f_mid.dim(1), F_f_mid.dim(0))
-          invF_f_mid(i,j) = fff_f_mid(i,k)*F_f_mid(j,k);
+        invert_a<AMatrix,adouble>( fff_f_mid, fff_f_mid.dim(0) );
+        
+        for (int i = 0; i < invF_f_mid.dim(0); ++i)
+          for (int j = 0; j < invF_f_mid.dim(1); ++j) {
+            invF_f_mid(i,j) = 0.;
+            for (int k = 0; k < fff_f_mid.dim(1); ++k)
+              invF_f_mid(i,j) += fff_f_mid(i,k)*F_f_mid(j,k);
+          }
 
         weight  = quadr_facet->weight(qp);
         JxW_mid = J_mid*weight;
-        CONTRACT2(i,j,Xqp.dim(0),x_coefs_f_mid.dim(0))
-          Xqp(i)   = x_coefs_f_mid(j,i) * qsi_f[qp](j); // coordenada espacial (x,y,z) do ponto de quadratura
+        for (int i = 0; i < Xqp.dim(0); ++i) {
+          Xqp(i) = 0.;
+          for (int j = 0; j < x_coefs_f_mid.dim(0); ++j)
+            Xqp(i)   += x_coefs_f_mid(j,i) * qsi_f[qp](j); // coordenada espacial (x,y,z) do ponto de quadratura
+        }
         
-        CONTRACT3(i,j,k,dxphi_f.dim(0),dxphi_f.dim(1),invF_f_mid.dim(0) )
-          dxphi_f(i,j) = dLphi_f[qp](i,k) * invF_f_mid(k,j);
-        CONTRACT3(i,j,k,dxU_f.dim(0), dxU_f.dim(1), dxphi_f.dim(0))
-          dxU_f(i,j)   = u_coefs_f_mid(k,i) * dxphi_f(k,j); // n+utheta
-        CONTRACT2(i,j,Uqp.dim(0),u_coefs_f_mid.dim(0));
-          Uqp(i)         = u_coefs_f_mid(j,i) * phi_f[qp](j);
+        for (int i = 0; i < dxphi_f.dim(0); ++i)
+          for (int j = 0; j < dxphi_f.dim(1); ++j) {
+            dxphi_f(i,j) = 0.;
+            for (int k = 0; k < dLphi_f[qp].cols(); ++k)
+              dxphi_f(i,j) += dLphi_f[qp](i,k) * invF_f_mid(k,j);
+          }
+        
+        for (int i = 0; i < dxU_f.dim(0); ++i)
+          for (int j = 0; j < dxU_f.dim(1); ++j) {
+            dxU_f(i,j) = 0.;
+            for (int k = 0; k < u_coefs_f_mid.dim(0); ++k)        
+              dxU_f(i,j)   += u_coefs_f_mid(k,i) * dxphi_f(k,j); // n+utheta
+          }
+        
+        for (int i = 0; i < Uqp.dim(0); ++i) {
+          Uqp(i) = 0.;
+          for (int j = 0; j < u_coefs_f_mid.dim(0); ++j)
+            Uqp(i) += u_coefs_f_mid(j,i) * phi_f[qp](j);
+        }
         //noi     = noi_coefs_f_new_trans * qsi_f[qp];
 
         if (is_surface)
@@ -1279,20 +1308,20 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
             for (int c = 0; c < dim; ++c)
             {
               //FUloc(i*dim + c) += JxW_mid *gama(Xqp,current_time,tag)*(dxphi_f(i,c) + (unsteady*dt) *dxU_f.row(c).dot(dxphi_f.row(i))); // correto
-              FUloc(i*dim + c) += JxW_mid *gama(Xqp,current_time,tag)*dxphi_f(i,c);
+              FUloc(i*dim + c) += JxW_mid *gama(Vector(),current_time,tag)*dxphi_f(i,c);
               //for (int d = 0; d < dim; ++d)
               //  FUloc(i*dim + c) += JxW_mid * gama(Xqp,current_time,tag)* ( (c==d?1:0) - noi(c)*noi(d) )* dxphi_f(i,d) ;
               //FUloc(i*dim + c) += JxW_mid * gama(Xqp,current_time,tag)* ( unsteady*dt *dxU_f.row(c).dot(dxphi_f.row(i)));
             }
           }
 
-          if (false) // semi-implicit term
-          {
-            for (int i = 0; i < n_dofs_u_per_facet/dim; ++i)
-              for (int j = 0; j < n_dofs_u_per_facet/dim; ++j)
-                for (int c = 0; c < dim; ++c)
-                  Aloc_f(i*dim + c, j*dim + c) += utheta*JxW_mid* (unsteady*dt) *gama(Xqp,current_time,tag)*dxphi_f.row(i).dot(dxphi_f.row(j));
-          }
+          //if (false) // semi-implicit term
+          //{
+          //  for (int i = 0; i < n_dofs_u_per_facet/dim; ++i)
+          //    for (int j = 0; j < n_dofs_u_per_facet/dim; ++j)
+          //      for (int c = 0; c < dim; ++c)
+          //        Aloc_f(i*dim + c, j*dim + c) += utheta*JxW_mid* (unsteady*dt) *gama(Xqp,current_time,tag)*dxphi_f.row(i).dot(dxphi_f.row(j));
+          //}
 
         }
 
@@ -1322,15 +1351,24 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       getProjectorMatrix(Prj, nodes_per_facet, facet_nodes.data(), Vec_x_1, current_time+dt, *this);
 
       FUloc_tmp = FUloc;
-      FUloc.assign(0);
-      CONTRACT2(i,j,FUloc.dim(0),Prj.cols)
-        FUloc(i) += Prj(i,j)*FUloc_tmp(j);
+      FUloc.assign(FUloc.size(), adouble(0., n_loc_unks));
       
-      CONTRACT2(i,j,Aloc_f.dim(0),Aloc_f.dim(1))
-        Aloc_f_tmp(i,j) = FUloc(i).dx(j);
+      for (int i = 0; i < FUloc.dim(0); ++i) {
+        FUloc(i) = 0.;
+        for (int j = 0; j < FUloc_tmp.dim(0); ++j)
+          FUloc(i) += Prj(i,j)*FUloc_tmp(j);
+      }
       
-      CONTRACT3(i,j,k,Aloc_f.dim(0),Aloc_f.dim(1),Aloc_f.dim(1))
-        Aloc_f(i,j) = Aloc_f_tmp(i,k)*Prj(k,j);
+      for (int i = 0; i < Aloc_f_tmp.dim(0); ++i)
+        for (int j = 0; j < Aloc_f_tmp.dim(1); ++j)
+          Aloc_f_tmp(i,j) = FUloc(i).dx(j);
+      
+      for (int i = 0; i < Aloc_f.dim(0); ++i)
+        for (int j = 0; j < Aloc_f.dim(1); ++j) {
+          Aloc_f(i,j) = 0.;
+          for (int k = 0; k < Aloc_f_tmp.dim(1); ++k)
+            Aloc_f(i,j) = Aloc_f_tmp(i,k)*Prj(k,j);
+        }
 
       for (int i = 0; i < FUloc.size(); ++i)
         floc_petsc[i] = FUloc(i).val();
