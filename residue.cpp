@@ -1,4 +1,98 @@
 #include "common.hpp"
+#include "Ead/ead.hpp"
+
+#define CONTRACT1(i,       size_i)                         for (int i = 0; i < size_i; ++i)
+#define CONTRACT2(i,j,     size_i, size_j)                 for (int i = 0; i < size_i; ++i) for (int j = 0; j < size_j; ++j)
+#define CONTRACT3(i,j,k,   size_i, size_j, size_k)         for (int i = 0; i < size_i; ++i) for (int j = 0; j < size_j; ++j) for (int k = 0; k < size_k; ++k)
+#define CONTRACT4(i,j,k,l, size_i, size_j, size_k, size_l) for (int i = 0; i < size_i; ++i) for (int j = 0; j < size_j; ++j) for (int k = 0; k < size_k; ++k) for (int l = 0; l < size_l; ++l)
+ 
+
+
+int epsilon(int i, int j, int k)
+{
+  if(i==1 && j==2 && k==3) return  1;
+  if(i==2 && j==3 && k==1) return  1;
+  if(i==3 && j==1 && k==2) return  1;
+  if(i==3 && j==2 && k==1) return -1;
+  if(i==1 && j==3 && k==2) return -1;
+  if(i==2 && j==1 && k==3) return -1;
+return 0;
+}
+
+template<class D, class T>
+D determinant(T const& a, int dim)
+{
+  if (dim==1)
+    return a(0,0);
+  else
+  if (dim==2)
+    return a(0,0)*a(1,1)-a(0,1)*a(1,0);
+  else
+  if (dim==3)
+    return a(0,0)*(a(1,1)*a(2,2)-a(1,2)*a(2,1))+a(0,1)*(a(1,2)*a(2,0)-a(1,0)*a(2,2))+a(0,2)*(a(1,0)*a(2,1)-a(1,1)*a(2,0));
+  else
+  {
+    printf("double determinant(Tensor const& a, int dim): invalid dim, get %d\n", dim);
+    throw;
+  }
+}
+
+template<class TensorType, class Double>
+void invert(TensorType & a, int dim)
+{
+  if (dim==1)
+  {
+    a(0,0)=1./a(0,0);
+  }
+  else
+  if (dim==2)
+  {
+    Double const det = a(0,0)*a(1,1)-a(0,1)*a(1,0);
+
+    Double const inv00 = a(1,1)/det;
+    Double const inv01 = -a(0,1)/det;
+    Double const inv10 = -a(1,0)/det;
+    Double const inv11 = a(0,0)/det;
+
+    a(0,0) = inv00;
+    a(0,1) = inv01;
+    a(1,0) = inv10;
+    a(1,1) = inv11;
+  }
+  else if (dim==3)
+  {
+    Double const det = a(0,0)*(a(1,1)*a(2,2)-a(1,2)*a(2,1))+a(0,1)*(a(1,2)*a(2,0)-a(1,0)*a(2,2))+a(0,2)*(a(1,0)*a(2,1)-a(1,1)*a(2,0));
+
+    Double const inv00 = ( a(1,1)*a(2,2)-a(1,2)*a(2,1) )/det;
+    Double const inv01 = ( a(0,2)*a(2,1)-a(0,1)*a(2,2) )/det;
+    Double const inv02 = ( a(0,1)*a(1,2)-a(0,2)*a(1,1) )/det;
+    Double const inv10 = ( a(1,2)*a(2,0)-a(1,0)*a(2,2) )/det;
+    Double const inv11 = ( a(0,0)*a(2,2)-a(0,2)*a(2,0) )/det;
+    Double const inv12 = ( a(0,2)*a(1,0)-a(0,0)*a(1,2) )/det;
+    Double const inv20 = ( a(1,0)*a(2,1)-a(1,1)*a(2,0) )/det;
+    Double const inv21 = ( a(0,1)*a(2,0)-a(0,0)*a(2,1) )/det;
+    Double const inv22 = ( a(0,0)*a(1,1)-a(0,1)*a(1,0) )/det;
+
+    a(0,0) = inv00;
+    a(0,1) = inv01;
+    a(0,2) = inv02;
+    a(1,0) = inv10;
+    a(1,1) = inv11;
+    a(1,2) = inv12;
+    a(2,0) = inv20;
+    a(2,1) = inv21;
+    a(2,2) = inv22;
+
+  }
+  else
+  {
+    printf("invalid dim, try to run again dumb \n");
+    throw;
+  }
+
+
+}
+
 
 template <typename Derived>
 void getProjectorMatrix(MatrixBase<Derived> & P, int n_nodes, int const* nodes, Vec const& Vec_x_, double t, AppCtx const& app)
@@ -14,7 +108,7 @@ void getProjectorMatrix(MatrixBase<Derived> & P, int n_nodes, int const* nodes, 
   //std::vector<int> const& periodic_tags   = app.periodic_tags ;
   std::vector<int> const& feature_tags    = app.feature_tags  ;
   //Vec const& Vec_normal = app.Vec_normal;
-  
+
   P.setIdentity();
 
   Tensor I(dim,dim);
@@ -51,7 +145,7 @@ void getProjectorMatrix(MatrixBase<Derived> & P, int n_nodes, int const* nodes, 
 
       normal = solid_normal(X,t,tag);
 
-      P.block(i*dim,i*dim,dim,dim)  = I - normal*normal.transpose();      
+      P.block(i*dim,i*dim,dim,dim)  = I - normal*normal.transpose();
       //P.block(i*dim,i*dim,dim,dim) = Z;
 
     }
@@ -72,10 +166,11 @@ void getProjectorMatrix(MatrixBase<Derived> & P, int n_nodes, int const* nodes, 
 // ******************************************************************************
 PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 {
+
   //PetscErrorCode      ierr;
 
   int null_space_press_dof=-1;
-  
+
   int iter;
 
   SNESGetIterationNumber(snes,&iter);
@@ -83,8 +178,8 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
   if (!iter)
   {
     converged_times=0;
-  }  
-  
+  }
+
   if (force_pressure && (iter<2))
   {
     Vector X(dim);
@@ -110,9 +205,9 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       // fix the initial guess
       VecSetValue(Vec_up_k, null_space_press_dof, pressure_exact(X,current_time+.5*dt,point->getTag()), INSERT_VALUES);
     }
-    
+
     Assembly(Vec_up_k);
-    
+
   }
 
   // checking:
@@ -131,7 +226,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
   VecZeroEntries(Vec_fun);
   MatZeroEntries(*JJ);
-  
+
   // LOOP NAS CÉLULAS
 #ifdef FEP_HAS_OPENMP
   FEP_PRAGMA_OMP(parallel default(none) shared(Vec_up_k,Vec_fun,cout,null_space_press_dof,JJ))
@@ -165,16 +260,16 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
     Tensor              F_c_mid(dim,dim);       // n+utheta
     Tensor              invF_c_mid(dim,dim);    // n+utheta
     Tensor              invFT_c_mid(dim,dim);   // n+utheta
-    
+
     Tensor              F_c_old(dim,dim);       // n
     Tensor              invF_c_old(dim,dim);    // n
     Tensor              invFT_c_old(dim,dim);   // n
-    
+
     Tensor              F_c_new(dim,dim);       // n+1
     Tensor              invF_c_new(dim,dim);    // n+1
     Tensor              invFT_c_new(dim,dim);   // n+1
-    
-    
+
+
     //Tensor              F_c_new(dim,dim);       // n+1
     //Tensor              invF_c_new(dim,dim);    // n+1
     //Tensor              invFT_c_new(dim,dim);   // n+1
@@ -304,7 +399,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       rho  = pho(Xqp,tag);
       Aloc.setZero();
       Gloc.setZero();
-      Dloc.setZero();      
+      Dloc.setZero();
       FUloc.setZero();
       FPloc.setZero();
       Eloc.setZero();
@@ -504,12 +599,12 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
               for (int d = 0; d < dim; d++)
               {
                 delta_cd = c==d;
-                
+
                 Bbn(c, j*dim + d) += JxW_mid*
                                      ( has_convec*bble[qp]*utheta *rho*( delta_cd*Uconv_qp.dot(dxphi_c.row(j)) + dxU(c,d)*phi_c[qp][j] ) // convective
                                      + unsteady*delta_cd*rho*bble[qp]*phi_c[qp][j]/dt // time derivative
                                      + utheta*visc*(delta_cd * dxphi_c.row(j).dot(dxbble) + dxphi_c(j,c)*dxbble(d)) ); // rigidez
-                
+
                 Bnb(j*dim + d, c) += JxW_mid*
                                      ( has_convec*phi_c[qp][j]*utheta *rho*( delta_cd*Uconv_qp.dot(dxbble) ) // convective
                                      + delta_cd*rho*phi_c[qp][j]*bble[qp]/dt * unsteady // time derivative
@@ -623,13 +718,13 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
         FUloc = FUloc - Bnb*iBbb*FUb;
         FPloc = FPloc - utheta*Gbp.transpose()*iBbb*FUb;
-        
+
         Dpb = utheta*Gbp.transpose();
 
         // correções com os coeficientes da bolha
 
         Ubqp = -utheta*iBbb*FUb; // U bolha no tempo n+utheta
-        
+
         for (int qp = 0; qp < n_qpts_cell; ++qp)
         {
           F_c_mid = x_coefs_c_mid_trans * dLqsi_c[qp];
@@ -664,7 +759,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
         Gloc -= Bnb*iBbb*Gbp;
         Dloc -= Dpb*iBbb*Bbn;
         Eloc = -Dpb*iBbb*Gbp;
-        
+
       }
       if(behaviors & BH_GLS)
       {
@@ -724,7 +819,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
         double const a = 1./(bble_integ*bble_integ);
         double const b = 1./bble_integ;
         Aloc += utheta*a*Gnx*iBbb*Gnx.transpose() - utheta*b*Bnb*Gnx.transpose() - b*Gnx*Bbn;
-        
+
         FUloc += a*Gnx*iBbb*FPx - b*Bnb*FPx - b*Gnx*FUb;
       }
 
@@ -736,9 +831,9 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
       FUloc = Prj*FUloc;
       Aloc = Prj*Aloc*Prj;
-      Gloc = Prj*Gloc;      
+      Gloc = Prj*Gloc;
       Dloc = Dloc*Prj;
-      
+
       if (force_pressure)
       {
         for (int i = 0; i < mapP_c.size(); ++i)
@@ -754,7 +849,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
           }
         }
       }
-      
+
 #ifdef FEP_HAS_OPENMP
       FEP_PRAGMA_OMP(critical)
 #endif
@@ -771,7 +866,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
   }
 
-  // LOOP NAS FACES DO CONTORNO
+  // LOOP NAS FACES DO CONTORNO (Neumann)
   //~ FEP_PRAGMA_OMP(parallel default(none) shared(Vec_up_k,Vec_fun,cout))
   {
     int                 tag;
@@ -802,13 +897,13 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
     MatrixXd            Aloc_f(n_dofs_u_per_facet, n_dofs_u_per_facet);
     VectorXd            FUloc(n_dofs_u_per_facet);
-                        
+
     MatrixXd            tmp(n_dofs_u_per_facet,n_dofs_u_per_facet);
-                        
+
     VectorXi            mapU_f(n_dofs_u_per_facet);
     VectorXi            mapP_f(n_dofs_p_per_facet);
     VectorXi            mapM_f(dim*nodes_per_facet);
-                        
+
     MatrixXd            Prj(n_dofs_u_per_facet,n_dofs_u_per_facet);
 
     MatrixXd            dxphi_f(n_dofs_u_per_facet/dim, dim);
@@ -850,7 +945,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       is_surface = is_in(tag, interface_tags);
       is_solid   = is_in(tag, solid_tags);
 
-      if ((!is_neumann) && (!is_surface) && (!is_solid))
+      if ((!is_neumann))
       //PetscFunctionReturn(0);
         continue;
 
@@ -865,7 +960,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       VecGetValues(Vec_x_1,     mapM_f.size(), mapM_f.data(), x_coefs_f_new.data());
       VecGetValues(Vec_up_0,    mapU_f.size(), mapU_f.data(), u_coefs_f_old.data());
       VecGetValues(Vec_up_k ,   mapU_f.size(), mapU_f.data(), u_coefs_f_new.data());
-      
+
       // get nodal coordinates of the old and new cell
       mesh->getFacetNodesId(&*facet, facet_nodes.data());
 
@@ -877,6 +972,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
       u_coefs_f_mid_trans = utheta*u_coefs_f_new_trans + (1.-utheta)*u_coefs_f_old_trans;
       x_coefs_f_mid_trans = utheta*x_coefs_f_new_trans + (1.-utheta)*x_coefs_f_old_trans;
+      x_coefs_f_mid_trans = x_coefs_f_old_trans + u_coefs_f_mid_trans*dt;
 
       FUloc.setZero();
       Aloc_f.setZero();
@@ -942,22 +1038,22 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
           {
             for (int c = 0; c < dim; ++c)
             {
-              //FUloc(i*dim + c) += JxW_mid *gama(Xqp,current_time,tag)*(dxphi_f(i,c) + 0*(unsteady*dt) *dxU_f.row(c).dot(dxphi_f.row(i))); // correto
-              FUloc(i*dim + c) += JxW_mid *gama(Xqp,current_time,tag)*dxphi_f(i,c);
+              FUloc(i*dim + c) += JxW_mid *gama(Xqp,current_time,tag)*(dxphi_f(i,c) + (unsteady*dt) *dxU_f.row(c).dot(dxphi_f.row(i))); // correto
+              //FUloc(i*dim + c) += JxW_mid *gama(Xqp,current_time,tag)*dxphi_f(i,c);
               //for (int d = 0; d < dim; ++d)
               //  FUloc(i*dim + c) += JxW_mid * gama(Xqp,current_time,tag)* ( (c==d?1:0) - noi(c)*noi(d) )* dxphi_f(i,d) ;
               //FUloc(i*dim + c) += JxW_mid * gama(Xqp,current_time,tag)* ( unsteady*dt *dxU_f.row(c).dot(dxphi_f.row(i)));
             }
           }
-          
-          if (false) // semi-implicit term
+
+          if (true) // semi-implicit term
           {
             for (int i = 0; i < n_dofs_u_per_facet/dim; ++i)
               for (int j = 0; j < n_dofs_u_per_facet/dim; ++j)
                 for (int c = 0; c < dim; ++c)
                   Aloc_f(i*dim + c, j*dim + c) += utheta*JxW_mid* (unsteady*dt) *gama(Xqp,current_time,tag)*dxphi_f.row(i).dot(dxphi_f.row(j));
-          }          
-          
+          }
+
         }
 
         if (is_solid)
@@ -970,16 +1066,16 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
             {
               FUloc(i*dim + c) += JxW_mid *beta_diss()*(Uqp(c)-Uqp_solid(c))*phi_f[qp][i];
               //FUloc(i*dim + c) += x_coefs_f_old_trans.norm()*beta_diss()*Uqp(c)*phi_f[qp][i];
-              
+
               for (int j = 0; j < n_dofs_u_per_facet/dim; ++j)
-                  Aloc_f(i*dim + c, j*dim + c) += utheta*JxW_mid *beta_diss()*phi_f[qp][j]*phi_f[qp][i];                   
-              
+                  Aloc_f(i*dim + c, j*dim + c) += utheta*JxW_mid *beta_diss()*phi_f[qp][j]*phi_f[qp][i];
+
             }
           }
         }
 
       } // end quadratura
-     
+
 
       // Projection - to force non-penetrarion bc
       mesh->getFacetNodesId(&*facet, facet_nodes.data());
@@ -999,16 +1095,267 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
   } // end parallel
 
+  // LOOP NAS FACES DO CONTORNO (free surface)
+  //~ FEP_PRAGMA_OMP(parallel default(none) shared(Vec_up_k,Vec_fun,cout))
+  {
+    typedef ead::DFad<double, 30>  adouble;
+    typedef marray::Array<adouble, 2>      AMatrix;
+    typedef marray::Array<adouble, 1>      AVec;
+    typedef marray::Array<double, 2>       MMatrix;
+    typedef marray::Array<double, 1>       MVec;
+
+    int              tag;
+    bool             is_neumann;
+    bool             is_surface;
+    bool             is_solid;
+
+    int const        n_loc_unks = n_dofs_u_per_facet;
+
+    AMatrix          u_coefs_f_mid(n_dofs_u_per_facet/dim, dim, adouble(0.,n_loc_unks));  // n+utheta
+    AMatrix          u_coefs_f_old(n_dofs_u_per_facet/dim, dim, adouble(0.,n_loc_unks));        // n
+    AMatrix          u_coefs_f_new(n_dofs_u_per_facet/dim, dim, adouble(0.,n_loc_unks));        // n+1
+
+    AMatrix          x_coefs_f_mid(n_dofs_v_per_facet/dim, dim, adouble(0.,n_loc_unks)); // n+utheta
+    AMatrix          x_coefs_f_new(n_dofs_v_per_facet/dim, dim, adouble(0.,n_loc_unks));       // n+1
+    AMatrix          x_coefs_f_old(n_dofs_v_per_facet/dim, dim, adouble(0.,n_loc_unks));       // n
+
+    MMatrix          noi_coefs_f_new(n_dofs_v_per_facet/dim, dim);  // normal interpolada em n+1
+
+    AMatrix          F_f_mid(dim,dim-1, adouble(0.,n_loc_unks));       // n+utheta
+    AMatrix          invF_f_mid(dim-1,dim, adouble(0.,n_loc_unks));    // n+utheta
+    AMatrix          fff_f_mid(dim-1,dim-1, adouble(0.,n_loc_unks));   // n+utheta; fff = first fundamental form
+    //Tensor              invFT_c_mid(dim,dim);   // n+utheta
+
+    MMatrix              Aloc_f(n_loc_unks, n_loc_unks);
+    MMatrix              Aloc_f_tmp(Aloc_f);
+    AVec                 FUloc(n_loc_unks, adouble(0.,n_loc_unks));
+    AVec                 FUloc_tmp(FUloc);
+
+    std::vector<double>  aloc_petsc(n_loc_unks);
+    std::vector<double>  floc_petsc(n_loc_unks);
+
+    AMatrix           tmp(n_dofs_u_per_facet,n_dofs_u_per_facet, adouble(0.,n_loc_unks));
+
+    std::vector<int>  mapU_f(n_dofs_u_per_facet);
+    std::vector<int>  mapP_f(n_dofs_p_per_facet);
+    std::vector<int>  mapM_f(dim*nodes_per_facet);
+
+    std::vector<double> dofs_petsc (  max( max(n_dofs_u_per_facet,n_dofs_p_per_facet), dim*nodes_per_facet  )) ;
+
+    MatrixXd           Prj(n_dofs_u_per_facet,n_dofs_u_per_facet);
+
+    AMatrix            dxphi_f(n_dofs_u_per_facet/dim, dim, adouble(0.,n_loc_unks));
+    AMatrix            dxU_f(dim,dim, adouble(0.,n_loc_unks));   // grad u
+    AVec               Xqp(dim, adouble(0.,n_loc_unks));
+    AVec               Xqp_new(dim, adouble(0.,n_loc_unks));
+    MVec               Xqp_old(dim);
+    AVec               Uqp(dim, adouble(0.,n_loc_unks));
+    AVec               Uqp_new(dim, adouble(0.,n_loc_unks));
+    MVec               Uqp_old(dim);
+    std::vector<int>   facet_nodes(nodes_per_facet);
+    //AVec               normal(dim, adouble(0.,n_loc_unks));
+    //MVec               noi(dim); // normal interpolada
+    AVec               some_vec(dim, adouble(0.,n_loc_unks));
+    adouble            J_mid(adouble(0.,n_loc_unks)), JxW_mid(adouble(0.,n_loc_unks));
+    double            weight=0;
+    //double              visc;
+    //double              rho;
+    AVec               Uqp_solid(dim, adouble(0.,n_loc_unks));
+
+    //~ const int tid = omp_get_thread_num();
+    //~ const int nthreads = omp_get_num_threads();
+//~
+    //~ facet_iterator facet = mesh->facetBegin(tid,nthreads);
+    //~ facet_iterator facet_end = mesh->facetEnd(tid,nthreads);
+
+    // LOOP NAS FACES DO CONTORNO
+    facet_iterator facet = mesh->facetBegin();
+    facet_iterator facet_end = mesh->facetEnd();
+    if (neumann_tags.size() != 0 || interface_tags.size() != 0 || solid_tags.size() != 0)
+    for (; facet != facet_end; ++facet)
+    {
+      tag = facet->getTag();
+      is_neumann = is_in(tag, neumann_tags);
+      is_surface = is_in(tag, interface_tags);
+      is_solid   = is_in(tag, solid_tags);
+
+      if (!is_surface)
+      //PetscFunctionReturn(0);
+        continue;
+
+      // mapeamento do local para o global:
+      //
+      dof_handler[DH_UNKS].getVariable(VAR_U).getFacetDofs(mapU_f.data(), &*facet);
+      dof_handler[DH_UNKS].getVariable(VAR_P).getFacetDofs(mapP_f.data(), &*facet);
+      dof_handler[DH_MESH].getVariable(VAR_M).getFacetDofs(mapM_f.data(), &*facet);
+
+      /*   get data   */
+      VecGetValues(Vec_normal,  mapM_f.size(), mapM_f.data(), dofs_petsc.data());
+      std::copy(dofs_petsc.begin(), dofs_petsc.end(), noi_coefs_f_new.begin());
+
+      VecGetValues(Vec_x_0,     mapM_f.size(), mapM_f.data(), dofs_petsc.data());
+      for (int k = 0; k < x_coefs_f_old.size(); ++k)
+        x_coefs_f_old[k].val() = dofs_petsc[k];
+
+      VecGetValues(Vec_x_1,     mapM_f.size(), mapM_f.data(), dofs_petsc.data());
+      for (int k = 0; k < x_coefs_f_new.size(); ++k)
+        x_coefs_f_new[k].val() = dofs_petsc[k];
+
+      VecGetValues(Vec_up_0,    mapU_f.size(), mapU_f.data(), dofs_petsc.data());
+      for (int k = 0; k < u_coefs_f_old.size(); ++k) 
+        u_coefs_f_old[k].val() = dofs_petsc[k];
+
+      VecGetValues(Vec_up_k ,   mapU_f.size(), mapU_f.data(), dofs_petsc.data());
+      for (int k = 0; k < u_coefs_f_new.size(); ++k)
+        u_coefs_f_new[k].val() = dofs_petsc[k];
+
+      // get nodal coordinates of the old and new cell
+      mesh->getFacetNodesId(&*facet, facet_nodes.data());
+  
+      for (int k = 0; k < u_coefs_f_mid.size(); ++k)
+        u_coefs_f_mid[k] = utheta*u_coefs_f_new[k] + (1.-utheta)*u_coefs_f_old[k];
+
+      for (int k = 0; k < x_coefs_f_mid.size(); ++k)
+        x_coefs_f_mid[k] = utheta*x_coefs_f_new[k] + (1.-utheta)*x_coefs_f_old[k];
+  
+      //x_coefs_f_mid = x_coefs_f_old + u_coefs_f_mid*dt;
+
+      FUloc.assign(FUloc.size(), adouble(0., n_loc_unks));
+      Aloc_f.assign(Aloc_f.size(), 0.);
+
+      //visc = muu(tag);
+      //rho  = pho(Xqp,tag);
+
+      //noi_coefs_f_new_trans = x_coefs_f_mid_trans;
+
+
+      for (int qp = 0; qp < n_qpts_facet; ++qp)
+      {
+      
+        for (int i = 0; i < F_f_mid.dim(0); ++i)
+          for (int j = 0; j < F_f_mid.dim(1); ++j)
+            for (int k = 0; k < x_coefs_f_mid.dim(0); ++k)
+              F_f_mid.get(i,j) += x_coefs_f_mid(k,i) * dLqsi_f[qp](k,j);
+
+        //if (dim==2)
+        //{
+        //  normal(0) = +F_f_mid(1,0);
+        //  normal(1) = -F_f_mid(0,0);
+        //  // normalize
+        //  normal.normalize();
+        //}
+        //else
+        //{
+        //  normal = cross(F_f_mid.col(0), F_f_mid.col(1));
+        //  normal.normalize();
+        //}
+        
+        CONTRACT3(i,j,k, fff_f_mid.dim(0), fff_f_mid.dim(1), F_f_mid.dim(0))
+          fff_f_mid(i,j)  = F_f_mid(k,i)*F_f_mid(k,j);
+        J_mid     = sqrt(determinant<adouble, AMatrix>(fff_f_mid, dim-1));
+        invert( fff_f_mid, fff_f_mid.dim(0) );
+        CONTRACT3(i,j,k, fff_f_mid.dim(0), fff_f_mid.dim(1), F_f_mid.dim(0))
+          invF_f_mid(i,j) = fff_f_mid(i,k)*F_f_mid(j,k);
+
+        weight  = quadr_facet->weight(qp);
+        JxW_mid = J_mid*weight;
+        CONTRACT2(i,j,Xqp.dim(0),x_coefs_f_mid.dim(0))
+          Xqp(i)   = x_coefs_f_mid(j,i) * qsi_f[qp](j); // coordenada espacial (x,y,z) do ponto de quadratura
+        
+        CONTRACT3(i,j,k,dxphi_f.dim(0),dxphi_f.dim(1),invF_f_mid.dim(0) )
+          dxphi_f(i,j) = dLphi_f[qp](i,k) * invF_f_mid(k,j);
+        CONTRACT3(i,j,k,dxU_f.dim(0), dxU_f.dim(1), dxphi_f.dim(0))
+          dxU_f(i,j)   = u_coefs_f_mid(k,i) * dxphi_f(k,j); // n+utheta
+        CONTRACT2(i,j,Uqp.dim(0),u_coefs_f_mid.dim(0));
+          Uqp(i)         = u_coefs_f_mid(j,i) * phi_f[qp](j);
+        //noi     = noi_coefs_f_new_trans * qsi_f[qp];
+
+        if (is_surface)
+        {
+          //Vector no(Xqp);
+          //no.normalize();
+          for (int i = 0; i < n_dofs_u_per_facet/dim; ++i)
+          {
+            for (int c = 0; c < dim; ++c)
+            {
+              //FUloc(i*dim + c) += JxW_mid *gama(Xqp,current_time,tag)*(dxphi_f(i,c) + (unsteady*dt) *dxU_f.row(c).dot(dxphi_f.row(i))); // correto
+              FUloc(i*dim + c) += JxW_mid *gama(Xqp,current_time,tag)*dxphi_f(i,c);
+              //for (int d = 0; d < dim; ++d)
+              //  FUloc(i*dim + c) += JxW_mid * gama(Xqp,current_time,tag)* ( (c==d?1:0) - noi(c)*noi(d) )* dxphi_f(i,d) ;
+              //FUloc(i*dim + c) += JxW_mid * gama(Xqp,current_time,tag)* ( unsteady*dt *dxU_f.row(c).dot(dxphi_f.row(i)));
+            }
+          }
+
+          if (false) // semi-implicit term
+          {
+            for (int i = 0; i < n_dofs_u_per_facet/dim; ++i)
+              for (int j = 0; j < n_dofs_u_per_facet/dim; ++j)
+                for (int c = 0; c < dim; ++c)
+                  Aloc_f(i*dim + c, j*dim + c) += utheta*JxW_mid* (unsteady*dt) *gama(Xqp,current_time,tag)*dxphi_f.row(i).dot(dxphi_f.row(j));
+          }
+
+        }
+
+        //if (is_solid)
+        //{
+        //  Uqp_solid = solid_veloc(Xqp, current_time+utheta*dt, tag);
+        //
+        //  for (int i = 0; i < n_dofs_u_per_facet/dim; ++i)
+        //  {
+        //    for (int c = 0; c < dim; ++c)
+        //    {
+        //      FUloc(i*dim + c) += JxW_mid *beta_diss()*(Uqp(c)-Uqp_solid(c))*phi_f[qp][i];
+        //      //FUloc(i*dim + c) += x_coefs_f_old_trans.norm()*beta_diss()*Uqp(c)*phi_f[qp][i];
+        //
+        //      for (int j = 0; j < n_dofs_u_per_facet/dim; ++j)
+        //          Aloc_f(i*dim + c, j*dim + c) += utheta*JxW_mid *beta_diss()*phi_f[qp][j]*phi_f[qp][i];
+        //
+        //    }
+        //  }
+        //}
+
+      } // end quadratura
+
+
+      // Projection - to force non-penetrarion bc
+      mesh->getFacetNodesId(&*facet, facet_nodes.data());
+      getProjectorMatrix(Prj, nodes_per_facet, facet_nodes.data(), Vec_x_1, current_time+dt, *this);
+
+      FUloc_tmp = FUloc;
+      FUloc.assign(0);
+      CONTRACT2(i,j,FUloc.dim(0),Prj.cols)
+        FUloc(i) += Prj(i,j)*FUloc_tmp(j);
+      
+      CONTRACT2(i,j,Aloc_f.dim(0),Aloc_f.dim(1))
+        Aloc_f_tmp(i,j) = FUloc(i).dx(j);
+      
+      CONTRACT3(i,j,k,Aloc_f.dim(0),Aloc_f.dim(1),Aloc_f.dim(1))
+        Aloc_f(i,j) = Aloc_f_tmp(i,k)*Prj(k,j);
+
+      for (int i = 0; i < FUloc.size(); ++i)
+        floc_petsc[i] = FUloc(i).val();
+
+      //~ FEP_PRAGMA_OMP(critical)
+      {
+        VecSetValues(Vec_fun, mapU_f.size(), mapU_f.data(), floc_petsc.data(), ADD_VALUES);
+        MatSetValues(*JJ, mapU_f.size(), mapU_f.data(), mapU_f.size(), mapU_f.data(), Aloc_f.data(),  ADD_VALUES);
+      }
+
+    }
+
+
+  } // end parallel
+
 
   // LINHA DE CONTATO
   //FEP_PRAGMA_OMP(parallel shared(Vec_up_k,Vec_fun,cout) default(none))
   {
     // will be useful I hope
     //Real const eps = std::numeric_limits<Real>::epsilon();
-    //Real const eps_root = pow(eps,1./3.);    
+    //Real const eps_root = pow(eps,1./3.);
     //double            h;
     //volatile double   hh;
-    
+
     int              tag;
     bool             is_triple;
 
@@ -1262,15 +1609,15 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
             FUloc(i*dim + c) += JxW_mid*(-gama_mid*cos_theta0() + zeta(Uqp_norm,0)*line_normal.dot(Uqp))*line_normal(c)*phi_r[qp][i];
             //FUloc(i*dim + c) += JxW_mid*(-gama_mid*cos_theta0() )*line_normal(c)*phi_r[qp][i];
             //FUloc(i*dim + c) += JxW_mid*zeta(Uqp_norm,0)*Uqp(c)*phi_r[qp][i];
-          
+
             for (int j = 0; j < n_dofs_u_per_corner/dim; ++j)
               for (int d = 0; d < dim; ++d)
                 Aloc_r(i*dim + c, j*dim + d) += JxW_mid* zeta(Uqp_norm,0)*utheta*line_normal(d) *phi_r[qp][j]*line_normal(c)*phi_r[qp][i];
                 //if (c==d)
                 //  Aloc_r(i*dim + c, j*dim + d) += JxW_mid* zeta(Uqp_norm,0) *utheta*phi_r[qp][j]*phi_r[qp][i];
-          
+
           }
-          
+
           //FUloc.segment(i*dim, dim) += JxW_mid* phi_r[qp][i] * (-gama_mid*cos_theta0() + zeta(0,0)*line_normal.dot(Uqp))*line_normal;
         }
 
@@ -1278,7 +1625,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       } // end quadratura
 
 
-     
+
 
       // Projection - to force non-penetrarion bc
       mesh->getCornerNodesId(&*corner, corner_nodes.data());
@@ -1286,7 +1633,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
       FUloc = Prj*FUloc;
       Aloc_r = Prj*Aloc_r*Prj;
-      
+
       VecSetValues(Vec_fun, mapU_r.size(), mapU_r.data(), FUloc.data(), ADD_VALUES);
       MatSetValues(*JJ, mapU_r.size(), mapU_r.data(), mapU_r.size(), mapU_r.data(), Aloc_r.data(),  ADD_VALUES);
       //cout << FUloc.transpose() << endl;
@@ -1323,7 +1670,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
         continue;
       //dof_handler[DH_UNKS].getVariable(VAR_U).getVertexAssociatedDofs(u_dofs, &*point);
       getNodeDofs(&*point, DH_UNKS, VAR_U, u_dofs);
-      
+
       nodeid = mesh->getPointId(&*point);
       getProjectorMatrix(A, 1, &nodeid, Vec_x_1, current_time+dt, *this);
       A = I - A;
@@ -1341,12 +1688,12 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
   {
     static bool ja_foi=false;
     if (!ja_foi)
-    { 
+    {
       View(Vec_fun, "rhs.m","res");
       View(*JJ,"jacob.m","Jac");
     }
     ja_foi = true;
-    
+
   }
 
   Assembly(Vec_fun);
@@ -1361,16 +1708,16 @@ PetscErrorCode AppCtx::formJacobian(SNES snes,Vec Vec_up_k, Mat* /*Mat_Jac*/, Ma
 {
   PetscBool          found = PETSC_FALSE;
   char               snes_type[PETSC_MAX_PATH_LEN];
-  
+
   PetscOptionsGetString(PETSC_NULL,"-snes_type",snes_type,PETSC_MAX_PATH_LEN-1,&found);
-  
+
   if (found)
     if (string(snes_type) == string("test"))
     {
       cout << "WARNING: TESTING JACOBIAN !!!!! \n";
       this->formFunction(snes, Vec_up_k, Vec_res);
     }
-  
+
   PetscFunctionReturn(0);
 }
 
@@ -1391,7 +1738,7 @@ void getProjectorBC(MatrixBase<Derived> & P, int n_nodes, int const* nodes, Vec 
   std::vector<int> const& periodic_tags   = app.periodic_tags ;
   std::vector<int> const& feature_tags    = app.feature_tags  ;
   Vec const& Vec_normal = app.Vec_normal;
-  
+
   P.setIdentity();
 
   Tensor I(dim,dim);
@@ -1427,11 +1774,11 @@ void getProjectorBC(MatrixBase<Derived> & P, int n_nodes, int const* nodes, Vec 
         app.getNodeDofs(&*point, DH_MESH, VAR_M, dofs);
         VecGetValues(Vec_x_, dim, dofs, X.data());
         normal = -solid_normal(X,t,tag);
-        P.block(i*dim,i*dim,dim,dim)  = I - normal*normal.transpose();      
+        P.block(i*dim,i*dim,dim,dim)  = I - normal*normal.transpose();
       }
       else
       {
-        P.block(i*dim,i*dim,dim,dim) = Z;  
+        P.block(i*dim,i*dim,dim,dim) = Z;
       }
     }
     else
@@ -1481,7 +1828,7 @@ PetscErrorCode AppCtx::formFunction_mesh(SNES /*snes_m*/, Vec Vec_v, Vec Vec_fun
 #endif
   {
     bool const non_linear = nonlinear_elasticity;
-    
+
     Tensor            dxV(dim,dim);   // grad u
     Tensor            F_c(dim,dim);
     Tensor            invF_c(dim,dim);
@@ -1523,10 +1870,10 @@ PetscErrorCode AppCtx::formFunction_mesh(SNES /*snes_m*/, Vec Vec_v, Vec Vec_fun
       /*  Pega os valores das variáveis nos graus de liberdade */
       VecGetValues(Vec_v ,  mapV_c.size(), mapV_c.data(), v_coefs_c.data());
       VecGetValues(Vec_x_0, mapV_c.size(), mapV_c.data(), x_coefs_c.data());
-      
+
       v_coefs_c_trans = v_coefs_c.transpose();
       x_coefs_c_trans = x_coefs_c.transpose();
-      
+
       Floc.setZero();
       Aloc.setZero();
 
@@ -1565,7 +1912,7 @@ PetscErrorCode AppCtx::formFunction_mesh(SNES /*snes_m*/, Vec Vec_v, Vec Vec_fun
                   {
                     sigma_ck -= dxV(l,l);
                     for (int m = 0; m < dim; ++m)
-                      sigma_ck -=  dxV(l,m)*dxV(l,m); 
+                      sigma_ck -=  dxV(l,m)*dxV(l,m);
                   }
 
                 }
@@ -1578,7 +1925,7 @@ PetscErrorCode AppCtx::formFunction_mesh(SNES /*snes_m*/, Vec Vec_v, Vec Vec_fun
                 for (int d = 0; d < dim; ++d)
                 {
                   dsigma_ckjd = 0;
-                  
+
                   if (c==d)
                     dsigma_ckjd = dxqsi_c(j,k);
 
@@ -1603,7 +1950,7 @@ PetscErrorCode AppCtx::formFunction_mesh(SNES /*snes_m*/, Vec Vec_v, Vec Vec_fun
                       }
                     }
                   }
-                  
+
                   Aloc(i*dim + c, j*dim + d) += dsigma_ckjd*dxqsi_c(i,k);
 
                 } // end d
@@ -1638,7 +1985,7 @@ PetscErrorCode AppCtx::formFunction_mesh(SNES /*snes_m*/, Vec Vec_v, Vec Vec_fun
 
   } // end parallel
 
-  
+
   // boundary conditions on global Jacobian
     // solid & triple tags .. force normal
   if (force_dirichlet)
@@ -1665,14 +2012,14 @@ PetscErrorCode AppCtx::formFunction_mesh(SNES /*snes_m*/, Vec Vec_v, Vec Vec_fun
         continue;
       //dof_handler[DH_UNKS].getVariable(VAR_U).getVertexAssociatedDofs(v_dofs, &*point);
       getNodeDofs(&*point, DH_MESH, VAR_M, v_dofs);
-      
+
       nodeid = mesh->getPointId(&*point);
       getProjectorBC(A, 1, &nodeid, Vec_x_0, current_time, *this);
       A = I - A;
       MatSetValues(*JJ, dim, v_dofs, dim, v_dofs, A.data(), ADD_VALUES);
     }
   }
-  
+
   Assembly(*JJ);
   Assembly(Vec_fun);
 

@@ -6,7 +6,7 @@ PETSC_ARCH =arch-linux2-cxx-opt
 
 CFLAGS   = -g -Wall -Wextra
 FFLAGS   =
-CPPFLAGS = -g -I. -I${FEPIC_DIR} $(FEP_INCLUDE) -Wall -Wextra -fopenmp -m64 -msse2 -L$(FEP_LIBS_DIR) -lfepic $(FEP_LDFLAGS)
+CPPFLAGS = -g -I. -I${FEPIC_DIR} $(FEP_INCLUDE) -Wall -Wextra -fopenmp -m64 -msse2 -L$(FEP_LIBS_DIR) -lfepic $(FEP_LDFLAGS) -I ead -D EAD_DEBUG
 FPPFLAGS =
 
 .PHONY: all clean
