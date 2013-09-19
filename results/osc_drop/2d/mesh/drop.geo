@@ -1,11 +1,11 @@
 // Gmsh project created on Mon Oct 25 15:56:52 2010
 
-N = 40;    // numero de pontos
-R = 1;     // raio
-A0 = 0.06;   // primeiro modo
-A1 = 0.0;  //  segundo modo
-A2 = 0.0;  //  terceiro modo  
-A3 = 0.0;  //  terceiro modo
+N = 40;      // numero de pontos
+R = 1;       // raio
+A0 = 0.002*R;   // primeiro modo
+A1 = 0.0;    //  segundo modo
+A2 = 0.0;    //  terceiro modo  
+A3 = 0.0;    //  terceiro modo
 A4 = 0.0;
 lc = R/30;  // densidade da malha
 
@@ -13,14 +13,12 @@ lc = R/30;  // densidade da malha
 //Point(N) = {0,h,0,lc};
 For s In {0:N-1}
 	
-	t = s/(N-1)/4;
+	t = s/(N-1)/2;
   
-	tet = 2*Pi*t;
-
-	z = Cos(tet);
+	tet = Pi*t;
 
 	// legendre polinomials
-	r = R*(1 + A0*0.5*(3*z*z - 1)   +   A1*0.5*(5*z*z*z - 3*z)   +  A2*0.125*(35*z^4 - 30*z^2 + 3)   +   A3*0.125*(63*z^5 - 70*z^3 + 15*z)) + A4*(231*z^6-315*z^4+105*z^2-5)/16;
+	r = R + A0*Cos(2*tet);
 
 	x = r * Cos(tet);
 	y = r * Sin(tet);

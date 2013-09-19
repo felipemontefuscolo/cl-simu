@@ -48,7 +48,7 @@ inline double sign(double a) {a<0 ? -1 : 1;};
 #define TRACO          18
 #define RUSSA_SIN2D    19
 
-#define PROBLEM_TYPE 12
+#define PROBLEM_TYPE 7
 
 
 #if (PROBLEM_TYPE==CAVITY_2D_3D)
@@ -785,11 +785,11 @@ double beta_diss()
 
 double gama(Vector const& X, double t, int tag)
 {
-  return 1;
+  return 1. / .15;
 }
 double muu(int tag)
 {
-  return 0.01;
+  return 1. / 30.;
 }
 Vector force(Vector const& X, double t, int tag)
 {
@@ -1619,7 +1619,7 @@ Tensor feature_proj(Vector const& X, double t, int tag)
 #endif
 
 // BOLHAS
-#if (true)
+#if (false)
 
 
 double pho(Vector const& X, int tag)

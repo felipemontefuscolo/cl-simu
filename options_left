@@ -1,0 +1,170 @@
+************************************************************************************************************************
+***             WIDEN YOUR WINDOW TO 120 CHARACTERS.  Use 'enscript -r -fCourier9' to print this document            ***
+************************************************************************************************************************
+
+---------------------------------------------- PETSc Performance Summary: ----------------------------------------------
+
+./main on a arch-linux2-cxx-opt named lmacc08 with 1 processor, by felipe.mt87 Fri Sep 13 14:42:40 2013
+Using Petsc Development GIT revision: 5a90d77431fd436338c7fc292df754db47687c23  GIT Date: 2013-08-29 10:42:05 -0500
+
+                         Max       Max/Min        Avg      Total 
+Time (sec):           7.331e+01      1.00000   7.331e+01
+Objects:              7.600e+01      1.00000   7.600e+01
+Flops:                7.583e+10      1.00000   7.583e+10  7.583e+10
+Flops/sec:            1.034e+09      1.00000   1.034e+09  1.034e+09
+MPI Messages:         0.000e+00      0.00000   0.000e+00  0.000e+00
+MPI Message Lengths:  0.000e+00      0.00000   0.000e+00  0.000e+00
+MPI Reductions:       6.100e+01      1.00000
+
+Flop counting convention: 1 flop = 1 real number operation of type (multiply/divide/add/subtract)
+                            e.g., VecAXPY() for real vectors of length N --> 2N flops
+                            and VecAXPY() for complex vectors of length N --> 8N flops
+
+Summary of Stages:   ----- Time ------  ----- Flops -----  --- Messages ---  -- Message Lengths --  -- Reductions --
+                        Avg     %Total     Avg     %Total   counts   %Total     Avg         %Total   counts   %Total 
+ 0:      Main Stage: 7.3306e+01 100.0%  7.5831e+10 100.0%  0.000e+00   0.0%  0.000e+00        0.0%  6.000e+01  98.4% 
+
+------------------------------------------------------------------------------------------------------------------------
+See the 'Profiling' chapter of the users' manual for details on interpreting output.
+Phase summary info:
+   Count: number of times phase was executed
+   Time and Flops: Max - maximum over all processors
+                   Ratio - ratio of maximum to minimum over all processors
+   Mess: number of messages sent
+   Avg. len: average message length (bytes)
+   Reduct: number of global reductions
+   Global: entire computation
+   Stage: stages of a computation. Set stages with PetscLogStagePush() and PetscLogStagePop().
+      %T - percent time in this phase         %f - percent flops in this phase
+      %M - percent messages in this phase     %L - percent message lengths in this phase
+      %R - percent reductions in this phase
+   Total Mflop/s: 10e-6 * (sum of flops over all processors)/(max time over all processors)
+------------------------------------------------------------------------------------------------------------------------
+Event                Count      Time (sec)     Flops                             --- Global ---  --- Stage ---   Total
+                   Max Ratio  Max     Ratio   Max  Ratio  Mess   Avg len Reduct  %T %f %M %L %R  %T %f %M %L %R Mflop/s
+------------------------------------------------------------------------------------------------------------------------
+
+--- Event Stage 0: Main Stage
+
+ThreadCommRunKer     104 1.0 3.7536e-02 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecNorm                4 1.0 1.1396e-04 1.0 1.08e+05 1.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0   949
+VecScale               3 1.0 6.0797e-05 1.0 5.22e+04 1.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0   859
+VecCopy               12 1.0 2.6512e-04 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecSet                43 1.0 1.2290e-03 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecAXPY                7 1.0 2.1529e-04 1.0 2.43e+05 1.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0  1130
+VecWAXPY               8 1.0 4.6110e-04 1.0 1.93e+05 1.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0   418
+VecAssemblyBegin   10637 1.0 9.6154e-04 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecAssemblyEnd     10637 1.0 9.6774e-04 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecReduceArith        15 1.0 4.1413e-04 1.0 5.41e+05 1.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0  1305
+VecReduceComm          5 1.0 4.0531e-06 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+MatSolve               8 1.0 3.0679e-01 1.0 2.39e+08 1.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0   778
+MatLUFactorSym         8 1.0 2.8386e+00 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 2.4e+01  4  0  0  0 39   4  0  0  0 40     0
+MatLUFactorNum         8 1.0 5.7383e+01 1.0 7.56e+10 1.0 0.0e+00 0.0e+00 0.0e+00 78100  0  0  0  78100  0  0  0  1317
+MatAssemblyBegin      11 1.0 5.2452e-06 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+MatAssemblyEnd        11 1.0 3.2034e-02 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+MatGetRowIJ            4 1.0 1.0404e-02 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+MatGetOrdering         4 1.0 3.7028e-02 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 1.6e+01  0  0  0  0 26   0  0  0  0 27     0
+MatZeroEntries        10 1.0 1.9503e-02 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+SNESSolve              5 1.0 7.2100e+01 1.0 7.58e+10 1.0 0.0e+00 0.0e+00 4.2e+01 98100  0  0 69  98100  0  0 70  1052
+SNESFunctionEval      10 1.0 1.1451e+01 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00 16  0  0  0  0  16  0  0  0  0     0
+SNESJacobianEval       8 1.0 3.3617e-05 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+SNESLineSearch         5 1.0 6.8084e+00 1.0 6.31e+05 1.0 0.0e+00 0.0e+00 0.0e+00  9  0  0  0  0   9  0  0  0  0     0
+KSPSetUp               8 1.0 1.5259e-05 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+KSPSolve               8 1.0 6.0646e+01 1.0 7.58e+10 1.0 0.0e+00 0.0e+00 4.0e+01 83100  0  0 66  83100  0  0 67  1250
+PCSetUp                8 1.0 6.0339e+01 1.0 7.56e+10 1.0 0.0e+00 0.0e+00 4.0e+01 82100  0  0 66  82100  0  0 67  1253
+PCApply                8 1.0 3.0681e-01 1.0 2.39e+08 1.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0   778
+------------------------------------------------------------------------------------------------------------------------
+
+Memory usage is given in bytes:
+
+Object Type          Creations   Destructions     Memory  Descendants' Mem.
+Reports information only for process 0.
+
+--- Event Stage 0: Main Stage
+
+              Vector    16             16      1998448     0
+              Matrix    10             10   1467261960     0
+                SNES     2              2         2660     0
+      SNESLineSearch     2              2         1736     0
+              DMSNES     2              2         1344     0
+    Distributed Mesh     4              4        17664     0
+     Bipartite Graph     8              8         6400     0
+       Krylov Solver     2              2         2304     0
+     DMKSP interface     2              2         1312     0
+      Preconditioner     2              2         1952     0
+              Viewer     2              1          736     0
+           Index Set    24             24       763024     0
+========================================================================================================================
+Average time to get PetscTime(): 1.19209e-07
+#PETSc Option Table entries:
+-ale 1
+-boundary_smoothing 0
+-dim 3
+-dir_tags 1
+-dt 2e-03
+-family_files 1
+-feature_tags 7,8,9
+-fin /cluster/felipe.mt87/mef/cl-simu/results/osc_drop/3d/drop.msh
+-finaltime -1e-2
+-force_dirichlet 1
+-force_mesh_velocity 0
+-force_pressure 0
+-fout /cluster/felipe.mt87/mef/cl-simu/results/osc_drop/3d/drop.vtk
+-fp_trap 1
+-fprint_ca 1
+-function_space 4
+-has_convec 1
+-interf_tags 3
+-ksp_rtol 1e-10
+-ksp_type preonly
+-log_summary options_left
+-maxts 1
+-mesh_adapt 0
+-nonlinear_elasticity 0
+-on_error_abort 1
+-pc_factor_reuse_ordering 1
+-pc_factor_shift_amount 1.e-12
+-pc_factor_shift_type NONZERO
+-pc_type lu
+-plot_es 0
+-print_step 1
+-print_to_matlab 0
+-quadr_c 4
+-quadr_e 8
+-quadr_f 4
+-quadr_r 2
+-renumber_dofs 0
+-snes_linesearch_type basic
+-snes_max_it 10
+-snes_monitor stdout
+-snes_rtol 1.e-11
+-snes_stol 1.e-11
+-solid_tags 4,5,6
+-sst -1.e-7
+-unsteady 1
+-utheta .5
+#End of PETSc Option Table entries
+Compiled without FORTRAN kernels
+Compiled with full precision matrices (default)
+sizeof(short) 2 sizeof(int) 4 sizeof(long) 8 sizeof(void*) 8 sizeof(PetscScalar) 8 sizeof(PetscInt) 4
+Configure run at: Thu Aug 29 16:16:59 2013
+Configure options:  --download-f-blas-lapack=1  --download-blacs=1  --download-mumps=1  --download-hypre=1  --download-metis=1  --download-parmetis=1  --download-mpich=1  --download-scalapack=1  --with-clanguage=cxx  --with-shared-libraries=1  --with-threadcomm  --with-openmp  --with-c2html=0  --with-debugging=0
+-----------------------------------------
+Libraries compiled on Thu Aug 29 16:16:59 2013 on lcadcs 
+Machine characteristics: Linux-2.6.35-25-server-x86_64-with-Ubuntu-10.04-lucid
+Using PETSc directory: /cluster/felipe.mt87/libs/petsc/current
+Using PETSc arch: arch-linux2-cxx-opt
+-----------------------------------------
+
+Using C compiler: /cluster/felipe.mt87/libs/petsc/current/arch-linux2-cxx-opt/bin/mpicxx   -Wall -Wwrite-strings -Wno-strict-aliasing -Wno-unknown-pragmas -O -fopenmp  -fPIC   ${COPTFLAGS} ${CFLAGS}
+Using Fortran compiler: /cluster/felipe.mt87/libs/petsc/current/arch-linux2-cxx-opt/bin/mpif90  -fPIC  -Wall -Wno-unused-variable -O -fopenmp  ${FOPTFLAGS} ${FFLAGS} 
+-----------------------------------------
+
+Using include paths: -I/cluster/felipe.mt87/libs/petsc/current/arch-linux2-cxx-opt/include -I/cluster/felipe.mt87/libs/petsc/current/include -I/cluster/felipe.mt87/libs/petsc/current/include -I/cluster/felipe.mt87/libs/petsc/current/arch-linux2-cxx-opt/include
+-----------------------------------------
+
+Using C linker: /cluster/felipe.mt87/libs/petsc/current/arch-linux2-cxx-opt/bin/mpicxx
+Using Fortran linker: /cluster/felipe.mt87/libs/petsc/current/arch-linux2-cxx-opt/bin/mpif90
+Using libraries: -Wl,-rpath,/cluster/felipe.mt87/libs/petsc/current/arch-linux2-cxx-opt/lib -L/cluster/felipe.mt87/libs/petsc/current/arch-linux2-cxx-opt/lib -lpetsc -Wl,-rpath,/cluster/felipe.mt87/libs/petsc/current/arch-linux2-cxx-opt/lib -L/cluster/felipe.mt87/libs/petsc/current/arch-linux2-cxx-opt/lib -lcmumps -ldmumps -lsmumps -lzmumps -lmumps_common -lpord -lscalapack -lHYPRE -lflapack -lfblas -lX11 -lpthread -lparmetis -lmetis -lm -Wl,-rpath,/usr/lib/gcc/x86_64-linux-gnu/4.4.3 -L/usr/lib/gcc/x86_64-linux-gnu/4.4.3 -lmpichf90 -lgfortran -lm -lm -lmpichcxx -lstdc++ -lmpichcxx -lstdc++ -ldl -lmpich -lopa -lmpl -lrt -lpthread -lgcc_s -ldl 
+-----------------------------------------
+

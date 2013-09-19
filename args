@@ -1,6 +1,8 @@
+#GIT PAPER TEST
+
 options_left
 -dim 2 				        # cell dimension (= space dimension)
--dt 2e-03 4.4603e-07    # time step 4 2 1 0.5 0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04 4.8828125e-04 2.44140625e-04 1.220703125e-04
+-dt 2e-04 4.4603e-07    # time step 4 2 1 0.5 0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04 4.8828125e-04 2.44140625e-04 1.220703125e-04
 -finaltime -1e-2           # the simulation ends at this time.
 -maxts 10              # maximum number of time steps
 -renumber_dofs 0        # dofs renumbering
