@@ -3,12 +3,12 @@
 
 N = 90;    // numero de pontos (NUMERO IMPAR!!!!)
 R = .5;     // raio
-A0 = 0.01;   // primeiro modo
+A0 = 0.1;   // primeiro modo
 A1 = 0.0;  //  segundo modo
 A2 = 0.0;  //  terceiro modo  
 A3 = 0.0;  //  terceiro modo
 A4 = 0.0;
-lc = 1000*R;  // densidade da malha
+lc = R/1;  // densidade da malha
 
 If((N+1)*.5 != Ceil((N+1)*.5))
   N=N+1;
@@ -59,8 +59,6 @@ Extrude {{0, 1, 0}, {0, 0, 0}, -Pi/2} {
 
 Coherence;
 Transfinite Line {11, 2, 15, 25, 1, 3, 13, 5, 4} = 2 Using Progression 1;
-
-
 Transfinite Surface {16} = {91, 93, 46} Alternated;
 Transfinite Surface {32} = {1, 46, 93} Alternated;
 
@@ -83,5 +81,3 @@ Physical Point(8) = {91, 1};
 
 
 
-
-Coherence;

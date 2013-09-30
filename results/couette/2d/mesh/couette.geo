@@ -46,7 +46,7 @@ Physical Line(2) = {2, 1, 4};
 Physical Line(1) = {3};
 Physical Point(2) = {4, 5};
 
-
+Reverse Surface { 10,16,14,12 };
 
 
 

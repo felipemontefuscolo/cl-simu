@@ -1,5 +1,5 @@
 /* [wxMaxima batch file version 1] [ DO NOT EDIT BY HAND! ]*/
-/* [ Created with wxMaxima version 12.04.0 ] */
+/* [ Created with wxMaxima version 11.08.0 ] */
 
 /* [wxMaxima: input   start ] */
 f(U,P) := [ diff(U[1],t)  + diff(P,x) - diff(U[1],x,2) -  diff(U[1],y,2) + U[1]*diff(U[1],x) +  U[2]*diff(U[1],y),
@@ -18,7 +18,30 @@ div_f : diff(f(u,p)[1],x) + diff(f(u,p)[2],y);
 /* [wxMaxima: input   end   ] */
 
 /* [wxMaxima: input   start ] */
-at([cos(t*w_)^2*x^3*y^2+(-w_*sin(t*w_)*x^2-2*cos(t*w_))*y+2*cos(t*w_)*x,cos(t*w_)^2*x^2*y^3+w_*sin(t*w_)*x*y^2+2*sin(t*w_)*y+2*cos(t*w_)*x],t=0);
+u : [x^2*sin(w_*t), -2*x*y*sin(w_*t)]$
+p : x*x*cos(w_*t) + y*y*sin(w_*t)$
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+u : [x*cos(w_*t) + y*sin(w_*t),-y*cos(w_*t) + x*sin(w_*t)]$
+p : x*cos(w_*t) + y*sin(w_*t)$
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+u : [x*x*y*sin(w_*t), -x*y*y*sin(w_*t)]$
+p : x*cos(w_*t) + y*sin(w_*t)$
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+ratsimp(f(u,p))$
+trigsimp(%);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+diff(u[1],x);
+diff(u[1],y);
+diff(u[2],x);
+diff(u[2],y);
 /* [wxMaxima: input   end   ] */
 
 /* Maxima can't load/batch files which end with a comment! */

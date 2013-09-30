@@ -48,7 +48,7 @@ inline double sign(double a) {a<0 ? -1 : 1;};
 #define TRACO          18
 #define RUSSA_SIN2D    19
 
-#define PROBLEM_TYPE 7
+#define PROBLEM_TYPE 16
 
 
 #if (PROBLEM_TYPE==CAVITY_2D_3D)
@@ -762,7 +762,8 @@ Vector solid_veloc(Vector const& X, double t, int tag)
 
 #endif
 
-#if (PROBLEM_TYPE==OSCI_BB)
+// OSCI_BB 3D
+#if (true)
 double pho(Vector const& X, int tag)
 {
   return 1.0;
@@ -785,11 +786,11 @@ double beta_diss()
 
 double gama(Vector const& X, double t, int tag)
 {
-  return 1. / .15;
+  return 1/.15;
 }
 double muu(int tag)
 {
-  return 1. / 30.;
+  return 1./30.;
 }
 Vector force(Vector const& X, double t, int tag)
 {
@@ -831,10 +832,10 @@ Vector solid_normal(Vector const& X, double t, int tag)
 {
   Vector N(Vector::Zero(X.size()));
 
-  if (tag==3)
-    N(0) = -1;
+  if (tag==6)
+    N(0) = 1;
   else
-    N(1) = -1;
+    N(2) = 1;
 
   return N;
 }
@@ -850,6 +851,33 @@ Vector solid_veloc(Vector const& X, double t, int tag)
 {
   Vector N(Vector::Zero(X.size()));
   return N;
+}
+
+Tensor feature_proj(Vector const& X, double t, int tag)
+{
+  Tensor f(Tensor::Zero(X.size(), X.size()));
+  
+  Vector A = solid_normal(X,t,tag);
+  
+  if (tag == 8)
+  {
+    f(1,1) = 1;
+  }
+  else if (tag == 6)
+  {
+    f(1,1) = 1;
+    f(2,2) = 1;
+  }
+  else if (tag == 5)
+  {
+    f(0,0) = 1;
+    f(1,1) = 1;
+  }
+  else
+  {
+  }
+  
+  return f;
 }
 
 
@@ -1270,7 +1298,8 @@ Vector solid_veloc(Vector const& X, double t, int tag)
 
 #endif
 
-#if (PROBLEM_TYPE==COUETTE && false)
+// COUETTE
+#if (false)
 
 double const w_ = 1;
 double const a__= 1;
@@ -1319,8 +1348,11 @@ Vector force(Vector const& X, double t, int tag)
   //f(1) = 2*t;
   //f(0) = -2.;
   //f(1) = 1;
-  f(0) = w_*cos(w_*t)*y+(1-w_*sin(w_*t))*x+cos(w_*t);
-  f(1) = (w_*sin(w_*t)+1)*y+w_*cos(w_*t)*x+sin(w_*t);
+  //f(0) = w_*cos(t*w_)*y+(1-w_*sin(t*w_))*x+cos(t*w_);
+  //f(1) = (w_*sin(t*w_)+1)*y+w_*cos(t*w_)*x+sin(t*w_);
+  
+  f(0) = pow(sin(t*w_),2)*pow(x,3)*pow(y,2)+(w_*cos(t*w_)*pow(x,2)-2*sin(t*w_))*y+2*cos(t*w_)*x;
+  f(1) = pow(sin(t*w_),2)*pow(x,2)*pow(y,3)-w_*cos(t*w_)*x*pow(y,2)+2*sin(t*w_)*y+2*sin(t*w_)*x;
   
   
   return f;
@@ -1332,8 +1364,10 @@ Vector u_exact(Vector const& X, double t, int tag)
 
   Vector v(Vector::Zero(X.size()));
 
-  v(0) =  x*cos(w_*t) + y*sin(w_*t);
-  v(1) = -y*cos(w_*t) + x*sin(w_*t);
+  //v(0) =  x*cos(w_*t) + y*sin(w_*t);
+  //v(1) = -y*cos(w_*t) + x*sin(w_*t);
+  v(0) = x*x*y*sin(w_*t);
+  v(1) = -x*y*y*sin(w_*t);
   
   
   return v;
@@ -1343,7 +1377,8 @@ double pressure_exact(Vector const& X, double t, int tag)
   double x = X(0);
   double y = X(1);
 
-  return  x*cos(w_*t) + y*sin(w_*t);
+  //return  x*cos(w_*t) + y*sin(w_*t);
+  return  x*x*cos(w_*t) + y*y*sin(w_*t);
   //return 0;
 }
 Vector grad_p_exact(Vector const& X, double t, int tag)
@@ -1351,8 +1386,11 @@ Vector grad_p_exact(Vector const& X, double t, int tag)
   double x = X(0);
   double y = X(1);
   Vector dxP(2);
-  dxP(0) = cos(w_*t);
-  dxP(1) = sin(w_*t);
+  //dxP(0) = cos(w_*t);
+  //dxP(1) = sin(w_*t);
+
+  dxP(0) = 2.*x*cos(w_*t);
+  dxP(1) = 2.*y*sin(w_*t);
 
   return dxP;
 }
@@ -1367,10 +1405,17 @@ Tensor grad_u_exact(Vector const& X, double t, int tag)
   //dxU(1,0) = sin(w_*t);
   //dxU(1,1) = 0;
   
-  dxU(0,0) = cos(w_*t);
-  dxU(0,1) = sin(w_*t);
-  dxU(1,0) = sin(w_*t);
-  dxU(1,1) =-cos(w_*t);
+  //dxU(0,0) = cos(w_*t);
+  //dxU(0,1) = sin(w_*t);
+  //dxU(1,0) = sin(w_*t);
+  //dxU(1,1) =-cos(w_*t);
+  
+  dxU(0,0) = 2.*sin(t*w_)*x*y;
+  dxU(0,1) = sin(t*w_)*x*x;
+  dxU(1,0) = -sin(t*w_)*y*y;
+  dxU(1,1) = -2.*sin(t*w_)*x*y;
+  
+  //dxU(0,1) = 1;
   
   return dxU;
 }
@@ -1417,8 +1462,8 @@ Vector v_exact(Vector const& X, double t, int tag) //(X,t,tag)
   //return v * (tag!=1 && tag!=2);
   //v(0) = t*(1-x*x)*(1+y)/4.;
   //v(1) = t*(1-y*y)*(x + t*(1-x*x)/32. + 1)/4.;
-  v(0) = 1*( x*x*sin(w_*t) + y*y*cos(w_*t) );
-  v(1) = 1*(-y*x*sin(w_*t) + x*y*cos(w_*t) );
+  v(0) = 50*( x*x*sin(w_*t) + y*y*cos(w_*t) );
+  v(1) = 50*(-y*x*sin(w_*t) + x*y*cos(w_*t) );
   return v;
   //return u_exact(X,t,tag);
 }
@@ -1433,7 +1478,7 @@ Vector x_exact(Vector const& X, double t, int tag)
 Vector solid_veloc(Vector const& X, double t, int tag)
 {
   Vector N(Vector::Zero(X.size()));
-  N(1) = 1;
+  //N(1) = 1;
   return N;
 }
 
@@ -2231,91 +2276,137 @@ Vector v_exact(Vector const& X, double t, int tag) //(X,t,tag)
 
 #endif
 
-#if (PROBLEM_TYPE==ZETA3D)
+// ZETA3D
+#if (false)
+
+double const w_ = 1;
+double const a__= 1;
+
+
 double pho(Vector const& X, int tag)
 {
-  return 0;
+  return 1.0;
 }
-
 double cos_theta0()
 {
-  return 0*sqrt(2.)/2.;
+  return 0*1.0;
 }
 
 double zeta(double u_norm, double angle)
 {
-  return 0*1.e-4;
+  return 0*1.e-3;
 }
 
 double beta_diss()
 {
-  return 0*1.e-4;
+  return 0*1.e-3;
 }
 
 double gama(Vector const& X, double t, int tag)
 {
-  return 0*0.075;
+  return 0*0.01;
 }
 double muu(int tag)
 {
-  return 1.e-0;
+  return  .1;
 }
 Vector force(Vector const& X, double t, int tag)
 {
   double x = X(0);
   double y = X(1);
+
   Vector f(Vector::Zero(X.size()));
+  //Tensor dxU(grad_u_exact(X,t,tag));
+
+  //f = dxU*u_exact(X,t,tag);
+  //f = dxU*u_exact(X,t,tag) + grad_p_exact(X,t,tag);
+  //f(0) += -a__*y*w_*sin(w_*t) + 1;
+  //f(1) += +a__*x*w_*cos(w_*t);
+  //f(1) += +a__*x;
+  //f(1) = 2*t;
+  //f(0) = -2.;
+  f(1) = -1;
+  //f(0) = w_*cos(t*w_)*y+(1-w_*sin(t*w_))*x+cos(t*w_);
+  //f(1) = (w_*sin(t*w_)+1)*y+w_*cos(t*w_)*x+sin(t*w_);
   
-  //f(1)=-4;
-  f(0)=1;
-  //f /= 4*sqrt(2);
-
-
+  //f(0) = 2*pow(sin(t*w_),2)*pow(x,3)+w_*cos(t*w_)*pow(x,2)-2*sin(t*w_) + 2.*x*cos(w_*t);
+  //f(1) = (2*pow(sin(t*w_),2)*pow(x,2)-2*w_*cos(t*w_)*x)*y + 2.*y*sin(w_*t);
+  
+  //f(0) = pow(sin(t*w_),2)*pow(x,3)*pow(y,2)+(w_*cos(t*w_)*pow(x,2)-2*sin(t*w_))*y+2*cos(t*w_)*x;
+  //f(1) = pow(sin(t*w_),2)*pow(x,2)*pow(y,3)-w_*cos(t*w_)*x*pow(y,2)+2*sin(t*w_)*y+2*sin(t*w_)*x;
+  
   return f;
 }
 Vector u_exact(Vector const& X, double t, int tag)
 {
   double x = X(0);
   double y = X(1);
+
   Vector v(Vector::Zero(X.size()));
 
-  v(0) = 0;
-
+  //v(0) =  x*cos(w_*t) + y*sin(w_*t);
+  //v(1) = -y*cos(w_*t) + x*sin(w_*t);
+  //v(0) =  x*x*y*sin(w_*t);
+  //v(1) = -x*y*y*sin(w_*t);
+  
+  
   return v;
-}
-Vector traction(Vector const& X, Vector const& normal, double t, int tag)
-{
-  double x = X(0);
-  double y = X(1);
-  Vector T(Vector::Zero(X.size()));
-
-  //T = -X;
-
-  return T;
 }
 double pressure_exact(Vector const& X, double t, int tag)
 {
   double x = X(0);
   double y = X(1);
 
-  //return 2*gama(X,t,tag);
-  return x;
+  //return  x*cos(w_*t) + y*sin(w_*t);
+  //return  x*x*cos(w_*t) + y*y*sin(w_*t);
+  return 0;
 }
 Vector grad_p_exact(Vector const& X, double t, int tag)
 {
   double x = X(0);
   double y = X(1);
-  Vector r(Vector::Zero(X.size()));
+  Vector dxP(Vector::Zero(X.size()));
+  //dxP(0) = cos(w_*t);
+  //dxP(1) = sin(w_*t);
 
-  return r;
+  dxP(0) = 2.*x*cos(w_*t);
+  dxP(1) = 2.*y*sin(w_*t);
+
+  return dxP;
 }
 Tensor grad_u_exact(Vector const& X, double t, int tag)
 {
   double x = X(0);
   double y = X(1);
-  Tensor dxU(Tensor::Zero(X.size(),X.size()));
+  Tensor dxU(Tensor::Zero(X.size(), X.size()));
 
+  //dxU(0,0) = cos(w_*t);
+  //dxU(0,1) = sin(w_*t);
+  //dxU(1,0) = sin(w_*t);
+  //dxU(1,1) =-cos(w_*t);
+  
+  dxU(0,0) = 2*sin(t*w_)*x*y;
+  dxU(0,1) = sin(t*w_)*x*x;
+  dxU(1,0) = -sin(t*w_)*y*y;
+  dxU(1,1) = -2*sin(t*w_)*x*y;
+  
+  //dxU(0,1) = 1;
+  
   return dxU;
+}
+Vector traction(Vector const& X, Vector const& normal, double t, int tag)
+{
+  Vector T(Vector::Zero(X.size()));
+
+  //T(0) = -pressure_exact(X,t,tag);
+  //T(1) = muu(tag)*(cos(w_*t) + sin(w_*t));
+
+  Tensor dxU(grad_u_exact(X,t,tag));
+  Tensor I(Tensor::Identity(X.size(),X.size()));
+
+  //T = (- pressure_exact(X,t,tag)*I +  muu(tag)*(dxU + dxU.transpose()))*normal;
+
+  return T;
 }
 
 Vector solid_normal(Vector const& X, double t, int tag)
@@ -2326,22 +2417,22 @@ Vector solid_normal(Vector const& X, double t, int tag)
   double y = X(1);
   double z = X(2);
   
-  if (tag == 2) { // contact line
-    if (x < 1.e-9)
-      N(0) = 1;
-    else if (y < 1.e-9)
-      N(1) = 1;
-    else if (z < 1.e-9)
-      N(2) = 1;
-    return N;
-  }
+  //if (tag == 2) { // contact line
+  //  if (x < 1.e-9)
+  //    N(0) = 1;
+  //  else if (y < 1.e-9)
+  //    N(1) = 1;
+  //  else if (z < 1.e-9)
+  //    N(2) = 1;
+  //  return N;
+  //}
   
   if (tag == 4)
-    N(1) = 1;
-  else if (tag == 6 )
     N(0) = 1;
-  else
+  else if (tag == 6 )
     N(2) = 1;
+  else
+    N(1) = 1;
   
   return N;
 }
@@ -2352,17 +2443,15 @@ Vector solid_veloc(Vector const& X, double t, int tag)
   return N;
 }
 
-
 Vector u_initial(Vector const& X, int tag)
 {
-  Vector r(Vector::Zero(X.size()));
   return u_exact(X,0,tag);
 }
 double p_initial(Vector const& X, int tag)
 {
-  return 0*pressure_exact(X,0,tag);
-
+  return pressure_exact(X,0,tag);
 }
+
 
 Vector v_exact(Vector const& X, double , int ) //(X,t,tag)
 {
@@ -3159,5 +3248,213 @@ Tensor feature_proj(Vector const& X, double t, int tag)
   return Tensor::Zero(2,2);
 }
 
+#endif
+
+// ZETA3D
+#if (false)
+
+double const w_ = 1;
+double const a__= 1;
+
+
+double pho(Vector const& X, int tag)
+{
+  return 1.0;
+}
+double cos_theta0()
+{
+  return 0.0;
+}
+
+double zeta(double u_norm, double angle)
+{
+  return 0*5.e-1;
+}
+
+double beta_diss()
+{
+  return 0*1.e-4;
+}
+
+double gama(Vector const& X, double t, int tag)
+{
+  return 0;
+}
+double muu(int tag)
+{
+  return  1.;
+}
+Vector force(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+
+  Vector f(Vector::Zero(X.size()));
+  //Tensor dxU(grad_u_exact(X,t,tag));
+
+  
+  //f(0) = w_*cos(t*w_)*y+(1-w_*sin(t*w_))*x+cos(t*w_);
+  //f(1) = (w_*sin(t*w_)+1)*y+w_*cos(t*w_)*x+sin(t*w_);
+  
+  f(0) = pow(sin(t*w_),2)*pow(x,3)*pow(y,2)+(w_*cos(t*w_)*pow(x,2)-2*sin(t*w_))*y+2*cos(t*w_)*x;
+  f(1) = pow(sin(t*w_),2)*pow(x,2)*pow(y,3)-w_*cos(t*w_)*x*pow(y,2)+2*sin(t*w_)*y+2*sin(t*w_)*x;
+  
+  //f(0) = pow(sin(t*w_),2)*pow(x,3)*pow(y,2)+(w_*cos(t*w_)*pow(x,2)-2*sin(t*w_))*y+2*cos(t*w_)*x;
+  //f(1) = pow(sin(t*w_),2)*pow(x,2)*pow(y,3)-w_*cos(t*w_)*x*pow(y,2)+2*sin(t*w_)*y+2*sin(t*w_)*x;
+  
+  return f;
+}
+Vector u_exact(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+
+  Vector v(Vector::Zero(X.size()));
+
+  //v(0) =  x*cos(w_*t) + y*sin(w_*t);
+  //v(1) = -y*cos(w_*t) + x*sin(w_*t);
+  
+  v(0) =  x*x*y*sin(w_*t);
+  v(1) = -x*y*y*sin(w_*t);
+  
+  //v(0) =  x*x*y*sin(w_*t);
+  //v(1) = -x*y*y*sin(w_*t);
+  
+  
+  return v;
+}
+double pressure_exact(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+
+  //return  x*cos(w_*t) + y*sin(w_*t);
+  return  x*x*cos(w_*t) + y*y*sin(w_*t);
+  //return x*x;
+}
+Vector grad_p_exact(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+  Vector dxP(Vector::Zero(X.size()));
+  //dxP(0) = cos(w_*t);
+  //dxP(1) = sin(w_*t);
+
+  dxP(0) = 2.*x*cos(w_*t);
+  dxP(1) = 2.*y*sin(w_*t);
+
+  return dxP;
+}
+Tensor grad_u_exact(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+  Tensor dxU(Tensor::Zero(X.size(), X.size()));
+
+  //dxU(0,0) = cos(w_*t);
+  //dxU(0,1) = sin(w_*t);
+  //dxU(1,0) = sin(w_*t);
+  //dxU(1,1) =-cos(w_*t);
+  
+  dxU(0,0) = 2*sin(t*w_)*x*y;
+  dxU(0,1) = sin(t*w_)*x*x;
+  dxU(1,0) = -sin(t*w_)*y*y;
+  dxU(1,1) = -2*sin(t*w_)*x*y;
+  
+  //dxU(0,0) = 2*sin(t*w_)*x*y;
+  //dxU(0,1) = sin(t*w_)*x*x;
+  //dxU(1,0) = -sin(t*w_)*y*y;
+  //dxU(1,1) = -2*sin(t*w_)*x*y;
+  
+  //dxU(0,1) = 1;
+  
+  return dxU;
+}
+Vector traction(Vector const& X, Vector const& normal, double t, int tag)
+{
+  Vector T(Vector::Zero(X.size()));
+
+  //T(0) = -pressure_exact(X,t,tag);
+  //T(1) = muu(tag)*(cos(w_*t) + sin(w_*t));
+
+  Tensor dxU(grad_u_exact(X,t,tag));
+  Tensor I(Tensor::Identity(X.size(),X.size()));
+
+  T = (- pressure_exact(X,t,tag)*I +  muu(tag)*(dxU + dxU.transpose()))*normal;
+
+  return T;
+}
+
+Vector solid_normal(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+  
+  double x = X(0);
+  double y = X(1);
+  double z = X(2);
+  
+  //if (tag == 2) { // contact line
+  //  if (x < 1.e-9)
+  //    N(0) = 1;
+  //  else if (y < 1.e-9)
+  //    N(1) = 1;
+  //  else if (z < 1.e-9)
+  //    N(2) = 1;
+  //  return N;
+  //}
+  
+  if (tag == 4)
+    N(0) = 1;
+  else if (tag == 6 )
+    N(2) = 1;
+  else
+    N(1) = 1;
+  
+  return N;
+}
+
+Vector solid_veloc(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+  return N;
+}
+
+Vector u_initial(Vector const& X, int tag)
+{
+  return u_exact(X,0,tag);
+}
+double p_initial(Vector const& X, int tag)
+{
+  return pressure_exact(X,0,tag);
+}
+
+
+Vector v_exact(Vector const& X, double , int ) //(X,t,tag)
+{
+  Vector v(Vector::Zero(X.size()));
+  return v;
+}
+
+Tensor feature_proj(Vector const& X, double t, int tag)
+{
+  Tensor f(Tensor::Zero(X.size(), X.size()));
+  
+  Vector A = solid_normal(X,t,tag);
+  
+  if (tag == 7)
+  {
+    f(0,0) = 1;
+  }
+  else if (tag == 8)
+  {
+    f(1,1) = 1;
+  }
+  else
+  {
+    f(2,2) = 1;
+  }
+  
+  return f;
+}
 #endif
 

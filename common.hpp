@@ -381,7 +381,7 @@ public:
     }
   }
 
-  void pressureTimeCorrection(Vec &Vec_up_1, Vec &Vec_up_0, double a, double b);
+  void pressureTimeCorrection(Vec &Vec_up_0, Vec &Vec_up_1, double a, double b);
 
 
   double getMeshVolume();

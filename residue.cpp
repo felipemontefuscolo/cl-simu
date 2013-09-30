@@ -945,7 +945,8 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       is_surface = is_in(tag, interface_tags);
       is_solid   = is_in(tag, solid_tags);
 
-      if ((!is_neumann))
+      //if ((!is_neumann))
+      if ((!is_neumann) && (!is_surface) && (!is_solid))
       //PetscFunctionReturn(0);
         continue;
 
@@ -972,7 +973,6 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
       u_coefs_f_mid_trans = utheta*u_coefs_f_new_trans + (1.-utheta)*u_coefs_f_old_trans;
       x_coefs_f_mid_trans = utheta*x_coefs_f_new_trans + (1.-utheta)*x_coefs_f_old_trans;
-      x_coefs_f_mid_trans = x_coefs_f_old_trans + u_coefs_f_mid_trans*dt;
 
       FUloc.setZero();
       Aloc_f.setZero();
@@ -1038,15 +1038,16 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
           {
             for (int c = 0; c < dim; ++c)
             {
-              FUloc(i*dim + c) += JxW_mid *gama(Xqp,current_time,tag)*(dxphi_f(i,c) + (unsteady*dt) *dxU_f.row(c).dot(dxphi_f.row(i))); // correto
-              //FUloc(i*dim + c) += JxW_mid *gama(Xqp,current_time,tag)*dxphi_f(i,c);
+              //FUloc(i*dim + c) += JxW_mid *gama(Xqp,current_time,tag)*(dxphi_f(i,c) + (unsteady*dt) *dxU_f.row(c).dot(dxphi_f.row(i))); // correto
+              FUloc(i*dim + c) += JxW_mid *gama(Xqp,current_time,tag)*dxphi_f(i,c);
+              //FUloc(i*dim + c) += JxW_mid *gama(Xqp,current_time,tag)*normal(c)* phi_f[qp][i];
               //for (int d = 0; d < dim; ++d)
               //  FUloc(i*dim + c) += JxW_mid * gama(Xqp,current_time,tag)* ( (c==d?1:0) - noi(c)*noi(d) )* dxphi_f(i,d) ;
               //FUloc(i*dim + c) += JxW_mid * gama(Xqp,current_time,tag)* ( unsteady*dt *dxU_f.row(c).dot(dxphi_f.row(i)));
             }
           }
 
-          if (true) // semi-implicit term
+          if (false) // semi-implicit term
           {
             for (int i = 0; i < n_dofs_u_per_facet/dim; ++i)
               for (int j = 0; j < n_dofs_u_per_facet/dim; ++j)
@@ -1097,6 +1098,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
   // LOOP NAS FACES DO CONTORNO (free surface)
   //~ FEP_PRAGMA_OMP(parallel default(none) shared(Vec_up_k,Vec_fun,cout))
+  if (false)
   {
     typedef ead::DFad<double, 30>      adouble;
     typedef marray::Array<adouble, 2>  AMatrix;
@@ -1207,7 +1209,10 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
       VecGetValues(Vec_up_k ,   mapU_f.size(), mapU_f.data(), dofs_petsc.data());
       for (int k = 0; k < u_coefs_f_new.size(); ++k)
+      {
         u_coefs_f_new[k].val() = dofs_petsc[k];
+        u_coefs_f_new[k].setDiff(k, n_loc_unks);
+      }
 
       // get nodal coordinates of the old and new cell
       mesh->getFacetNodesId(&*facet, facet_nodes.data());
@@ -1216,8 +1221,8 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
         u_coefs_f_mid[k] = utheta*u_coefs_f_new[k] + (1.-utheta)*u_coefs_f_old[k];
 
       for (int k = 0; k < x_coefs_f_mid.size(); ++k)
-        x_coefs_f_mid[k] = utheta*x_coefs_f_new[k] + (1.-utheta)*x_coefs_f_old[k];
-        //x_coefs_f_mid[k] = u_coefs_f_old[k]*dt/2. + x_coefs_f_old[k];
+        //x_coefs_f_mid[k] = utheta*x_coefs_f_new[k] + (1.-utheta)*x_coefs_f_old[k];
+        x_coefs_f_mid[k] = (u_coefs_f_new[k])*dt/2. + x_coefs_f_old[k];
   
       //x_coefs_f_mid = x_coefs_f_old + u_coefs_f_mid*dt;
 
@@ -1309,6 +1314,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
             {
               //FUloc(i*dim + c) += JxW_mid *gama(Xqp,current_time,tag)*(dxphi_f(i,c) + (unsteady*dt) *dxU_f.row(c).dot(dxphi_f.row(i))); // correto
               FUloc(i*dim + c) += JxW_mid *gama(Vector(),current_time,tag)*dxphi_f(i,c);
+              //FUloc(i*dim + c) += u_coefs_f_new[i*dim + c];
               //for (int d = 0; d < dim; ++d)
               //  FUloc(i*dim + c) += JxW_mid * gama(Xqp,current_time,tag)* ( (c==d?1:0) - noi(c)*noi(d) )* dxphi_f(i,d) ;
               //FUloc(i*dim + c) += JxW_mid * gama(Xqp,current_time,tag)* ( unsteady*dt *dxU_f.row(c).dot(dxphi_f.row(i)));
@@ -1355,20 +1361,24 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       
       for (int i = 0; i < FUloc.dim(0); ++i) {
         FUloc(i) = 0.;
-        for (int j = 0; j < FUloc_tmp.dim(0); ++j)
+        for (int j = 0; j < FUloc_tmp.dim(0); ++j) {
           FUloc(i) += Prj(i,j)*FUloc_tmp(j);
+        }
       }
       
-      for (int i = 0; i < Aloc_f_tmp.dim(0); ++i)
-        for (int j = 0; j < Aloc_f_tmp.dim(1); ++j)
+      for (int i = 0; i < Aloc_f_tmp.dim(0); ++i) {
+        for (int j = 0; j < Aloc_f_tmp.dim(1); ++j) {
           Aloc_f_tmp(i,j) = FUloc(i).dx(j);
+        }
+      }
       
       for (int i = 0; i < Aloc_f.dim(0); ++i)
         for (int j = 0; j < Aloc_f.dim(1); ++j) {
           Aloc_f(i,j) = 0.;
           for (int k = 0; k < Aloc_f_tmp.dim(1); ++k)
-            Aloc_f(i,j) = Aloc_f_tmp(i,k)*Prj(k,j);
+            Aloc_f(i,j) += Aloc_f_tmp(i,k)*Prj(k,j);
         }
+
 
       for (int i = 0; i < FUloc.size(); ++i)
         floc_petsc[i] = FUloc(i).val();
