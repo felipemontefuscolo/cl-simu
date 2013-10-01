@@ -3292,6 +3292,7 @@ Vector force(Vector const& X, double t, int tag)
   Vector f(Vector::Zero(X.size()));
   //Tensor dxU(grad_u_exact(X,t,tag));
 
+  //f(0) = 70*cos(70*t);
   
   //f(0) = w_*cos(t*w_)*y+(1-w_*sin(t*w_))*x+cos(t*w_);
   //f(1) = (w_*sin(t*w_)+1)*y+w_*cos(t*w_)*x+sin(t*w_);
@@ -3311,6 +3312,8 @@ Vector u_exact(Vector const& X, double t, int tag)
 
   Vector v(Vector::Zero(X.size()));
 
+  //v(0) = sin(70*t);
+
   //v(0) =  x*cos(w_*t) + y*sin(w_*t);
   //v(1) = -y*cos(w_*t) + x*sin(w_*t);
   
@@ -3328,6 +3331,7 @@ double pressure_exact(Vector const& X, double t, int tag)
   double x = X(0);
   double y = X(1);
 
+  //return sin(70*t);
   //return  x*cos(w_*t) + y*sin(w_*t);
   return  x*x*cos(w_*t) + y*y*sin(w_*t);
   //return x*x;

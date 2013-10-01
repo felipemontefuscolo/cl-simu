@@ -1567,19 +1567,17 @@ PetscErrorCode AppCtx::solveTimeProblem()
       setUPInitialGuess();
       ierr = SNESSolve(snes,PETSC_NULL,Vec_up_1);        CHKERRQ(ierr);
     }
-    if (plot_exact_sol)
+    if (time_step == 0)
     {
-      if (time_step == 0)
-      {
-        pressureTimeCorrection(Vec_up_0, Vec_up_1, 0., 1); // press(n) = press(n+1/2) - press(n-1/2)
-        if (maxts <= 1)
-          computeError(Vec_x_0, Vec_up_0,current_time);
-      }
-      else
-      {
-        pressureTimeCorrection(Vec_up_0, Vec_up_1, .5, .5); // press(n) = press(n+1/2) - press(n-1/2)
+      pressureTimeCorrection(Vec_up_0, Vec_up_1, 0., 1); // press(n) = press(n+1/2) - press(n-1/2)
+      if (plot_exact_sol && maxts <= 1)
         computeError(Vec_x_0, Vec_up_0,current_time);
-      }
+    }
+    else
+    {
+      pressureTimeCorrection(Vec_up_0, Vec_up_1, .5, .5); // press(n) = press(n+1/2) - press(n-1/2)
+      if (plot_exact_sol)
+        computeError(Vec_x_0, Vec_up_0,current_time);
     }
 
     if ((time_step%print_step)==0 || time_step == (maxts-1))
