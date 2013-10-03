@@ -945,8 +945,8 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       is_surface = is_in(tag, interface_tags);
       is_solid   = is_in(tag, solid_tags);
 
-      //if ((!is_neumann))
-      if ((!is_neumann) && (!is_surface) && (!is_solid))
+      if ((!is_neumann))
+      //if ((!is_neumann) && (!is_surface) && (!is_solid))
       //PetscFunctionReturn(0);
         continue;
 
@@ -1098,7 +1098,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
   // LOOP NAS FACES DO CONTORNO (free surface)
   //~ FEP_PRAGMA_OMP(parallel default(none) shared(Vec_up_k,Vec_fun,cout))
-  if (false)
+  if (true)
   {
     typedef ead::DFad<double, 30>      adouble;
     typedef marray::Array<adouble, 2>  AMatrix;
@@ -1221,8 +1221,8 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
         u_coefs_f_mid[k] = utheta*u_coefs_f_new[k] + (1.-utheta)*u_coefs_f_old[k];
 
       for (int k = 0; k < x_coefs_f_mid.size(); ++k)
-        //x_coefs_f_mid[k] = utheta*x_coefs_f_new[k] + (1.-utheta)*x_coefs_f_old[k];
-        x_coefs_f_mid[k] = (u_coefs_f_new[k])*dt/2. + x_coefs_f_old[k];
+        x_coefs_f_mid[k] = utheta*x_coefs_f_new[k] + (1.-utheta)*x_coefs_f_old[k];
+        //x_coefs_f_mid[k] = (u_coefs_f_new[k])*dt + x_coefs_f_old[k];
   
       //x_coefs_f_mid = x_coefs_f_old + u_coefs_f_mid*dt;
 

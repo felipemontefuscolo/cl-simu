@@ -48,7 +48,7 @@ inline double sign(double a) {a<0 ? -1 : 1;};
 #define TRACO          18
 #define RUSSA_SIN2D    19
 
-#define PROBLEM_TYPE 16
+#define PROBLEM_TYPE 99
 
 
 #if (PROBLEM_TYPE==CAVITY_2D_3D)
@@ -763,7 +763,7 @@ Vector solid_veloc(Vector const& X, double t, int tag)
 #endif
 
 // OSCI_BB 3D
-#if (true)
+#if (false)
 double pho(Vector const& X, int tag)
 {
   return 1.0;
@@ -1664,7 +1664,7 @@ Tensor feature_proj(Vector const& X, double t, int tag)
 #endif
 
 // BOLHAS
-#if (false)
+#if (true)
 
 
 double pho(Vector const& X, int tag)
@@ -1699,7 +1699,7 @@ double muu(int tag)
   if (tag == 200)
     return 1.e-3;
   else
-    return 3.75e-4*800.;
+    return 0.3;
   //return 1;
 }
 Vector force(Vector const& X, double t, int tag)
@@ -1808,8 +1808,8 @@ Vector v_exact(Vector const& X, double t, int tag) //(X,t,tag)
   //v(0) = +0.1*(  1 );//*(X(0)+0.5)*(X(0)-0.5)/2.;
   //v(1) = +0.1*(  0 );//*(X(1)+0.5)*(X(1)-0.5)/2.;
   //return v * (tag!=1 && tag!=2);
-  v(0) = t*(1-x*x)*(1+y)/4.;
-  v(1) = t*(1-y*y)*(x + t*(1-x*x)/32. + 1)/4.;
+  //v(0) = t*(1-x*x)*(1+y)/4.;
+  //v(1) = t*(1-y*y)*(x + t*(1-x*x)/32. + 1)/4.;
   return v;
   //return u_exact(X,t,tag);
 }
