@@ -396,7 +396,8 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
   if (flg_fout)
     filename_out.assign(foutaux);
 
-  if (neumann_tags.size() + interface_tags.size() == 0 || force_pressure)
+  //if (neumann_tags.size() + interface_tags.size() == 0 || force_pressure)
+  if (force_pressure)
   {
     full_diriclet = PETSC_TRUE;
     force_pressure = PETSC_TRUE;
@@ -1354,6 +1355,7 @@ PetscErrorCode AppCtx::setInitialConditions()
 
   if (ale)
   {
+    setUPInitialGuess();
     printf("Initial conditions:\n");
     for (int i = 0; i < 10; ++i)
     {
@@ -1361,7 +1363,7 @@ PetscErrorCode AppCtx::setInitialConditions()
       // * SOLVE THE SYSTEM *
       if (solve_the_sys)
       {
-        setUPInitialGuess();
+        //setUPInitialGuess();
         ierr = SNESSolve(snes,PETSC_NULL,Vec_up_1);  CHKERRQ(ierr);
       }
       // * SOLVE THE SYSTEM *

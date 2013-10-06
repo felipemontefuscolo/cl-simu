@@ -1,15 +1,15 @@
-#PBS -N osc07
-#PBS -l nodes=1:ppn=8:octo32
+#PBS -N usc04
+#PBS -l nodes=1:ppn=8:hexadeca
 #PBS -o /cluster/felipe.mt87/err1
 #PBS -e /cluster/felipe.mt87/err2
 
-export TT=0.00390625e-3
-export TMP_DIR=/temp/felipe.mt87/osc$TT
+export TT=0.03125e-3
+export TMP_DIR=/temp/felipe.mt87/usc$TT
 
 export OUT_DIR=/cluster/felipe.mt87/cluster_out
-export OUT_NAME=osc_07.txt
+export OUT_NAME=usc_04.txt
 export MSH_IN=/cluster/felipe.mt87/mef/cl-simu/results/osc_drop/3d/drop.msh
-export VTK_OUT=osc_07.vtk
+export VTK_OUT=usc_04.vtk
 
 
 mkdir -p $TMP_DIR 
@@ -30,7 +30,7 @@ export GOMP_CPU_AFFINITY=0-7
 rm -f main
 rm -f args
 
-cp ContactHistory $OUT_DIR/osc_history$TT
+cp ContactHistory $OUT_DIR/usc_history$TT
 cp -r $TMP_DIR/* $OUT_DIR
 
 rm -rf $TMP_DIR
