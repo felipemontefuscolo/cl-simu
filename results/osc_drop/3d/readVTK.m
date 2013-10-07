@@ -69,7 +69,7 @@ Rtable = [1       ,  0    , 0  , 0    , 0    ;
 pref = zeros(size(P(:,end)));
 vref = zeros(size(V(:,end)));
 
-Npts = 1;
+Npts = 5;
 
 for k=1:min(ncols,Npts)
   pref = pref + Rtable(min(ncols,Npts),k)*P(:,end-k+1);

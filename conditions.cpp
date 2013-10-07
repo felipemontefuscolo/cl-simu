@@ -3529,8 +3529,8 @@ Vector force(Vector const& X, double t, int tag)
   //f(0) = w_*cos(t*w_)*y+(1-w_*sin(t*w_))*x+cos(t*w_);
   //f(1) = (w_*sin(t*w_)+1)*y+w_*cos(t*w_)*x+sin(t*w_);
   
-  /////f(0) = pow(sin(t*w_),2)*pow(x,3)*pow(y,2)+(w_*cos(t*w_)*pow(x,2)-2*sin(t*w_))*y+2*cos(t*w_)*x;
-  /////f(1) = pow(sin(t*w_),2)*pow(x,2)*pow(y,3)-w_*cos(t*w_)*x*pow(y,2)+2*sin(t*w_)*y+2*sin(t*w_)*x;
+  //f(0) = pow(sin(t*w_),2)*pow(x,3)*pow(y,2)+(w_*cos(t*w_)*pow(x,2)-2*sin(t*w_))*y+2*cos(t*w_)*x;
+  //f(1) = pow(sin(t*w_),2)*pow(x,2)*pow(y,3)-w_*cos(t*w_)*x*pow(y,2)+2*sin(t*w_)*y+2*sin(t*w_)*x;
   f(0) = -1;
 
 
@@ -3569,6 +3569,8 @@ double pressure_exact(Vector const& X, double t, int tag)
   //return  x*cos(w_*t) + y*sin(w_*t);
   //return  x*x*cos(w_*t) + y*y*sin(w_*t);
   //return x*x;
+  
+  
   return 0;
 }
 Vector grad_p_exact(Vector const& X, double t, int tag)
@@ -3579,8 +3581,8 @@ Vector grad_p_exact(Vector const& X, double t, int tag)
   //dxP(0) = cos(w_*t);
   //dxP(1) = sin(w_*t);
 
-  dxP(0) = 2.*x*cos(w_*t);
-  dxP(1) = 2.*y*sin(w_*t);
+  //dxP(0) = 2.*x*cos(w_*t);
+  //dxP(1) = 2.*y*sin(w_*t);
 
   return dxP;
 }

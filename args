@@ -112,7 +112,7 @@ zeta3d       dir_tags 1 triple_tags 2 interf_tags 3 solid_tags 4,5,6 feature_tag
 zeta3d       neum_tags 1,2,3,4,5,6,7,8,9 interf_tags 3
 half2d:      dir_tags 1 interf_tags 2 solid_tags 3 triple_tags 21 feature_tags 4,22
 bolhas       dir_tags 33 interf_tags 5 solid_tags 1,2,3 neum_tags 4
-half_osc3ds  interf_tags 3 -feature_tags 5,6,8,1
+half_osc3ds  interf_tags 3 feature_tags 5,6,8,1
 
 ############################################################################
 
