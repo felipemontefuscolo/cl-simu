@@ -1,14 +1,14 @@
 options_left
 -dim 3 				        # cell dimension (= space dimension)
-dt 0.125e-6 0.0625e-3 0.03125e-3 0.015625e-3 0.0078125e-3 0.00390625e-3 # time step 4 2 1 0.5 0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04 4.8828125e-04 2.44140625e-04 1.220703125e-04
--finaltime 5e-1           # the simulation ends at this time.
+dt 0.5e-4 0.0625e-3 0.03125e-3 0.015625e-3 0.0078125e-3 0.00390625e-3 # time step 4 2 1 0.5 0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04 4.8828125e-04 2.44140625e-04 1.220703125e-04
+-finaltime 2          # the simulation ends at this time.
 -maxts -2              # maximum number of time steps
 -renumber_dofs 0        # dofs renumbering
--print_step 99999999999999 1          # print step
+-print_step 9999999999999 1          # print step
 -has_convec 1           # convective term: true or false CONSIDERE COLOCAR utheta=1 se desativar isto.
 -unsteady   1           # steady or unsteady problem
 -boundary_smoothing 0
--force_mesh_velocity 1  # imposes the mesh velocity of boundary grid
+-force_mesh_velocity 0  # imposes the mesh velocity of boundary grid
 -nonlinear_elasticity 0 # non-linear term in the elasticity problem
 -mesh_adapt 0           # 1 to enable mesh adaption
 -fprint_ca 1            # print contact angle at file ContactHistory
@@ -38,8 +38,8 @@ pc_composite_pcs ilu,ilu
 -ksp_type gmres preonly gmres preonly   # (one of) preonly bcgs gmres cg cgne nash stcg gltr richardson chebychev tcqmr ibcgs bcgsl cgs tfqmr cr lsqr qcg bicg fgmres minres symmlq lgmres lcd broyden gcr (KSPSetType)
 ksp_initial_guess_nonzero 1       # não usar com precond asm+lu, alias nao usar nunca (talvez um erro da versão dev????)
 ksp_gmres_restart 300
-pc_factor_shift_type NONZERO
-pc_factor_shift_amount 1.e-12
+-pc_factor_shift_type NONZERO
+-pc_factor_shift_amount 1.e-12
 pc_factor_mat_ordering_type natural    # natural nd 1wd rcm qmd rowlength flow (PCFactorSetMatOrderingType)
 -pc_factor_reuse_ordering 1
 pc_factor_nonzeros_along_diagonal 1.e-10
@@ -104,7 +104,7 @@ couette      dir_tags 1,2 neum_tags 1,2
 pseudo_osc   neum_tags 2
 sloshing     dir_tags 5 interf_tags 2 solid_tags 3,4 triple_tags 20,21
 gerbeau:     interf_tags 3 solid_tags 21,22,23,24,25,26  periodic_tags 4,5 triple_tags 11,12,13,14
-half osc     interf_tags 2 solid_tags 3,4 dir_tags 5
+half osc     interf_tags 2 feature_tags 3,4,5
 micro        interf_tags 3,4 solid_tags 20,21 triple_tags 16,17,18,19
 pseudo_osc   dir_tags 2 neum_tags 3
 traco        dir_tags 1,2 neum_tags 1,2
@@ -112,14 +112,14 @@ zeta3d       dir_tags 1 triple_tags 2 interf_tags 3 solid_tags 4,5,6 feature_tag
 zeta3d       neum_tags 1,2,3,4,5,6,7,8,9 interf_tags 3
 half2d:      dir_tags 1 interf_tags 2 solid_tags 3 triple_tags 21 feature_tags 4,22
 bolhas       dir_tags 33 interf_tags 5 solid_tags 1,2,3 neum_tags 4
-half_osc3ds  interf_tags 3 feature_tags 5,6,8,1
+half_osc3d   -interf_tags 3 -feature_tags 5,6,8,1
 
 ############################################################################
 
--function_space 1 # P1P1 (or Q1Q1) GLS stabilization
+function_space 1 # P1P1 (or Q1Q1) GLS stabilization
 function_space 2 # P1+P1 with bubble condensation
 function_space 3 # P2+Pm1 with bubble condensation and pressure gradient elimination
-function_space 4 # P2P1 (or Q2Q1)
+-function_space 4 # P2P1 (or Q2Q1)
 function_space 5 # P1+P1
 function_space 6 # P2P0
 function_space 7 # P2+Pm1 full
@@ -190,7 +190,10 @@ fout results/couette/2d/mesh/couette.vtk
 fin  results/bolhas/santiago.msh
 fout results/bolhas/test.vtk
 
-dt           1e-2
+fin  /cluster/felipe.mt87/mef/cl-simu/results/osc_drop/3d/drop.msh
+fout /cluster/felipe.mt87/mef/cl-simu/results/osc_drop/3d/drop.vtk
+
+dt           1e-1
 dt         0.5e-2 
 dt        0.25e-2            # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04
 dt       0.125e-2            # time step   0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04

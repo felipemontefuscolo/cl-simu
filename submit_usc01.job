@@ -1,9 +1,9 @@
-#PBS -N usc01
-#PBS -l nodes=1:ppn=8:octo32
+#PBS -N kinosagi01
+#PBS -l nodes=1:ppn=8:octo
 #PBS -o /cluster/felipe.mt87/err1
 #PBS -e /cluster/felipe.mt87/err2
 
-export TT=0.25e-3
+export TT=0.5e-4
 export TMP_DIR=/temp/felipe.mt87/usc$TT
 
 export OUT_DIR=/cluster/felipe.mt87/cluster_out

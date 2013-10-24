@@ -3,12 +3,12 @@
 #PBS -o /cluster/felipe.mt87/err1
 #PBS -e /cluster/felipe.mt87/err2
 
-export TT=0.015625e-0
+export TT=0.03125e-1
 export TMP_DIR=/temp/felipe.mt87/zeta$TT
 
 export OUT_DIR=/cluster/felipe.mt87/cluster_out
 export OUT_NAME=zeta_05.txt
-export MSH_IN=/cluster/felipe.mt87/mef/cl-simu/results/zeta3d/drop.msh
+export MSH_IN=/cluster/felipe.mt87/mef/cl-simu/results/osc_drop/2d/mesh/drop.msh
 export VTK_OUT=zeta_05.vtk
 
 
@@ -30,7 +30,7 @@ export GOMP_CPU_AFFINITY=0-7
 rm -f main
 rm -f args
 
-#cp ContactHistory $OUT_DIR/ContactHistory$TT
+cp ContactHistory $OUT_DIR/ContactHistory$TT
 cp -r $TMP_DIR/* $OUT_DIR
 
 rm -rf $TMP_DIR
