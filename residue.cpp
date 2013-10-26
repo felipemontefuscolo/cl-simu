@@ -1800,6 +1800,9 @@ void getProjectorBC(MatrixBase<Derived> & P, int n_nodes, int const* nodes, Vec 
   I.setIdentity();
   Z.setZero();
 
+  bool boundary_smoothing = app.boundary_smoothing;
+  //bool boundary_smoothing = false;
+
   // NODES
   for (int i = 0; i < n_nodes; ++i)
   {
@@ -1817,7 +1820,7 @@ void getProjectorBC(MatrixBase<Derived> & P, int n_nodes, int const* nodes, Vec 
     //else
     if (is_in(tag,solid_tags) )
     {
-      if (app.boundary_smoothing)
+      if (boundary_smoothing)
       {
         app.getNodeDofs(&*point, DH_MESH, VAR_M, dofs);
         VecGetValues(Vec_x_, dim, dofs, X.data());
@@ -1832,7 +1835,7 @@ void getProjectorBC(MatrixBase<Derived> & P, int n_nodes, int const* nodes, Vec 
     else
     if (is_in(tag,interface_tags))
     {
-      if (app.boundary_smoothing)
+      if (boundary_smoothing)
       {
         app.getNodeDofs(&*point, DH_MESH, VAR_M, dofs);
         VecGetValues(Vec_normal, dim, dofs, X.data());
@@ -1886,6 +1889,8 @@ PetscErrorCode AppCtx::formFunction_mesh(SNES /*snes_m*/, Vec Vec_v, Vec Vec_fun
     MatrixXd          v_coefs_c(nodes_per_cell, dim);
     MatrixXd          x_coefs_c_trans(dim, nodes_per_cell);
     MatrixXd          x_coefs_c(nodes_per_cell, dim);
+    MatrixXd          x_coefs_c_new_trans(dim, nodes_per_cell);
+    MatrixXd          x_coefs_c_new(nodes_per_cell, dim);
     MatrixXd          dxqsi_c(nodes_per_cell, dim);
     double            J, weight, JxW;
 
@@ -1918,6 +1923,10 @@ PetscErrorCode AppCtx::formFunction_mesh(SNES /*snes_m*/, Vec Vec_v, Vec Vec_fun
       /*  Pega os valores das variáveis nos graus de liberdade */
       VecGetValues(Vec_v ,  mapV_c.size(), mapV_c.data(), v_coefs_c.data());
       VecGetValues(Vec_x_0, mapV_c.size(), mapV_c.data(), x_coefs_c.data());
+      VecGetValues(Vec_x_1, mapV_c.size(), mapV_c.data(), x_coefs_c_new.data());
+
+      x_coefs_c += x_coefs_c_new;
+      x_coefs_c /= 2.;
 
       v_coefs_c_trans = v_coefs_c.transpose();
       x_coefs_c_trans = x_coefs_c.transpose();

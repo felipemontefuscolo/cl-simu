@@ -763,7 +763,7 @@ Vector solid_veloc(Vector const& X, double t, int tag)
 #endif
 
 // OSC_BB 2D
-#if (false)
+#if (true)
 double pho(Vector const& X, int tag)
 {
   return 1.0;
@@ -786,16 +786,16 @@ double beta_diss()
 
 double gama(Vector const& X, double t, int tag)
 {
-  return 1e-2;
+  return 0;
 }
 double muu(int tag)
 {
-  return 1e-3;//1./30.;
+  return 0.03;//1./30.;
 }
 Vector force(Vector const& X, double t, int tag)
 {
   Vector f (Vector::Zero(X.size()));
-  f(0) = 0;
+  f(1) = 10;
   return f;
 }
 Vector u_exact(Vector const& X, double t, int tag)
@@ -840,9 +840,18 @@ Vector solid_normal(Vector const& X, double t, int tag)
 }
 
 
-Vector v_exact(Vector const& X, double , int ) //(X,t,tag)
+Vector v_exact(Vector const& X, double t, int ) //(X,t,tag)
 {
   Vector N(Vector::Zero(X.size()));
+  double x = X(0);
+  double y = X(1);
+  
+  //N(0) = cos(x*t);
+  //N(1) = sin(10*y*t);
+  
+  N(0) = 10*x*exp(t);
+  N(1) = 5*y*exp(t);
+  
   return N;
 }
 
@@ -856,19 +865,12 @@ Tensor feature_proj(Vector const& X, double t, int tag)
 {
   Tensor f(Tensor::Zero(X.size(), X.size()));
   
-  Vector A = solid_normal(X,t,tag);
 
-
-  if (tag == 3)
+  if (tag == 5)
   {
     f(1,1) = 1;
   }
-  else if (tag == 5)
-  {
-    f(0,0) = 0;
-    f(1,1) = 0;
-  }
-  else if (tag == 4)
+  else if (tag == 6)
   {
     f(0,0) = 1;
   }
@@ -1298,7 +1300,7 @@ Vector solid_veloc(Vector const& X, double t, int tag)
 // COUETTE
 #if (false)
 
-double const w_ = 1;
+double const w_ = 0;
 double const a__= 1;
 
 
@@ -1345,11 +1347,11 @@ Vector force(Vector const& X, double t, int tag)
   //f(1) = 2*t;
   //f(0) = -2.;
   //f(1) = 1;
-  //f(0) = w_*cos(t*w_)*y+(1-w_*sin(t*w_))*x+cos(t*w_);
-  //f(1) = (w_*sin(t*w_)+1)*y+w_*cos(t*w_)*x+sin(t*w_);
+  f(0) = w_*cos(t*w_)*y+(1-w_*sin(t*w_))*x+cos(t*w_);
+  f(1) = (w_*sin(t*w_)+1)*y+w_*cos(t*w_)*x+sin(t*w_);
   
-  f(0) = pow(sin(t*w_),2)*pow(x,3)*pow(y,2)+(w_*cos(t*w_)*pow(x,2)-2*sin(t*w_))*y+2*cos(t*w_)*x;
-  f(1) = pow(sin(t*w_),2)*pow(x,2)*pow(y,3)-w_*cos(t*w_)*x*pow(y,2)+2*sin(t*w_)*y+2*sin(t*w_)*x;
+  //f(0) = pow(sin(t*w_),2)*pow(x,3)*pow(y,2)+(w_*cos(t*w_)*pow(x,2)-2*sin(t*w_))*y+2*cos(t*w_)*x;
+  //f(1) = pow(sin(t*w_),2)*pow(x,2)*pow(y,3)-w_*cos(t*w_)*x*pow(y,2)+2*sin(t*w_)*y+2*sin(t*w_)*x;
   
   
   return f;
@@ -1361,10 +1363,10 @@ Vector u_exact(Vector const& X, double t, int tag)
 
   Vector v(Vector::Zero(X.size()));
 
-  //v(0) =  x*cos(w_*t) + y*sin(w_*t);
-  //v(1) = -y*cos(w_*t) + x*sin(w_*t);
-  v(0) = x*x*y*sin(w_*t);
-  v(1) = -x*y*y*sin(w_*t);
+  v(0) =  x*cos(w_*t) + y*sin(w_*t);
+  v(1) = -y*cos(w_*t) + x*sin(w_*t);
+  //v(0) = x*x*y*sin(w_*t);
+  //v(1) = -x*y*y*sin(w_*t);
   
   
   return v;
@@ -1374,8 +1376,8 @@ double pressure_exact(Vector const& X, double t, int tag)
   double x = X(0);
   double y = X(1);
 
-  //return  x*cos(w_*t) + y*sin(w_*t);
-  return  x*x*cos(w_*t) + y*y*sin(w_*t);
+  return  x*cos(w_*t) + y*sin(w_*t);
+  //return  x*x*cos(w_*t) + y*y*sin(w_*t);
   //return 0;
 }
 Vector grad_p_exact(Vector const& X, double t, int tag)
@@ -1402,15 +1404,15 @@ Tensor grad_u_exact(Vector const& X, double t, int tag)
   //dxU(1,0) = sin(w_*t);
   //dxU(1,1) = 0;
   
-  //dxU(0,0) = cos(w_*t);
-  //dxU(0,1) = sin(w_*t);
-  //dxU(1,0) = sin(w_*t);
-  //dxU(1,1) =-cos(w_*t);
+  dxU(0,0) = cos(w_*t);
+  dxU(0,1) = sin(w_*t);
+  dxU(1,0) = sin(w_*t);
+  dxU(1,1) =-cos(w_*t);
   
-  dxU(0,0) = 2.*sin(t*w_)*x*y;
-  dxU(0,1) = sin(t*w_)*x*x;
-  dxU(1,0) = -sin(t*w_)*y*y;
-  dxU(1,1) = -2.*sin(t*w_)*x*y;
+  //dxU(0,0) = 2.*sin(t*w_)*x*y;
+  //dxU(0,1) = sin(t*w_)*x*x;
+  //dxU(1,0) = -sin(t*w_)*y*y;
+  //dxU(1,1) = -2.*sin(t*w_)*x*y;
   
   //dxU(0,1) = 1;
   
@@ -1459,8 +1461,8 @@ Vector v_exact(Vector const& X, double t, int tag) //(X,t,tag)
   //return v * (tag!=1 && tag!=2);
   //v(0) = t*(1-x*x)*(1+y)/4.;
   //v(1) = t*(1-y*y)*(x + t*(1-x*x)/32. + 1)/4.;
-  v(0) = 50*( x*x*sin(w_*t) + y*y*cos(w_*t) );
-  v(1) = 50*(-y*x*sin(w_*t) + x*y*cos(w_*t) );
+  v(0) = 5*( x*x*sin(w_*t) + y*y*cos(w_*t) );
+  v(1) = 5*(-y*x*sin(w_*t) + x*y*cos(w_*t) );
   return v;
   //return u_exact(X,t,tag);
 }
@@ -3464,7 +3466,7 @@ Tensor feature_proj(Vector const& X, double t, int tag)
 
 // Esse deu certo!!!!!!!!!!!!
 // OSC_BB 3D
-#if (true)
+#if (false)
 double pho(Vector const& X, int tag)
 {
   return 1.0;
@@ -3573,6 +3575,118 @@ Tensor feature_proj(Vector const& X, double t, int tag)
   {
     f(2,2) = 1;
     f(1,1) = 1;
+  }
+
+  
+  return f;
+}
+
+
+#endif
+
+
+// OSC_BB 2D backup
+#if (false)
+double pho(Vector const& X, int tag)
+{
+  return 1.0;
+}
+
+double cos_theta0()
+{
+  return 0;
+}
+
+double zeta(double u_norm, double angle)
+{
+  return 0;
+}
+
+double beta_diss()
+{
+  return 0;
+}
+
+double gama(Vector const& X, double t, int tag)
+{
+  return .06;
+}
+double muu(int tag)
+{
+  return 0.03;//1./30.;
+}
+Vector force(Vector const& X, double t, int tag)
+{
+  Vector f (Vector::Zero(X.size()));
+  f(0) = 0;
+  return f;
+}
+Vector u_exact(Vector const& X, double t, int tag)
+{
+  return Vector::Zero(X.size());
+}
+Vector traction(Vector const& X, Vector const& normal, double t, int tag)
+{
+  return Vector::Zero(X.size());
+}
+double pressure_exact(Vector const& X, double t, int tag)
+{
+  return X.size()==2 ? 1 : 2;
+}
+Vector grad_p_exact(Vector const& X, double t, int tag)
+{
+  return Vector::Zero(X.size());
+}
+Tensor grad_u_exact(Vector const& X, double t, int tag)
+{
+  return Tensor::Zero(X.size(),X.size());
+}
+Vector u_initial(Vector const& X, int tag)
+{
+  return u_exact(X,0,tag);
+}
+double p_initial(Vector const& X, int tag)
+{
+  return pressure_exact(X,0,tag);
+}
+
+Vector solid_normal(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+
+  if (tag==6)
+    N(0) = 1;
+  else
+    N(1) = 1;
+
+  return N;
+}
+
+
+Vector v_exact(Vector const& X, double , int ) //(X,t,tag)
+{
+  Vector N(Vector::Zero(X.size()));
+  return N;
+}
+
+Vector solid_veloc(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+  return N;
+}
+
+Tensor feature_proj(Vector const& X, double t, int tag)
+{
+  Tensor f(Tensor::Zero(X.size(), X.size()));
+  
+
+  if (tag == 5)
+  {
+    f(1,1) = 1;
+  }
+  else if (tag == 6)
+  {
+    f(0,0) = 1;
   }
 
   

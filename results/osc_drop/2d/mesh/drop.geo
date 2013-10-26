@@ -2,14 +2,14 @@
 
 N = 40;      // numero de pontos
 R = 1;       // raio
-A0 = 0.02*R;   // primeiro modo
+A0 = 0.2*R;   // primeiro modo
 A1 = 0.0;    //  segundo modo
 A2 = 0.0;    //  terceiro modo  
 A3 = 0.0;    //  terceiro modo
 A4 = 0.0;
 //lc = R/30;  // densidade da malha
-lc = R/5;  // densidade da malha
-//lc = R/7;  // densidade da malha
+//lc = R/5;  // densidade da malha
+lc = R/3;  // densidade da malha
 
 //Point(1) = {L,0,0,lc};
 //Point(N) = {0,h,0,lc};
@@ -46,13 +46,13 @@ Rotate {{0, 0, 1}, {0, 0, 0}, 0*Pi/4} {
 }
 
 
-Physical Surface(6) = {5};
-Physical Line(2) = {1};    // surface
-Physical Line(3) = {2};   // solid
-Physical Line(4) = {3};   // solid
-Physical Point(3) = {N};  // triple
-Physical Point(4) = {1};  // triple
-Physical Point(5) = {N+1};   // dirichlet
+Physical Surface(16) = {5};
+Physical Line(3) = {1};    // surface
+Physical Line(5) = {2};   // solid
+Physical Line(6) = {3};   // solid
+Physical Point(5) = {N};  // triple
+Physical Point(6) = {1};  // triple
+Physical Point(1) = {N+1};   // dirichlet
 
 
 Reverse Surface { 5 };

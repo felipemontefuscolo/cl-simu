@@ -3,7 +3,7 @@
 
 N = 90;    // numero de pontos (NUMERO IMPAR!!!!)
 R = .5;     // raio
-A0 = 0.02;   // primeiro modo
+A0 = 0.2;   // primeiro modo
 A1 = 0.0;  //  segundo modo
 A2 = 0.0;  //  terceiro modo  
 A3 = 0.0;  //  terceiro modo

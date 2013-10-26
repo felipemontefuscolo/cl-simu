@@ -69,7 +69,7 @@ Rtable = [1       ,  0    , 0  , 0    , 0    ;
 pref = zeros(size(P(:,end)));
 vref = zeros(size(V(:,end)));
 
-Npts = 1;
+Npts = 3;
 
 for k=1:min(ncols,Npts)
   pref = pref + Rtable(min(ncols,Npts),k)*P(:,end-k+1);
@@ -95,29 +95,38 @@ end
 %pref = P(:,end);
 %vref = V(:,end);
 
-
-for k=1:size(P,2)
-
-  Ep(k) = norm(P(:,k) - pref,Inf);
-  Ev(k) = norm(V(:,k) - vref,Inf);
-
-end
-
-Ep=Ep';
-Ev=Ev';
-
-for k=1:length(Ep)-1
-
-  Op(k,1) = log2( Ep(k)/Ep(k+1) );
-  Ov(k,1) = log2( Ev(k)/Ev(k+1) );
-
-end
+if (0)
+  for k=1:size(P,2)
   
+    Ep(k) = norm(P(:,k) - pref,Inf);
+    Ev(k) = norm(V(:,k) - vref,Inf);
 
+  end
 
+  Ep=Ep';
+  Ev=Ev';
 
+  for k=1:length(Ep)-1
 
+    Op(k,1) = log2( Ep(k)/Ep(k+1) );
+    Ov(k,1) = log2( Ev(k)/Ev(k+1) );
 
+  end
+else
+
+  for k=1:size(P,2)-1
+    Ep(k) = norm(P(:,k+1) - P(:,k),Inf);
+    Ev(k) = norm(V(:,k+1) - V(:,k),Inf);
+  end
+
+  for k=1:length(Ep)-1
+
+    Op(k,1) = log2( Ep(k)/Ep(k+1) );
+    Ov(k,1) = log2( Ev(k)/Ev(k+1) );
+
+  end
+
+end
 
 
 

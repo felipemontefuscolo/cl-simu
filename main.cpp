@@ -1567,7 +1567,54 @@ PetscErrorCode AppCtx::solveTimeProblem()
     if (solve_the_sys)
     {
       setUPInitialGuess();
-      ierr = SNESSolve(snes,PETSC_NULL,Vec_up_1);        CHKERRQ(ierr);
+      
+      for (int kk = 0 ; kk < 1; kk++)
+      {
+        printf("\tIterations %d\n", kk);
+        
+        ierr = SNESSolve(snes,PETSC_NULL,Vec_up_1);        CHKERRQ(ierr);
+        
+        // update
+        if (false)
+        {
+          //double tt = time_step==0? dt : current_time;
+          //calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, Vec_v_mid, 0.0); // Euler (tem que ser esse no começo)
+          calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 0.5, Vec_v_mid, current_time); // Adams-Bashforth
+          // move the mesh
+          VecWAXPY(Vec_x_1, dt, Vec_v_mid, Vec_x_0); // Vec_x_1 = Vec_v_mid*dt + Vec_x_0
+
+          //compute normal for the next time step, at n+1/2
+          {
+            Vec Vec_x_mid;
+            int xsize;
+            double *xarray;
+            VecGetSize(Vec_x_0, &xsize);
+            VecGetArray(Vec_res, &xarray);
+            //prototipo no petsc-dev: VecCreateSeqWithArray(MPI_Comm comm,PetscInt bs,PetscInt n,const PetscScalar array[],Vec *V)
+            //VecCreateSeqWithArray(MPI_COMM_SELF, xsize, xarray, &Vec_x_mid);
+            VecCreateSeqWithArray(MPI_COMM_SELF, 1, xsize, xarray, &Vec_x_mid);
+            Assembly(Vec_x_mid);
+
+            VecCopy(Vec_x_0, Vec_x_mid);
+            VecAXPY(Vec_x_mid,1.,Vec_x_1);
+            VecScale(Vec_x_mid, 0.5);
+            getVecNormals(&Vec_x_mid, Vec_normal);
+
+            VecDestroy(&Vec_x_mid);
+            VecRestoreArray(Vec_res, &xarray);
+          }
+
+          //// initial guess for the next time step; u(n+1) = 2*u(n) - u(n-1)
+          //VecCopy(Vec_up_1, Vec_res);
+          //VecScale(Vec_res,2.);
+          //VecAXPY(Vec_res, -1., Vec_up_0);
+          //VecCopy(Vec_res, Vec_up_1); // u(n+1) = 2*u(n) - u(n-1)
+
+        }
+
+        
+        
+      }
     }
     if (time_step == 0)
     {

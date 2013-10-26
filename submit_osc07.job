@@ -1,4 +1,4 @@
-#PBS -N osc07
+#PBS -N again07
 #PBS -l nodes=1:ppn=8:dodeca
 #PBS -o /cluster/felipe.mt87/err1
 #PBS -e /cluster/felipe.mt87/err2

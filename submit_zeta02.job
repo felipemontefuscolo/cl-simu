@@ -3,7 +3,7 @@
 #PBS -o /cluster/felipe.mt87/err1
 #PBS -e /cluster/felipe.mt87/err2
 
-export TT=0.25e-1
+export TT=0.25e-3
 export TMP_DIR=/temp/felipe.mt87/zeta$TT
 
 export OUT_DIR=/cluster/felipe.mt87/cluster_out
