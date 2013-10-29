@@ -1563,19 +1563,22 @@ PetscErrorCode AppCtx::solveTimeProblem()
       computeError(Vec_x_0, Vec_up_0,current_time);
       break;
     }
+    
+    bool const full_implicit = false;
+    
     // * SOLVE THE SYSTEM *
     if (solve_the_sys)
     {
       setUPInitialGuess();
       
-      for (int kk = 0 ; kk < 4; kk++)
+      for (int kk = 0 ; kk < 1+3*full_implicit; kk++)
       {
         printf("\tIterations %d\n", kk);
         
         ierr = SNESSolve(snes,PETSC_NULL,Vec_up_1);        CHKERRQ(ierr);
         
         // update
-        if (true)
+        if (full_implicit)
         {
           //double tt = time_step==0? dt : current_time;
           //calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, Vec_v_mid, 0.0); // Euler (tem que ser esse no começo)
@@ -1716,9 +1719,14 @@ PetscErrorCode AppCtx::solveTimeProblem()
         } // end ts%1
       } // end mesh adapt
 
-
-      VecCopy(Vec_x_1, Vec_x_0);
-//      copyMesh2Vec(Vec_x_0);
+      if (full_implicit)
+        VecCopy(Vec_x_1, Vec_x_0);
+      else
+      {
+        VecScale(Vec_x_1, 2.0);
+        VecAXPY(Vec_x_1,-1.0,Vec_x_0);
+        copyMesh2Vec(Vec_x_0);
+      }
 
 
 
@@ -1727,11 +1735,13 @@ PetscErrorCode AppCtx::solveTimeProblem()
       ///////moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, current_time, Vec_x_1); // Adams-Bashforth
       /////////moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 0.5, current_time, Vec_x_1); // Alguma-coisa
       ///////calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, Vec_v_mid, current_time);
-//      calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, Vec_v_mid, current_time); // Adams-Bashforth
-//      //calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, Vec_v_mid, 0.0); // Euler
-//      // move the mesh
-//      VecWAXPY(Vec_x_1, dt, Vec_v_mid, Vec_x_0); // Vec_x_1 = Vec_v_mid*dt + Vec_x_0
-
+      if ( !full_implicit )
+      {
+        calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, Vec_v_mid, current_time); // Adams-Bashforth
+        //calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, Vec_v_mid, 0.0); // Euler
+        // move the mesh
+        VecWAXPY(Vec_x_1, dt, Vec_v_mid, Vec_x_0); // Vec_x_1 = Vec_v_mid*dt + Vec_x_0
+      }
 
 
       //compute normal for the next time step, at n+1/2
