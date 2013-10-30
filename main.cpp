@@ -1564,7 +1564,8 @@ PetscErrorCode AppCtx::solveTimeProblem()
       break;
     }
     
-    bool const full_implicit = false;
+    bool const full_implicit = true;
+    bool const try2 = false;
     
     // * SOLVE THE SYSTEM *
     if (solve_the_sys)
@@ -1721,6 +1722,13 @@ PetscErrorCode AppCtx::solveTimeProblem()
 
       if (full_implicit)
         VecCopy(Vec_x_1, Vec_x_0);
+      else if (try2)
+      {
+        VecWAXPY(Vec_x_1, dt, Vec_v_mid, Vec_x_0);
+        copyVec2Mesh(Vec_x_1);
+        VecAXPBY(Vec_x_1,-1.0, 2.0,Vec_x_0); // Vec_x_1 <- 2*Vec_x_1 - Vec_x_0
+        copyMesh2Vec(Vec_x_0);
+      }
       else
       {
         VecScale(Vec_x_1, 2.0);
@@ -1740,7 +1748,8 @@ PetscErrorCode AppCtx::solveTimeProblem()
         calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, Vec_v_mid, current_time); // Adams-Bashforth
         //calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, Vec_v_mid, 0.0); // Euler
         // move the mesh
-        VecWAXPY(Vec_x_1, dt, Vec_v_mid, Vec_x_0); // Vec_x_1 = Vec_v_mid*dt + Vec_x_0
+        if (!try2)
+          VecWAXPY(Vec_x_1, dt, Vec_v_mid, Vec_x_0); // Vec_x_1 = Vec_v_mid*dt + Vec_x_0
       }
 
 
