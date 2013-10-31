@@ -1564,7 +1564,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
       break;
     }
     
-    bool const full_implicit = true;
+    bool const full_implicit = false;
     bool const try2 = false;
     
     // * SOLVE THE SYSTEM *
@@ -2584,8 +2584,13 @@ void AppCtx::printContactAngle(bool _print)
 
   ofstream File("ContactHistory", ios::app);
 
-  if (plc!=NULL)
-  plc->getCoord(X.data(), dim);
+  plc = mesh->getNodePtr(0);
+  if (plc!=NULL && mesh->isVertex(plc))
+  {
+    int dofs[3];
+    dof_handler[DH_MESH].getVariable(VAR_M).getVertexDofs(dofs, &*plc);
+    VecGetValues(Vec_x_0,  dim, dofs, X.data());
+  }
   File.precision(12);
   File << current_time << " "
        << theta_min << " "
