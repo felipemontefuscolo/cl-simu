@@ -763,7 +763,7 @@ Vector solid_veloc(Vector const& X, double t, int tag)
 #endif
 
 // OSC_BB 2D
-#if (false)
+#if (true)
 double pho(Vector const& X, int tag)
 {
   return 1.0;
@@ -849,8 +849,8 @@ Vector v_exact(Vector const& X, double t, int ) //(X,t,tag)
   //N(0) = cos(x*t);
   //N(1) = sin(10*y*t);
   
-  N(0) = 10*x*exp(t);
-  N(1) = 5*y*exp(t);
+  //N(0) = 10*x*exp(t);
+  //N(1) = 5*y*exp(t);
   
   return N;
 }
@@ -3466,7 +3466,7 @@ Tensor feature_proj(Vector const& X, double t, int tag)
 
 // Esse deu certo!!!!!!!!!!!!
 // OSC_BB 3D
-#if (true)
+#if (false)
 double pho(Vector const& X, int tag)
 {
   return 1.0;

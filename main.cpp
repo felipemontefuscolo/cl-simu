@@ -251,6 +251,14 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
   PetscOptionsGetString(PETSC_NULL,"-fout",foutaux,PETSC_MAX_PATH_LEN-1,&flg_fout);
   PetscOptionsHasName(PETSC_NULL,"-help",&ask_help);
 
+  //is_bdf2 = PETSC_FALSE;
+  is_bdf2 = PETSC_TRUE;
+  if (is_bdf2 && utheta!=1)
+  {
+    cout << "ERROR:    BDF2 with utheta!=1" << endl;
+    throw;
+  }
+
   if (finaltime < 0)
     finaltime = maxts*dt;
   else
@@ -702,10 +710,20 @@ PetscErrorCode AppCtx::allocPetscObjs()
   ierr = VecSetSizes(Vec_up_1, PETSC_DECIDE, n_unknowns);              CHKERRQ(ierr);
   ierr = VecSetFromOptions(Vec_up_1);                                  CHKERRQ(ierr);
 
+  //Vec Vec_dup;
+  ierr = VecCreate(PETSC_COMM_WORLD, &Vec_dup);                       CHKERRQ(ierr);
+  ierr = VecSetSizes(Vec_dup, PETSC_DECIDE, n_unknowns);              CHKERRQ(ierr);
+  ierr = VecSetFromOptions(Vec_dup);                                  CHKERRQ(ierr);
+
   //Vec Vec_v_mid
   ierr = VecCreate(PETSC_COMM_WORLD, &Vec_v_mid);                  CHKERRQ(ierr);
   ierr = VecSetSizes(Vec_v_mid, PETSC_DECIDE, n_dofs_v_mesh);      CHKERRQ(ierr);
   ierr = VecSetFromOptions(Vec_v_mid);                             CHKERRQ(ierr);
+
+  //Vec Vec_v_1
+  ierr = VecCreate(PETSC_COMM_WORLD, &Vec_v_1);                  CHKERRQ(ierr);
+  ierr = VecSetSizes(Vec_v_1, PETSC_DECIDE, n_dofs_v_mesh);      CHKERRQ(ierr);
+  ierr = VecSetFromOptions(Vec_v_1);                             CHKERRQ(ierr);
 
   //Vec Vec_x_0;
   ierr = VecCreate(PETSC_COMM_WORLD, &Vec_x_0);                  CHKERRQ(ierr);
@@ -1542,7 +1560,38 @@ PetscErrorCode AppCtx::solveTimeProblem()
 
   printf("Num of time iterations (maxts): %d\n",maxts);
   printf("starting time loop . . . \n");
-  // WARNING: ADAMS-BASHFORTH IS NOT SELF STARTING
+  
+  // BDF2
+  if (is_bdf2)
+  {
+    current_time += dt;
+    time_step += 1;
+    VecCopy(Vec_up_1, Vec_dup);
+    VecAXPY(Vec_dup,-1.0,Vec_up_0); // Vec_dup -= Vec_up_0
+    VecScale(Vec_dup, 1./dt);
+
+    copyVec2Mesh(Vec_x_1);
+
+    VecScale(Vec_x_1, 2.0);
+    VecAXPY(Vec_x_1,-1.0,Vec_x_0);
+    copyMesh2Vec(Vec_x_0);
+
+    calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 2.0, Vec_v_1, current_time);
+
+    //VecWAXPY(Vec_x_1, dt, Vec_v_mid, Vec_x_0); // Vec_x_1 = Vec_v_mid*dt + Vec_x_0
+    // Vec_x_1 = Vec_x_0 + (2/3 Vec_v_1  + 1/3 Vec_v_mid) * dt
+    {
+      VecCopy(Vec_v_1, Vec_x_1);
+      VecScale(Vec_x_1, 2./3.);
+      VecAXPY(Vec_x_1, 1./3.,Vec_v_mid);
+      VecScale(Vec_x_1, dt);
+      VecAXPY(Vec_x_1,1.,Vec_x_0);
+    }
+
+    VecCopy(Vec_up_1, Vec_up_0);
+
+  }
+
   for(;;)
   {
 
@@ -1566,6 +1615,9 @@ PetscErrorCode AppCtx::solveTimeProblem()
     
     bool const full_implicit = false;
     bool const try2 = false;
+    
+    // BDF2
+    
     
     // * SOLVE THE SYSTEM *
     if (solve_the_sys)
@@ -1620,20 +1672,41 @@ PetscErrorCode AppCtx::solveTimeProblem()
         
       }
     }
-    if (time_step == 0)
+    if (is_bdf2)
     {
-      pressureTimeCorrection(Vec_up_0, Vec_up_1, 0., 1); // press(n) = press(n+1/2) - press(n-1/2)
-      if (plot_exact_sol && maxts <= 1)
+      if (plot_exact_sol)
         computeError(Vec_x_0, Vec_up_0,current_time);
+        VecCopy(Vec_up_1, Vec_dup);
+        VecAXPY(Vec_dup,-1.0,Vec_up_0); // Vec_dup -= Vec_up_0
+        VecScale(Vec_dup, 1./dt);
     }
     else
     {
-      pressureTimeCorrection(Vec_up_0, Vec_up_1, .5, .5); // press(n) = press(n+1/2) - press(n-1/2)
-      if (plot_exact_sol)
-        computeError(Vec_x_0, Vec_up_0,current_time);
+      if (time_step == 0)
+      {
+        pressureTimeCorrection(Vec_up_0, Vec_up_1, 0., 1); // press(n) = press(n+1/2) - press(n-1/2)
+        if (plot_exact_sol && maxts <= 1)
+          computeError(Vec_x_0, Vec_up_0,current_time);
+      }
+      else
+      {
+        pressureTimeCorrection(Vec_up_0, Vec_up_1, .5, .5); // press(n) = press(n+1/2) - press(n-1/2)
+        if (plot_exact_sol)
+          computeError(Vec_x_0, Vec_up_0,current_time);
+      }
     }
-
-    if ((time_step%print_step)==0 || time_step == (maxts-1))
+    
+    bool must_print = false;
+    if (is_bdf2)
+    {
+      if ((time_step-1%print_step)==0 || time_step == (maxts-1))
+        must_print = true;
+    }
+    else
+      if ((time_step%print_step)==0 || time_step == (maxts-1))
+        must_print = true;
+        
+    if (must_print)
     {
       if (family_files)
       {
@@ -1745,7 +1818,14 @@ PetscErrorCode AppCtx::solveTimeProblem()
       ///////calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, Vec_v_mid, current_time);
       if ( !full_implicit )
       {
-        calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, Vec_v_mid, current_time); // Adams-Bashforth
+        if (is_bdf2)
+        {
+          VecCopy(Vec_v_1, Vec_v_mid);
+          calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 2.0, Vec_v_1, current_time);
+          VecAXPBY(Vec_v_mid, .5, .5, Vec_v_1);
+        }
+        else
+          calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, Vec_v_mid, current_time); // Adams-Bashforth
         //calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, Vec_v_mid, 0.0); // Euler
         // move the mesh
         if (!try2)
@@ -2616,7 +2696,9 @@ void AppCtx::freePetscObjs()
   Destroy(Vec_res_m);
   Destroy(Vec_up_0);
   Destroy(Vec_up_1);
+  Destroy(Vec_dup);
   Destroy(Vec_v_mid);
+  Destroy(Vec_v_1);
   Destroy(Vec_x_0);
   Destroy(Vec_x_1);
   Destroy(Vec_normal);
