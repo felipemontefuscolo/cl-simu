@@ -1,4 +1,5 @@
 function [Ev,Ep,Ov,Op,V,P] = readVTK(vtkfile)
+% function [Ev,Ep,Ov,Op,V,P] = readVTK(vtkfile)
 %for VTK files starting with 0000. e.g.
 %VTKfile.0000.vtk,VTKfile.0001.vtk...
 %NOT
@@ -36,9 +37,10 @@ for ii = 1:10
 
   while (~feof(fid))
     s = fgetl(fid);
-    found = strfind(s,'SCALARS pressure double');
+    %found = strfind(s,'SCALARS pressure double');
+    found = strfind(s,'pressure');
     if (found)
-      s = fgetl(fid); % LOOKUP_TABLE default
+      %s = fgetl(fid); % LOOKUP_TABLE default    % comentar quando for ler saida do paraview
       P(:,ii) = fread(fid,n_pts,'double');
       %V = reshape(V,3,n_pts)';
       break;

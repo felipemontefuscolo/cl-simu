@@ -1222,7 +1222,8 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
       for (int k = 0; k < x_coefs_f_mid.size(); ++k)
         //x_coefs_f_mid[k] = utheta*x_coefs_f_new[k] + (1.-utheta)*x_coefs_f_old[k];
-        x_coefs_f_mid[k] = (u_coefs_f_new[k])*dt/2. + x_coefs_f_old[k];
+        //x_coefs_f_mid[k] = (u_coefs_f_new[k])*dt/2. + x_coefs_f_old[k];
+        x_coefs_f_mid[k] = (u_coefs_f_mid[k])*dt/2. + x_coefs_f_old[k];
   
       //x_coefs_f_mid = x_coefs_f_old + u_coefs_f_mid*dt;
 
@@ -1925,8 +1926,11 @@ PetscErrorCode AppCtx::formFunction_mesh(SNES /*snes_m*/, Vec Vec_v, Vec Vec_fun
       VecGetValues(Vec_x_0, mapV_c.size(), mapV_c.data(), x_coefs_c.data());
       VecGetValues(Vec_x_1, mapV_c.size(), mapV_c.data(), x_coefs_c_new.data());
 
-      x_coefs_c += x_coefs_c_new;
-      x_coefs_c /= 2.;
+      //if (current_time < .5*dt)
+      {
+        x_coefs_c += x_coefs_c_new;
+        x_coefs_c /= 2.;
+      }
 
       v_coefs_c_trans = v_coefs_c.transpose();
       x_coefs_c_trans = x_coefs_c.transpose();

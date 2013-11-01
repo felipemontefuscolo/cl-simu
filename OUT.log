@@ -1,0 +1,848 @@
+OpenMP version:
+num threads: 8
+mesh: /cluster/felipe.mt87/mef/cl-simu/results/osc_drop/3d/drop.msh
+elem type:  Quadratic tetrahedron
+space dim:  3
+# vertices: 55
+# nodes:    285
+# cells:    128
+# facets:   304
+# corners:  230
+
+# velocity unknows: 855
+# preassure unknows: 55
+
+Cell list: 
+  -size:           128
+Node list: 
+  -size:           285
+Facet list: 
+  -size:           304
+Corner list: 
+  -size:           230
+elapsed    0.000s in : buildCellsAdjacency()
+elapsed    0.000s in : buildCorners_Template()
+elapsed    0.000s in : setUpConnected/BoundaryComponentsId()
+elapsed    0.000s in : buildNodesAdjacency()
+elapsed    0.000s in : readFileMsh(): read connectivity
+elapsed    0.001s in : readFileMsh(): search for boundary elements
+feature_tags =  5 6 8 1 
+on update mesh
+allocing petsc objs ... done.
+matrix coloring ... done 
+initial volume: 0.177311467773585 
+Initial conditions:
+	Iterations 0
+  0 SNES Function norm 2.724522658719e+00 
+  1 SNES Function norm 2.288820765015e-04 
+  2 SNES Function norm 1.391937280511e-10 
+  3 SNES Function norm 1.363688857469e-15 
+	Iterations 1
+  0 SNES Function norm 1.102141043661e-02 
+  1 SNES Function norm 5.900531241766e-06 
+  2 SNES Function norm 7.572115535202e-13 
+	Iterations 2
+  0 SNES Function norm 1.837415348014e-03 
+  1 SNES Function norm 2.094048616966e-07 
+  2 SNES Function norm 1.666806872706e-15 
+	Iterations 3
+  0 SNES Function norm 3.322506306322e-04 
+  1 SNES Function norm 7.422394476686e-09 
+  2 SNES Function norm 1.399644040325e-15 
+	Iterations 4
+  0 SNES Function norm 6.176413176448e-05 
+  1 SNES Function norm 2.632418674954e-10 
+  2 SNES Function norm 1.450309259168e-15 
+	Iterations 5
+  0 SNES Function norm 1.166873547614e-05 
+  1 SNES Function norm 9.360587772308e-12 
+  2 SNES Function norm 1.375283222985e-15 
+	Iterations 6
+  0 SNES Function norm 2.231933012967e-06 
+  1 SNES Function norm 3.339470406262e-13 
+	Iterations 7
+  0 SNES Function norm 4.318468548534e-07 
+  1 SNES Function norm 1.202874436194e-14 
+	Iterations 8
+  0 SNES Function norm 8.463046235937e-08 
+  1 SNES Function norm 1.462695160222e-15 
+	Iterations 9
+  0 SNES Function norm 1.685238434206e-08 
+  1 SNES Function norm 1.340832972956e-15 
+Num of time iterations (maxts): 68
+starting time loop . . . 
+
+current time: 0
+time step: 0
+steady error: 1
+	Iterations 0
+  0 SNES Function norm 1.705124875280e-01 
+  1 SNES Function norm 1.680979329717e-04 
+  2 SNES Function norm 5.984188930240e-11 
+  3 SNES Function norm 1.355124231795e-15 
+num snes iterations: 3
+theta min: 180
+theta max: 0
+
+current time: 0.0015
+time step: 1
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 4.346552811977e-01 
+  1 SNES Function norm 3.040957728448e-04 
+  2 SNES Function norm 1.075982744422e-10 
+  3 SNES Function norm 1.416597121141e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.003
+time step: 2
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 4.851410126128e-01 
+  1 SNES Function norm 2.094451200406e-04 
+  2 SNES Function norm 5.831240689743e-11 
+  3 SNES Function norm 1.240883571927e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.0045
+time step: 3
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 4.906422027873e-01 
+  1 SNES Function norm 3.031768603472e-04 
+  2 SNES Function norm 3.231640545975e-09 
+  3 SNES Function norm 1.264353226814e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.006
+time step: 4
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 5.144277599209e-01 
+  1 SNES Function norm 4.033440029301e-04 
+  2 SNES Function norm 4.321135391979e-09 
+  3 SNES Function norm 1.443755370009e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.0075
+time step: 5
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 5.806428542641e-01 
+  1 SNES Function norm 4.169014780884e-04 
+  2 SNES Function norm 5.697723199840e-10 
+  3 SNES Function norm 1.374520924383e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.009
+time step: 6
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 6.787600230763e-01 
+  1 SNES Function norm 7.200329468122e-04 
+  2 SNES Function norm 2.211082203386e-09 
+  3 SNES Function norm 1.359723892882e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.0105
+time step: 7
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 7.839968659548e-01 
+  1 SNES Function norm 1.008048058119e-03 
+  2 SNES Function norm 3.208489169219e-09 
+  3 SNES Function norm 1.273312729154e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.012
+time step: 8
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 8.642118987212e-01 
+  1 SNES Function norm 1.003014211433e-03 
+  2 SNES Function norm 1.323523847687e-09 
+  3 SNES Function norm 1.293807659102e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.0135
+time step: 9
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 9.111778602671e-01 
+  1 SNES Function norm 9.504710067910e-04 
+  2 SNES Function norm 3.463858777418e-09 
+  3 SNES Function norm 1.375709353632e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.015
+time step: 10
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 9.486171081269e-01 
+  1 SNES Function norm 9.407357459842e-04 
+  2 SNES Function norm 5.770303441296e-09 
+  3 SNES Function norm 1.380350576786e-15 
+num snes iterations: 3
+theta min: 180
+theta max: 0
+
+current time: 0.0165
+time step: 11
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.001673965982e+00 
+  1 SNES Function norm 9.665950152165e-04 
+  2 SNES Function norm 1.477409742533e-09 
+  3 SNES Function norm 1.272807424484e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.018
+time step: 12
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.073393842073e+00 
+  1 SNES Function norm 1.159161049826e-03 
+  2 SNES Function norm 2.978223727590e-09 
+  3 SNES Function norm 1.406673522432e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.0195
+time step: 13
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.146591782331e+00 
+  1 SNES Function norm 1.318133135472e-03 
+  2 SNES Function norm 4.175326177463e-09 
+  3 SNES Function norm 1.347490670350e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.021
+time step: 14
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.200691352700e+00 
+  1 SNES Function norm 1.230585269338e-03 
+  2 SNES Function norm 2.013390599497e-09 
+  3 SNES Function norm 1.299283283220e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.0225
+time step: 15
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.232092104928e+00 
+  1 SNES Function norm 1.102919932895e-03 
+  2 SNES Function norm 1.814145215311e-09 
+  3 SNES Function norm 1.222051700695e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.024
+time step: 16
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.256756952522e+00 
+  1 SNES Function norm 1.085716082605e-03 
+  2 SNES Function norm 3.495616585951e-09 
+  3 SNES Function norm 1.365478910959e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.0255
+time step: 17
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.292240581391e+00 
+  1 SNES Function norm 1.153589591313e-03 
+  2 SNES Function norm 1.565382424374e-09 
+  3 SNES Function norm 1.373470128899e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.027
+time step: 18
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.343778541311e+00 
+  1 SNES Function norm 1.367257842918e-03 
+  2 SNES Function norm 2.663786339915e-09 
+  3 SNES Function norm 1.377874410033e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.0285
+time step: 19
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.402805943799e+00 
+  1 SNES Function norm 1.588696379748e-03 
+  2 SNES Function norm 3.975083307018e-09 
+  3 SNES Function norm 1.311689205985e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.03
+time step: 20
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.454186374726e+00 
+  1 SNES Function norm 1.623026568278e-03 
+  2 SNES Function norm 2.972785395995e-09 
+  3 SNES Function norm 1.339398734848e-15 
+num snes iterations: 3
+theta min: 180
+theta max: 0
+
+current time: 0.0315
+time step: 21
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.490798692181e+00 
+  1 SNES Function norm 1.557890447727e-03 
+  2 SNES Function norm 2.561693847853e-09 
+  3 SNES Function norm 1.347291300417e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.033
+time step: 22
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.519924509091e+00 
+  1 SNES Function norm 1.516226738316e-03 
+  2 SNES Function norm 3.146013129707e-09 
+  3 SNES Function norm 1.437993196500e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.0345
+time step: 23
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.552412454690e+00 
+  1 SNES Function norm 1.510883076218e-03 
+  2 SNES Function norm 2.221842419061e-09 
+  3 SNES Function norm 1.398690160041e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.036
+time step: 24
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.591530298559e+00 
+  1 SNES Function norm 1.603339996616e-03 
+  2 SNES Function norm 2.694764389061e-09 
+  3 SNES Function norm 1.301094531334e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.0375
+time step: 25
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.632352499122e+00 
+  1 SNES Function norm 1.724927242817e-03 
+  2 SNES Function norm 3.656106103423e-09 
+  3 SNES Function norm 1.298907327012e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.039
+time step: 26
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.666619108597e+00 
+  1 SNES Function norm 1.718844773293e-03 
+  2 SNES Function norm 3.214451736805e-09 
+  3 SNES Function norm 1.312782177635e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.0405
+time step: 27
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.690762951845e+00 
+  1 SNES Function norm 1.631656429945e-03 
+  2 SNES Function norm 2.670919151490e-09 
+  3 SNES Function norm 1.384312246948e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.042
+time step: 28
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.710624622044e+00 
+  1 SNES Function norm 1.585900692774e-03 
+  2 SNES Function norm 3.300729069422e-09 
+  3 SNES Function norm 1.328192980538e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.0435
+time step: 29
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.735036266838e+00 
+  1 SNES Function norm 1.600349410502e-03 
+  2 SNES Function norm 2.364147397035e-09 
+  3 SNES Function norm 1.453643868732e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.045
+time step: 30
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.766475330872e+00 
+  1 SNES Function norm 1.692112696885e-03 
+  2 SNES Function norm 2.708547578223e-09 
+  3 SNES Function norm 1.367510111631e-15 
+num snes iterations: 3
+theta min: 180
+theta max: 0
+
+current time: 0.0465
+time step: 31
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.799496037199e+00 
+  1 SNES Function norm 1.802893149420e-03 
+  2 SNES Function norm 3.352266158129e-09 
+  3 SNES Function norm 1.496022856908e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.048
+time step: 32
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.826034425403e+00 
+  1 SNES Function norm 1.811733889194e-03 
+  2 SNES Function norm 3.328032965703e-09 
+  3 SNES Function norm 1.460315886831e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.0495
+time step: 33
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.842921942028e+00 
+  1 SNES Function norm 1.740393504880e-03 
+  2 SNES Function norm 2.876003434532e-09 
+  3 SNES Function norm 1.467731500851e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.051
+time step: 34
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.855109132589e+00 
+  1 SNES Function norm 1.685092034991e-03 
+  2 SNES Function norm 3.202377765964e-09 
+  3 SNES Function norm 1.441620148275e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.0525
+time step: 35
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.870659782180e+00 
+  1 SNES Function norm 1.669825231791e-03 
+  2 SNES Function norm 2.518920348041e-09 
+  3 SNES Function norm 1.334042702825e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.054
+time step: 36
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.893274248896e+00 
+  1 SNES Function norm 1.710752313234e-03 
+  2 SNES Function norm 2.589990510214e-09 
+  3 SNES Function norm 1.462520826871e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.0555
+time step: 37
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.919187970137e+00 
+  1 SNES Function norm 1.775303489445e-03 
+  2 SNES Function norm 2.707447109391e-09 
+  3 SNES Function norm 1.388773534873e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.057
+time step: 38
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.940345189524e+00 
+  1 SNES Function norm 1.768500210372e-03 
+  2 SNES Function norm 2.719052590458e-09 
+  3 SNES Function norm 1.250339070471e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.0585
+time step: 39
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.952028586286e+00 
+  1 SNES Function norm 1.698634497676e-03 
+  2 SNES Function norm 2.496745384750e-09 
+  3 SNES Function norm 1.304298795984e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.06
+time step: 40
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.957612356911e+00 
+  1 SNES Function norm 1.648581252104e-03 
+  2 SNES Function norm 2.822448672614e-09 
+  3 SNES Function norm 1.405272035346e-15 
+num snes iterations: 3
+theta min: 180
+theta max: 0
+
+current time: 0.0615
+time step: 41
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.965031270145e+00 
+  1 SNES Function norm 1.635006996657e-03 
+  2 SNES Function norm 2.353188431011e-09 
+  3 SNES Function norm 1.401172865174e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.063
+time step: 42
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.979299510790e+00 
+  1 SNES Function norm 1.667942807366e-03 
+  2 SNES Function norm 2.201315722416e-09 
+  3 SNES Function norm 1.354863629729e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.0645
+time step: 43
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 1.998666099219e+00 
+  1 SNES Function norm 1.735737951925e-03 
+  2 SNES Function norm 2.265016836397e-09 
+  3 SNES Function norm 1.436534618436e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.066
+time step: 44
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 2.016461781735e+00 
+  1 SNES Function norm 1.756502242353e-03 
+  2 SNES Function norm 2.355929661742e-09 
+  3 SNES Function norm 1.384952526139e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.0675
+time step: 45
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 2.026800447494e+00 
+  1 SNES Function norm 1.715872136618e-03 
+  2 SNES Function norm 2.370890127733e-09 
+  3 SNES Function norm 1.437435660977e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.069
+time step: 46
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 2.030301394666e+00 
+  1 SNES Function norm 1.683402839497e-03 
+  2 SNES Function norm 2.729503366430e-09 
+  3 SNES Function norm 1.421418750178e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.0705
+time step: 47
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 2.033222276313e+00 
+  1 SNES Function norm 1.672037950241e-03 
+  2 SNES Function norm 2.703412491180e-09 
+  3 SNES Function norm 1.295867699151e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.072
+time step: 48
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 2.040530700581e+00 
+  1 SNES Function norm 1.688811772122e-03 
+  2 SNES Function norm 2.057785568643e-09 
+  3 SNES Function norm 1.354043870304e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.0735
+time step: 49
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 2.052194877436e+00 
+  1 SNES Function norm 1.741250198948e-03 
+  2 SNES Function norm 2.138881819157e-09 
+  3 SNES Function norm 1.357451602222e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.075
+time step: 50
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 2.063942134444e+00 
+  1 SNES Function norm 1.768952152667e-03 
+  2 SNES Function norm 2.240093199342e-09 
+  3 SNES Function norm 1.376617165841e-15 
+num snes iterations: 3
+theta min: 180
+theta max: 0
+
+current time: 0.0765
+time step: 51
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 2.070453881758e+00 
+  1 SNES Function norm 1.736430898486e-03 
+  2 SNES Function norm 2.271612331615e-09 
+  3 SNES Function norm 1.390942347623e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.078
+time step: 52
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 2.070917033302e+00 
+  1 SNES Function norm 1.690681733965e-03 
+  2 SNES Function norm 2.392763239644e-09 
+  3 SNES Function norm 1.400374306605e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.0795
+time step: 53
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 2.069427984228e+00 
+  1 SNES Function norm 1.663132305055e-03 
+  2 SNES Function norm 2.646102348610e-09 
+  3 SNES Function norm 1.339790490383e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.081
+time step: 54
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 2.069954122869e+00 
+  1 SNES Function norm 1.656894777934e-03 
+  2 SNES Function norm 1.983185389825e-09 
+  3 SNES Function norm 1.391600614397e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.0825
+time step: 55
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 2.073549181111e+00 
+  1 SNES Function norm 1.681144764721e-03 
+  2 SNES Function norm 1.878534120143e-09 
+  3 SNES Function norm 1.344729299012e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.084
+time step: 56
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 2.077634678828e+00 
+  1 SNES Function norm 1.706972130716e-03 
+  2 SNES Function norm 1.899960631076e-09 
+  3 SNES Function norm 1.451826550203e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.0855
+time step: 57
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 2.078436410759e+00 
+  1 SNES Function norm 1.689235758192e-03 
+  2 SNES Function norm 1.959881250647e-09 
+  3 SNES Function norm 1.422253277502e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.087
+time step: 58
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 2.075020470112e+00 
+  1 SNES Function norm 1.649934997732e-03 
+  2 SNES Function norm 2.033258911971e-09 
+  3 SNES Function norm 1.316971397867e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.0885
+time step: 59
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 2.069449304294e+00 
+  1 SNES Function norm 1.620848085087e-03 
+  2 SNES Function norm 2.332681973953e-09 
+  3 SNES Function norm 1.361861591034e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.09
+time step: 60
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 2.065117855157e+00 
+  1 SNES Function norm 1.601511148096e-03 
+  2 SNES Function norm 1.917140231054e-09 
+  3 SNES Function norm 1.313358504817e-15 
+num snes iterations: 3
+theta min: 180
+theta max: 0
+
+current time: 0.0915
+time step: 61
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 2.063449053110e+00 
+  1 SNES Function norm 1.615622206400e-03 
+  2 SNES Function norm 1.767188371857e-09 
+  3 SNES Function norm 1.324622907052e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.093
+time step: 62
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 2.062174614753e+00 
+  1 SNES Function norm 1.640314748988e-03 
+  2 SNES Function norm 1.757325927292e-09 
+  3 SNES Function norm 1.327653899099e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.0945
+time step: 63
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 2.058363432084e+00 
+  1 SNES Function norm 1.622374290326e-03 
+  2 SNES Function norm 1.669550415515e-09 
+  3 SNES Function norm 1.289330925311e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.096
+time step: 64
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 2.050382918834e+00 
+  1 SNES Function norm 1.593287900995e-03 
+  2 SNES Function norm 1.825163650725e-09 
+  3 SNES Function norm 1.483554860934e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.0975
+time step: 65
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 2.039978884854e+00 
+  1 SNES Function norm 1.562931323174e-03 
+  2 SNES Function norm 2.082021811831e-09 
+  3 SNES Function norm 1.316771835351e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.099
+time step: 66
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 2.031068000673e+00 
+  1 SNES Function norm 1.545130952793e-03 
+  2 SNES Function norm 1.736774202504e-09 
+  3 SNES Function norm 1.374198894974e-15 
+theta min: 180
+theta max: 0
+
+current time: 0.1005
+time step: 67
+steady error: 0
+	Iterations 0
+  0 SNES Function norm 2.024574351313e+00 
+  1 SNES Function norm 1.571228311736e-03 
+  2 SNES Function norm 1.791641079993e-09 
+  3 SNES Function norm 1.380890391235e-15 
+num snes iterations: 3
+theta min: 180
+theta max: 0
+
+==========================================
+stop reason:
+maximum number of iterations reached. 
+
+final volume: 0.177308435384397 
+volume error 100*(f-i)/i: 0.001710204774445 per percent
+x error : 1.165226228683528 
+num snes iterations: 3
+reason: 2
+SNES_CONVERGED_FNORM_ABS      /* ||F|| < atol */
+66566 allocated		66566 used	0 unneeded
+Greatest error reached during the simulation:
+# hmean               u_L2_norm             p_L2_norm             grad_u_L2_norm        grad_p_L2_norm        u_L2_facet_norm       u_inf_facet_norm      u_inf_norm            p_inf_norm
+0.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00
+
+
+elapsed    0.000s in : CuthillMcKeeRenumber
+

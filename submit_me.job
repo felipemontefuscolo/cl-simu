@@ -1,12 +1,12 @@
-#PBS -N usc00
-#PBS -l nodes=1:ppn=8:octo32
+#PBS -N TEST
+#PBS -l nodes=1:ppn=7:octo32
 #PBS -o /cluster/felipe.mt87/err1
 #PBS -e /cluster/felipe.mt87/err2
 
 cd /cluster/felipe.mt87/mef/cl-simu
 
 
-./main `cat args` 
+./main `cat args` > OUT.log
 #./main -dt -fin $MSH_IN -fout $VTK_OUT `cat args` > $OUT_NAME 2>&1
 
 
