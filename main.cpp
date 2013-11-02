@@ -1707,7 +1707,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
     bool must_print = false;
     if (is_bdf2)
     {
-      if ((time_step-1%print_step)==0 || time_step == (maxts-1))
+      if (((time_step-1)%print_step)==0 || time_step == (maxts-1))
         must_print = true;
     }
     else
