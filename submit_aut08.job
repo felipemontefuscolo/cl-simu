@@ -1,26 +1,26 @@
-#PBS -N kinosagi01
-#PBS -l nodes=1:ppn=4:octo
+#PBS -N aut08
+#PBS -l nodes=1:ppn=8:octo32
 #PBS -o /cluster/felipe.mt87/err1
 #PBS -e /cluster/felipe.mt87/err2
 
 #export           TT=1e-3
 #export         TT=0.5e-3
-export        TT=0.25e-3
+#export        TT=0.25e-3
 #export       TT=0.125e-3
 #export      TT=0.0625e-3
 #export     TT=0.03125e-3
 #export    TT=0.015625e-3
 #export   TT=0.0078125e-3
 #export  TT=0.00390625e-3
-#export TT=0.001953125e-3
+export TT=0.001953125e-3
 
 
-export TMP_DIR=/temp/felipe.mt87/usc$TT
+export TMP_DIR=/temp/felipe.mt87/aut$TT
 
 export OUT_DIR=/cluster/felipe.mt87/cluster_out
-export OUT_NAME=usc_01.txt
+export OUT_NAME=aut_08.txt
 export MSH_IN=/cluster/felipe.mt87/mef/cl-simu/results/osc_drop/3d/drop.msh
-export VTK_OUT=usc_01.vtk
+export VTK_OUT=aut_08.vtk
 
 
 mkdir -p $TMP_DIR 
@@ -31,7 +31,7 @@ cp /cluster/felipe.mt87/mef/cl-simu/args $TMP_DIR
 
 cd $TMP_DIR
 
-export OMP_NUM_THREADS=4
+export OMP_NUM_THREADS=8
 
 export GOMP_CPU_AFFINITY=0-7
 
@@ -42,7 +42,7 @@ export GOMP_CPU_AFFINITY=0-7
 rm -f main
 rm -f args
 
-cp ContactHistory $OUT_DIR/usc_history$TT
+cp ContactHistory $OUT_DIR/aut_history_08
 cp -r $TMP_DIR/* $OUT_DIR
 
 rm -rf $TMP_DIR

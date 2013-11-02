@@ -1587,6 +1587,14 @@ PetscErrorCode AppCtx::solveTimeProblem()
       VecScale(Vec_x_1, dt);
       VecAXPY(Vec_x_1,1.,Vec_x_0);
     }
+    //{
+    //  VecCopy(Vec_v_1, Vec_x_1);
+    //  VecScale(Vec_x_1, 2./2.);
+    //  VecAXPY(Vec_x_1, 0./2.,Vec_v_mid);
+    //  VecScale(Vec_x_1, dt);
+    //  VecAXPY(Vec_x_1,1.,Vec_x_0);
+    //}
+
 
     VecCopy(Vec_up_1, Vec_up_0);
 

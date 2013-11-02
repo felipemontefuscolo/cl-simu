@@ -1,7 +1,7 @@
 options_left
--dim 2 				        # cell dimension (= space dimension)
-dt 1.5e-3    1e-3 0.0625e-3 0.03125e-3 0.015625e-3 0.0078125e-3 0.00390625e-3 # time step 4 2 1 0.5 0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04 4.8828125e-04 2.44140625e-04 1.220703125e-04
--finaltime .1          # the simulation ends at this time.
+-dim 3 				        # cell dimension (= space dimension)
+dt 0.5e-3    1e-3 0.0625e-3 0.03125e-3 0.015625e-3 0.0078125e-3 0.00390625e-3 # time step 4 2 1 0.5 0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04 4.8828125e-04 2.44140625e-04 1.220703125e-04
+-finaltime .7          # the simulation ends at this time.
 -maxts -2              # maximum number of time steps
 -renumber_dofs 0        # dofs renumbering
 -print_step 9999999999999 1          # print step
@@ -27,7 +27,7 @@ vtheta 1.0              # time discretization theta method (mesh velocity)
 -force_pressure 0       # force pressure at a random point ... 0 to automatic
 
 # Petsc options
--pc_type lu lu                    # Preconditioner (one of) none jacobi pbjacobi bjacobi sor lu shell mg eisenstat ilu icc cholesky asm ksp composite redundant nn mat fieldsplit galerkin exotic openmp asa cp bfbt lsc redistribute tfs (PCSetType)
+-pc_type ilu lu                    # Preconditioner (one of) none jacobi pbjacobi bjacobi sor lu shell mg eisenstat ilu icc cholesky asm ksp composite redundant nn mat fieldsplit galerkin exotic openmp asa cp bfbt lsc redistribute tfs (PCSetType)
 sub_pc_type ilu
 pc_factor_mat_solver_package mumps # MUMPS
 mat_mumps_icntl_7 2
@@ -35,11 +35,11 @@ pc_factor_levels 2
 sub_pc_factor_levels 1            # <0>  ativar quando o resolutor não estiver convergindo
 pc_composite_type multiplicative  # one of multiplicative, additive, special
 pc_composite_pcs ilu,ilu
--ksp_type preonly gmres preonly   # (one of) preonly bcgs gmres cg cgne nash stcg gltr richardson chebychev tcqmr ibcgs bcgsl cgs tfqmr cr lsqr qcg bicg fgmres minres symmlq lgmres lcd broyden gcr (KSPSetType)
+-ksp_type gmres preonly   # (one of) preonly bcgs gmres cg cgne nash stcg gltr richardson chebychev tcqmr ibcgs bcgsl cgs tfqmr cr lsqr qcg bicg fgmres minres symmlq lgmres lcd broyden gcr (KSPSetType)
 ksp_initial_guess_nonzero 1       # não usar com precond asm+lu, alias nao usar nunca (talvez um erro da versão dev????)
 ksp_gmres_restart 300
--pc_factor_shift_type NONZERO
--pc_factor_shift_amount 1.e-12
+pc_factor_shift_type NONZERO
+pc_factor_shift_amount 1.e-12
 pc_factor_mat_ordering_type natural    # natural nd 1wd rcm qmd rowlength flow (PCFactorSetMatOrderingType)
 -pc_factor_reuse_ordering 1
 pc_factor_nonzeros_along_diagonal 1.e-10

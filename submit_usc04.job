@@ -24,6 +24,7 @@ export VTK_OUT=usc_04.vtk
 
 
 mkdir -p $TMP_DIR 
+rm -f $TMP_DIR/*
 
 cp /cluster/felipe.mt87/mef/cl-simu/main $TMP_DIR
 cp /cluster/felipe.mt87/mef/cl-simu/args $TMP_DIR
