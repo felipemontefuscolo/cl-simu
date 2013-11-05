@@ -1622,7 +1622,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
     }
     
     bool const full_implicit = false;
-    bool const try2 = true; // extrapolate geometry Vec_x_1 <- 2*Vec_x_1 - Vec_x_0
+    bool const try2 = false; // extrapolate geometry Vec_x_1 <- 2*Vec_x_1 - Vec_x_0
     
     // BDF2
     
@@ -1812,8 +1812,8 @@ PetscErrorCode AppCtx::solveTimeProblem()
       }
       else
       {
-        //VecScale(Vec_x_1, 2.0);
-        //VecAXPY(Vec_x_1,-1.0,Vec_x_0);
+        VecScale(Vec_x_1, 2.0);
+        VecAXPY(Vec_x_1,-1.0,Vec_x_0);
         copyMesh2Vec(Vec_x_0);
       }
 

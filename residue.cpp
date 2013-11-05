@@ -524,7 +524,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
         Pqp      = p_coefs_c_mid.dot(psi_c[qp]);
         Vqp      = v_coefs_c_mid_trans * qsi_c[qp];
         //Vqp = v_exact(Xqp_old, current_time, 0);
-        Vqp = v_exact(Xqp, current_time+dt/2., 0);
+        //Vqp = v_exact(Xqp, current_time+dt/2., 0);
         Uconv_qp = Uqp - Vqp;
         //Uconv_qp = Uqp_old;
         dUdt     = (Uqp_new-Uqp_old)/dt;

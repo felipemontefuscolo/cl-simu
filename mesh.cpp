@@ -1184,7 +1184,7 @@ PetscErrorCode AppCtx::calcMeshVelocity(Vec const& Vec_x_0, Vec const& Vec_up_0,
     int tag;
 
     Vector      U0(dim);
-    Vector      X0(dim);
+    Vector      X0(dim), Y0(dim);
     Vector      U1(dim);
     Vector      tmp(dim);
     Vector      k1(dim),k2(dim),k3(dim),k4(dim); //  RK4
@@ -1202,11 +1202,28 @@ PetscErrorCode AppCtx::calcMeshVelocity(Vec const& Vec_x_0, Vec const& Vec_up_0,
 
       if (force_mesh_velocity)
       {
-        k1 = v_exact(X0,tt,tag);
-        k2 = v_exact(X0+0.5*k1*dt,tt+0.5*dt,tag);
-        k3 = v_exact(X0+0.5*k2*dt,tt+0.5*dt,tag);
-        k4 = v_exact(X0+k3*dt,tt+dt,tag);
-        tmp =  (k1 + 2.*(k2+k3) + k4)/6.; // velocity
+        //k1 = v_exact(X0,tt,tag);
+        //k2 = v_exact(X0+0.5*k1*dt,tt+0.5*dt,tag);
+        //k3 = v_exact(X0+0.5*k2*dt,tt+0.5*dt,tag);
+        //k4 = v_exact(X0+k3*dt,tt+dt,tag);
+        //tmp =  (k1 + 2.*(k2+k3) + k4)/6.; // velocity
+        
+        int const N = 8;
+        double Dt = dt/N, TT = tt;
+        Y0 = X0;
+        tmp.setZero();
+        for (int jj = 0; jj < N ; ++jj)
+        {
+          k1 = v_exact(Y0,TT,tag);
+          k2 = v_exact(Y0+0.5*k1*Dt,TT+0.5*Dt,tag);
+          k3 = v_exact(Y0+0.5*k2*Dt,TT+0.5*Dt,tag);
+          k4 = v_exact(Y0+k3*Dt,TT+Dt,tag);
+          tmp =  (k1 + 2.*(k2+k3) + k4)/6.; // velocity
+          Y0 += Dt*tmp;
+          TT += Dt;
+        }
+        tmp = (Y0 - X0)/dt;
+
         //tmp = k1;
 
         
