@@ -48,7 +48,7 @@ inline double sign(double a) {a<0 ? -1 : 1;};
 #define TRACO          18
 #define RUSSA_SIN2D    19
 
-#define PROBLEM_TYPE 16
+#define PROBLEM_TYPE 99
 
 
 #if (PROBLEM_TYPE==CAVITY_2D_3D)
@@ -1298,9 +1298,9 @@ Vector solid_veloc(Vector const& X, double t, int tag)
 #endif
 
 // COUETTE
-#if (false)
+#if (true)
 
-double const w_ = 0;
+double const w_ = 10;
 double const a__= 1;
 
 
@@ -1459,10 +1459,12 @@ Vector v_exact(Vector const& X, double t, int tag) //(X,t,tag)
   //v(0) = +0.1*(  1 );//*(X(0)+0.5)*(X(0)-0.5)/2.;
   //v(1) = +0.1*(  0 );//*(X(1)+0.5)*(X(1)-0.5)/2.;
   //return v * (tag!=1 && tag!=2);
-  //v(0) = t*(1-x*x)*(1+y)/4.;
-  //v(1) = t*(1-y*y)*(x + t*(1-x*x)/32. + 1)/4.;
-  v(0) = 5*( x*x*sin(w_*t) + y*y*cos(w_*t) );
-  v(1) = 5*(-y*x*sin(w_*t) + x*y*cos(w_*t) );
+  //v(0) = 10*t*(1-x*x)*(1+y)/4.;
+  //v(1) = 10*t*(1-y*y)*(x + t*(1-x*x)/32. + 1)/4.;
+  v(0) = 5*( sin(x)*sin(x)*sin(w_*t) + sin(y)*sin(y)*cos(w_*t) );
+  v(1) = 5*(-sin(y)*sin(x)*sin(w_*t) + sin(x)*sin(y)*cos(w_*t) );
+  //v(0) = y*y;
+  //v(1) = 2*y;
   return v;
   //return u_exact(X,t,tag);
 }
@@ -3466,7 +3468,7 @@ Tensor feature_proj(Vector const& X, double t, int tag)
 
 // Esse deu certo!!!!!!!!!!!!
 // OSC_BB 3D
-#if (true)
+#if (false)
 double pho(Vector const& X, int tag)
 {
   return 1.0;

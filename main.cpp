@@ -251,8 +251,8 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
   PetscOptionsGetString(PETSC_NULL,"-fout",foutaux,PETSC_MAX_PATH_LEN-1,&flg_fout);
   PetscOptionsHasName(PETSC_NULL,"-help",&ask_help);
 
-  //is_bdf2 = PETSC_FALSE;
-  is_bdf2 = PETSC_TRUE;
+  is_bdf2 = PETSC_FALSE;
+  //is_bdf2 = PETSC_TRUE;
   if (is_bdf2 && utheta!=1)
   {
     cout << "ERROR:    BDF2 with utheta!=1" << endl;
@@ -1375,7 +1375,7 @@ PetscErrorCode AppCtx::setInitialConditions()
   {
     setUPInitialGuess();
     printf("Initial conditions:\n");
-    for (int i = 0; i < 10; ++i)
+    for (int i = 0; i < 0; ++i)
     {
       printf("\tIterations %d\n", i);
       // * SOLVE THE SYSTEM *
@@ -1609,10 +1609,10 @@ PetscErrorCode AppCtx::solveTimeProblem()
     cout << "time step: "    << time_step  << endl;
     cout << "steady error: " << steady_error << endl;
 
-    mesh->getNodePtr(0)->getCoord(X.data(), dim);
-    Xe(0) = 1.0*exp(sin(pi*current_time)/pi);
-    Xe(1) = 0;
-    x_error += (X-Xe).norm()/maxts;
+    //mesh->getNodePtr(0)->getCoord(X.data(), dim);
+    //Xe(0) = 1.0*exp(sin(pi*current_time)/pi);
+    //Xe(1) = 0;
+    //x_error += (X-Xe).norm()/maxts;
 
 
     if (maxts == 0)
@@ -1622,7 +1622,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
     }
     
     bool const full_implicit = false;
-    bool const try2 = false;
+    bool const try2 = true; // extrapolate geometry Vec_x_1 <- 2*Vec_x_1 - Vec_x_0
     
     // BDF2
     
@@ -1812,8 +1812,8 @@ PetscErrorCode AppCtx::solveTimeProblem()
       }
       else
       {
-        VecScale(Vec_x_1, 2.0);
-        VecAXPY(Vec_x_1,-1.0,Vec_x_0);
+        //VecScale(Vec_x_1, 2.0);
+        //VecAXPY(Vec_x_1,-1.0,Vec_x_0);
         copyMesh2Vec(Vec_x_0);
       }
 

@@ -175,6 +175,8 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       utheta = 0.5;
   }
   
+  bool const compact_bubble = true;
+  
 
   //PetscErrorCode      ierr;
 
@@ -304,6 +306,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
     Tensor              dxUb(dim,dim);  // grad u bble
     Vector              dxP_new(dim);   // grad p
     Vector              Xqp(dim);
+    Vector              Xqp_old(dim);
     Vector              Xc(dim);  // cell center; to compute CR element
     Vector              Uqp(dim);
     Vector              Ubqp(dim); // bble
@@ -513,12 +516,15 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
         dxU_new  = u_coefs_c_new_trans * dLphi_c[qp] * invF_c_new;       // n+1
 
         Xqp      = x_coefs_c_mid_trans * qsi_c[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
+        Xqp_old  = x_coefs_c_old_trans * qsi_c[qp]; // coordenada espacial (x,y,z) do ponto de quadratura
         Uqp      = u_coefs_c_mid_trans * phi_c[qp]; //n+utheta
         Uqp_new  = u_coefs_c_new_trans * phi_c[qp]; //n+utheta
         Uqp_old  = u_coefs_c_old_trans * phi_c[qp]; //n+utheta
         Pqp_new  = p_coefs_c_new.dot(psi_c[qp]);
         Pqp      = p_coefs_c_mid.dot(psi_c[qp]);
         Vqp      = v_coefs_c_mid_trans * qsi_c[qp];
+        //Vqp = v_exact(Xqp_old, current_time, 0);
+        Vqp = v_exact(Xqp, current_time+dt/2., 0);
         Uconv_qp = Uqp - Vqp;
         //Uconv_qp = Uqp_old;
         dUdt     = (Uqp_new-Uqp_old)/dt;
@@ -584,7 +590,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
                 delta_cd = c==d;
                 Aloc(i*dim + c, j*dim + d) += JxW_mid*
                                               ( has_convec*phi_c[qp][i]*utheta *rho*( delta_cd*Uconv_qp.dot(dxphi_c.row(j))  +  dxU(c,d)*phi_c[qp][j] )   // advecção
-                        + (is_bdf2 && time_step > 0?  1.5 : 1.0)*   unsteady* delta_cd*rho*phi_c[qp][i]*phi_c[qp][j]/dt     // time derivative
+                        + ((is_bdf2 && time_step>0)?  1.5 : 1.0)*   unsteady* delta_cd*rho*phi_c[qp][i]*phi_c[qp][j]/dt     // time derivative
                                               + utheta*visc*( delta_cd * dxphi_c.row(i).dot(dxphi_c.row(j)) + dxphi_c(i,d)*dxphi_c(j,c))   ); // rigidez
 
               }
@@ -627,17 +633,27 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
               for (int d = 0; d < dim; d++)
               {
                 delta_cd = c==d;
+    
+                if (compact_bubble)
+                {
+                  Bbn(c, j*dim + d) += JxW_mid*
+                                       ( utheta*visc*(delta_cd * dxphi_c.row(j).dot(dxbble) + dxphi_c(j,c)*dxbble(d)) ); // rigidez
 
-                Bbn(c, j*dim + d) += JxW_mid*
-                                     ( has_convec*bble[qp]*utheta *rho*( delta_cd*Uconv_qp.dot(dxphi_c.row(j)) + dxU(c,d)*phi_c[qp][j] ) // convective
-                                     + unsteady*delta_cd*rho*bble[qp]*phi_c[qp][j]/dt // time derivative
-                                     + utheta*visc*(delta_cd * dxphi_c.row(j).dot(dxbble) + dxphi_c(j,c)*dxbble(d)) ); // rigidez
+                  Bnb(j*dim + d, c) += JxW_mid*
+                                       ( utheta*visc*(delta_cd * dxphi_c.row(j).dot(dxbble) + dxphi_c(j,c)*dxbble(d)) ); // rigidez  
+                }
+                else
+                {
+                  Bbn(c, j*dim + d) += JxW_mid*
+                                       ( has_convec*bble[qp]*utheta *rho*( delta_cd*Uconv_qp.dot(dxphi_c.row(j)) + dxU(c,d)*phi_c[qp][j] ) // convective
+                                       + unsteady*delta_cd*rho*bble[qp]*phi_c[qp][j]/dt // time derivative
+                                       + utheta*visc*(delta_cd * dxphi_c.row(j).dot(dxbble) + dxphi_c(j,c)*dxbble(d)) ); // rigidez
 
-                Bnb(j*dim + d, c) += JxW_mid*
-                                     ( has_convec*phi_c[qp][j]*utheta *rho*( delta_cd*Uconv_qp.dot(dxbble) ) // convective
-                                     + delta_cd*rho*phi_c[qp][j]*bble[qp]/dt * unsteady // time derivative
-                                     + utheta*visc*(delta_cd * dxphi_c.row(j).dot(dxbble) + dxphi_c(j,c)*dxbble(d)) ); // rigidez
-
+                  Bnb(j*dim + d, c) += JxW_mid*
+                                       ( has_convec*phi_c[qp][j]*utheta *rho*( delta_cd*Uconv_qp.dot(dxbble) ) // convective
+                                       + delta_cd*rho*phi_c[qp][j]*bble[qp]/dt * unsteady // time derivative
+                                       + utheta*visc*(delta_cd * dxphi_c.row(j).dot(dxbble) + dxphi_c(j,c)*dxbble(d)) ); // rigidez
+                }
               }
             }
             if (behaviors & BH_bble_condens_PnPn)
@@ -650,17 +666,38 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
             for (int d = 0; d < dim; d++)
             {
               delta_cd = c==d;
-              iBbb(c, d) += JxW_mid*
-                            ( has_convec*bble[qp]*utheta *rho*( delta_cd*Uconv_qp.dot(dxbble) ) // convective
-                            + delta_cd*rho*bble[qp]*bble[qp]/dt * unsteady // time derivative
-                            + utheta*visc*(delta_cd* dxbble.dot(dxbble) + dxbble(d)*dxbble(c)) ); // rigidez
+              
+              if (compact_bubble)
+              {
+                iBbb(c, d) += JxW_mid*
+                              ( utheta*visc*(delta_cd* dxbble.dot(dxbble) + dxbble(d)*dxbble(c)) ); // rigidez  
+              }
+              else
+              {
+                iBbb(c, d) += JxW_mid*
+                              ( has_convec*bble[qp]*utheta *rho*( delta_cd*Uconv_qp.dot(dxbble) ) // convective
+                              + delta_cd*rho*bble[qp]*bble[qp]/dt * unsteady // time derivative
+                              + utheta*visc*(delta_cd* dxbble.dot(dxbble) + dxbble(d)*dxbble(c)) ); // rigidez  
+              }
+              
+              
             }
-
-            FUb(c) += JxW_mid*
-                      ( bble[qp]*rho*(dUdt(c)*unsteady + has_convec*Uconv_qp.dot(dxU.row(c))) + // time derivative + convective
-                        visc*dxbble.dot(dxU.row(c) + dxU.col(c).transpose()) - //rigidez
-                        Pqp_new*dxbble(c) - // pressão
-                        force_at_mid(c)*bble[qp] ); // força
+            if (compact_bubble)
+            {
+              FUb(c) += JxW_mid*
+                        ( visc*dxbble.dot(dxU.row(c) + dxU.col(c).transpose()) - //rigidez
+                          Pqp_new*dxbble(c) - // pressão
+                          force_at_mid(c)*bble[qp] ); // força  
+            }
+            else
+            {
+              FUb(c) += JxW_mid*
+                        ( bble[qp]*rho*(dUdt(c)*unsteady + has_convec*Uconv_qp.dot(dxU.row(c))) + // time derivative + convective
+                          visc*dxbble.dot(dxU.row(c) + dxU.col(c).transpose()) - //rigidez
+                          Pqp_new*dxbble(c) - // pressão
+                          force_at_mid(c)*bble[qp] ); // força  
+            }
+            
           }
         }
         else
@@ -739,7 +776,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       //
       // stabilization
       //
-      if (behaviors & BH_bble_condens_PnPn)
+      if ((behaviors & BH_bble_condens_PnPn) && !compact_bubble)
       {
         //iBbb = iBbb.inverse().eval();
         invert(iBbb,dim);

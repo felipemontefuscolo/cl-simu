@@ -1,27 +1,29 @@
 #PBS -N zeta03
-#PBS -l nodes=1:ppn=8:octo32
+#PBS -l nodes=1:ppn=4:octo32
 #PBS -o /cluster/felipe.mt87/err1
 #PBS -e /cluster/felipe.mt87/err2
 
-export TT=0.125e-3
+export TT=0.125e-2
 export TMP_DIR=/temp/felipe.mt87/zeta$TT
 
 export OUT_DIR=/cluster/felipe.mt87/cluster_out
 export OUT_NAME=zeta_03.txt
-export MSH_IN=/cluster/felipe.mt87/mef/cl-simu/results/osc_drop/2d/mesh/drop.msh
+#export MSH_IN=/cluster/felipe.mt87/mef/cl-simu/results/osc_drop/2d/mesh/drop.msh
+export MSH_IN=/cluster/felipe.mt87/mef/cl-simu/results/couette/2d/mesh/couette.msh
 export VTK_OUT=zeta_03.vtk
 
 
 mkdir -p $TMP_DIR 
+rm -f $TMP_DIR/*
 
 cp /cluster/felipe.mt87/mef/cl-simu/main $TMP_DIR
 cp /cluster/felipe.mt87/mef/cl-simu/args $TMP_DIR
 
 cd $TMP_DIR
 
-export OMP_NUM_THREADS=8
+export OMP_NUM_THREADS=4
 
-export GOMP_CPU_AFFINITY=0-7
+#export GOMP_CPU_AFFINITY=0-3
 
 ./main -dt $TT -fin $MSH_IN -fout $VTK_OUT `cat args` > $OUT_DIR/$OUT_NAME 2>&1
 
@@ -30,7 +32,7 @@ export GOMP_CPU_AFFINITY=0-7
 rm -f main
 rm -f args
 
-cp ContactHistory $OUT_DIR/ContactHistory$TT
+cp ContactHistory $OUT_DIR/zeta_hist_03
 cp -r $TMP_DIR/* $OUT_DIR
 
 rm -rf $TMP_DIR
