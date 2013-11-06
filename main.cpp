@@ -251,8 +251,8 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
   PetscOptionsGetString(PETSC_NULL,"-fout",foutaux,PETSC_MAX_PATH_LEN-1,&flg_fout);
   PetscOptionsHasName(PETSC_NULL,"-help",&ask_help);
 
-  is_bdf2 = PETSC_FALSE;
-  //is_bdf2 = PETSC_TRUE;
+  //is_bdf2 = PETSC_FALSE;
+  is_bdf2 = PETSC_TRUE;
   if (is_bdf2 && utheta!=1)
   {
     cout << "ERROR:    BDF2 with utheta!=1" << endl;
@@ -1375,7 +1375,7 @@ PetscErrorCode AppCtx::setInitialConditions()
   {
     setUPInitialGuess();
     printf("Initial conditions:\n");
-    for (int i = 0; i < 0; ++i)
+    for (int i = 0; i < 5; ++i)
     {
       printf("\tIterations %d\n", i);
       // * SOLVE THE SYSTEM *
