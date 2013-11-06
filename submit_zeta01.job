@@ -1,5 +1,5 @@
 #PBS -N zeta01
-#PBS -l nodes=1:ppn=4:octo32
+#PBS -l nodes=1:ppn=4:octo
 #PBS -o /cluster/felipe.mt87/err1
 #PBS -e /cluster/felipe.mt87/err2
 

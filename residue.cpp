@@ -240,7 +240,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
   // LOOP NAS CÉLULAS
 #ifdef FEP_HAS_OPENMP
-  FEP_PRAGMA_OMP(parallel default(none) shared(Vec_up_k,Vec_fun,cout,null_space_press_dof,JJ,utheta))
+  FEP_PRAGMA_OMP(parallel default(none) shared(Vec_up_k,Vec_fun,cout,null_space_press_dof,JJ,utheta,iter))
 #endif
   {
     VectorXd          FUloc(n_dofs_u_per_cell);
@@ -418,6 +418,37 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       x_coefs_c_mid_trans = utheta*x_coefs_c_new_trans + (1.-utheta)*x_coefs_c_old_trans;
       p_coefs_c_mid       = utheta*p_coefs_c_new       + (1.-utheta)*p_coefs_c_old;
 
+      // test: erase me. Interpolated mesh velocity
+      if (false)
+      {
+        //if (iter==0 && (&*cell)==mesh->getCellPtr(0))
+        //{
+        //  printf("COEFSSSSSSSSS: \n");
+        //  cout << v_coefs_c_mid_trans << endl << endl;
+        //}
+        for (int j = 0; j < (int)v_coefs_c_mid_trans.cols(); ++j)
+        {
+          for (int c = 0; c < dim; ++c)
+            Xqp(c) = x_coefs_c_mid_trans(c,j);
+          Vqp = v_exact(Xqp, current_time+dt/2., tag);
+          for (int c = 0; c < dim; ++c)
+            v_coefs_c_mid_trans(c,j) = Vqp(c);
+        }
+        //if (iter==0 && (&*cell)==mesh->getCellPtr(0))
+        //{
+        //  printf("EXACTTTTTTT: \n");
+        //  cout << v_coefs_c_mid_trans << endl << endl;
+        //}
+        //if (iter==0 && (&*cell)==mesh->getCellPtr(0))
+        //{
+        //  printf("COORD: \n");
+        //  cout << x_coefs_c_old_trans << endl << endl;
+        //}        
+        //for (int i = 0; i < v_coefs_c_mid_trans.rows(); ++i)
+        //  for (int j = 0; j < v_coefs_c_mid_trans.cols(); ++j)
+        //    v_coefs_c_mid_trans(i,j) += dt*dt;
+      }
+
       visc = muu(tag);
       rho  = pho(Xqp,tag);
       Aloc.setZero();
@@ -523,8 +554,8 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
         Pqp_new  = p_coefs_c_new.dot(psi_c[qp]);
         Pqp      = p_coefs_c_mid.dot(psi_c[qp]);
         Vqp      = v_coefs_c_mid_trans * qsi_c[qp];
-        //Vqp = v_exact(Xqp_old, current_time, 0);
-        //Vqp = v_exact(Xqp, current_time+dt/2., 0);
+        //Vqp = v_exact(Xqp_old, current_time, tag);
+        //Vqp = v_exact(Xqp, current_time+dt/2., tag);
         Uconv_qp = Uqp - Vqp;
         //Uconv_qp = Uqp_old;
         dUdt     = (Uqp_new-Uqp_old)/dt;

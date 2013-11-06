@@ -1463,6 +1463,9 @@ Vector v_exact(Vector const& X, double t, int tag) //(X,t,tag)
   //v(1) = 10*t*(1-y*y)*(x + t*(1-x*x)/32. + 1)/4.;
   v(0) = 5*( sin(x)*sin(x)*sin(w_*t) + sin(y)*sin(y)*cos(w_*t) );
   v(1) = 5*(-sin(y)*sin(x)*sin(w_*t) + sin(x)*sin(y)*cos(w_*t) );
+  //v(0) = x;
+  //v(1) = y;
+  
   //v(0) = y*y;
   //v(1) = 2*y;
   return v;

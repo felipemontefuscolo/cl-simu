@@ -1208,7 +1208,7 @@ PetscErrorCode AppCtx::calcMeshVelocity(Vec const& Vec_x_0, Vec const& Vec_up_0,
         //k4 = v_exact(X0+k3*dt,tt+dt,tag);
         //tmp =  (k1 + 2.*(k2+k3) + k4)/6.; // velocity
         
-        int const N = 8;
+        int const N = 16;
         double Dt = dt/N, TT = tt;
         Y0 = X0;
         tmp.setZero();
@@ -1223,7 +1223,8 @@ PetscErrorCode AppCtx::calcMeshVelocity(Vec const& Vec_x_0, Vec const& Vec_up_0,
           TT += Dt;
         }
         tmp = (Y0 - X0)/dt;
-
+        //tmp = v_exact(X0,tt,tag);
+    
         //tmp = k1;
 
         
