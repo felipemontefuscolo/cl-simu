@@ -17,7 +17,7 @@ beta2 1.0
 -plot_es 1              # plot exact solution: true or false
 -family_files 1         # plot output as 001, 002, 003, ...
 -sst -1.e-7             # steady state tol (Unew-Uold)/(Unew)
--utheta 1              # time discretization theta method (momentum)
+-utheta .5              # time discretization theta method (momentum)
 vtheta 1.0              # time discretization theta method (mesh velocity)
 -quadr_c 4              # quadrature degree (cell) // 2D: 3 para ME e TH2, 2 para GLS .... 3D
 -quadr_f 3              # quadrature degree (facet)

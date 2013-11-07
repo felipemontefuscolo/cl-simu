@@ -1265,8 +1265,8 @@ PetscErrorCode AppCtx::calcMeshVelocity(Vec const& Vec_x_0, Vec const& Vec_up_0,
       }
       else
       {
-        if (  true &&  (  is_in(tag, neumann_tags) || is_in(tag, dirichlet_tags) || is_in(tag, periodic_tags)   )   )
-        //if (  false &&  (  is_in(tag, neumann_tags) || is_in(tag, dirichlet_tags) || is_in(tag, periodic_tags)   )   )
+        //if (  true &&  (  is_in(tag, neumann_tags) || is_in(tag, dirichlet_tags) || is_in(tag, periodic_tags)   )   )
+        if (  false &&  (  is_in(tag, neumann_tags) || is_in(tag, dirichlet_tags) || is_in(tag, periodic_tags)   )   )
         //if (  true &&  (  is_in(tag, neumann_tags) || is_in(tag, dirichlet_tags) || is_in(tag, periodic_tags) || is_in(tag, feature_tags))   )
         {
           tmp.setZero();
