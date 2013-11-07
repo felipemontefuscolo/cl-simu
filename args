@@ -8,7 +8,7 @@ dt 1e-2    1e-3 0.0625e-3 0.03125e-3 0.015625e-3 0.0078125e-3 0.00390625e-3 # ti
 -has_convec 1           # convective term: true or false CONSIDERE COLOCAR utheta=1 se desativar isto.
 -unsteady   1           # steady or unsteady problem
 -boundary_smoothing 0
--force_mesh_velocity 1  # imposes the mesh velocity of boundary grid
+-force_mesh_velocity 0  # imposes the mesh velocity of boundary grid
 -nonlinear_elasticity 0 # non-linear term in the elasticity problem
 -mesh_adapt 0           # 1 to enable mesh adaption
 -fprint_ca 1            # print contact angle at file ContactHistory
@@ -64,7 +64,7 @@ snes_converged_reason 1
 -snes_rtol 1.e-12  # <1e-08>: Stop if decrease in function norm less than
 -snes_atol 1.e-12
 ksp_monitor stdout
--snes_max_it 10
+-snes_max_it 20
 mat_no_inode 1
 
 ##### DEBUG
@@ -116,11 +116,11 @@ half_osc3d   interf_tags 3 feature_tags 5,6,8,1
 
 ############################################################################
 
-function_space 1 # P1P1 (or Q1Q1) GLS stabilization
+-function_space 1 # P1P1 (or Q1Q1) GLS stabilization
 function_space 2 # P1+P1 with bubble condensation
 function_space 3 # P2+Pm1 with bubble condensation and pressure gradient elimination
 function_space 4 # P2P1 (or Q2Q1)
--function_space 5 # P1+P1
+function_space 5 # P1+P1
 function_space 6 # P2P0
 function_space 7 # P2+Pm1 full
 function_space 8 # P1P1 unstable

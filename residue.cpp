@@ -739,7 +739,10 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
           for (int j = 0; j < n_dofs_u_per_cell/dim; ++j)
           {
-            dResdu = unsteady*(rho*phi_c[qp][j]/dt)*I + has_convec*rho*utheta*( phi_c[qp][j]*dxU + Uconv_qp.dot(dxphi_c.row(j))*I );
+            if (is_bdf2 && time_step > 0)
+              dResdu = unsteady*(rho*1.5*phi_c[qp][j]/dt)*I + has_convec*rho*utheta*( phi_c[qp][j]*dxU + Uconv_qp.dot(dxphi_c.row(j))*I );
+            else
+              dResdu = unsteady*(rho*phi_c[qp][j]/dt)*I + has_convec*rho*utheta*( phi_c[qp][j]*dxU + Uconv_qp.dot(dxphi_c.row(j))*I );
 
             for (int i = 0; i < n_dofs_p_per_cell; ++i)
             {
