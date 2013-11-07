@@ -172,7 +172,8 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
   if (is_bdf2)
   {
     if (time_step == 0)
-      utheta = 0.5;
+      if(!is_bdf_euler_start)
+        utheta = 0.5;
   }
   
   bool const compact_bubble = true;
@@ -1326,7 +1327,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
         for (int k = 0; k < x_coefs_f_mid.size(); ++k)
           //x_coefs_f_mid[k] = utheta*x_coefs_f_new[k] + (1.-utheta)*x_coefs_f_old[k];
           //x_coefs_f_mid[k] = (u_coefs_f_new[k])*dt/2. + x_coefs_f_old[k];
-          x_coefs_f_mid[k] = (u_coefs_f_mid[k])*dt/2. + x_coefs_f_old[k];        
+          x_coefs_f_mid[k] = utheta*u_coefs_f_mid[k]*dt + x_coefs_f_old[k];        
       }
 
   
@@ -1969,6 +1970,15 @@ PetscErrorCode AppCtx::formFunction_mesh(SNES /*snes_m*/, Vec Vec_v, Vec Vec_fun
 {
   Mat *JJ = &Mat_Jac_m;
 
+  double utheta = AppCtx::utheta;
+  
+  if (is_bdf2)
+  {
+    if (time_step == 0)
+      if (!is_bdf_euler_start)
+        utheta = 0.5;
+  }
+
   //SNESGetJacobian(snes_m, JJ, NULL, NULL, NULL);
 
   // NOTE: solve elasticity problem in the mesh at time step n
@@ -1981,7 +1991,7 @@ PetscErrorCode AppCtx::formFunction_mesh(SNES /*snes_m*/, Vec Vec_v, Vec Vec_fun
 
 
 #ifdef FEP_HAS_OPENMP
-  FEP_PRAGMA_OMP(parallel default(none) shared(Vec_v, Vec_fun, cout, JJ))
+  FEP_PRAGMA_OMP(parallel default(none) shared(Vec_v, Vec_fun, cout, JJ, utheta))
 #endif
   {
     bool const non_linear = nonlinear_elasticity;
@@ -2038,8 +2048,9 @@ PetscErrorCode AppCtx::formFunction_mesh(SNES /*snes_m*/, Vec Vec_v, Vec Vec_fun
       }
       else
       {
-        x_coefs_c += x_coefs_c_new;
-        x_coefs_c /= 2.;
+        x_coefs_c = (1.-utheta)*x_coefs_c + utheta*x_coefs_c_new;
+        //x_coefs_c += x_coefs_c_new;
+        //x_coefs_c /= 2.;
       }
 
       v_coefs_c_trans = v_coefs_c.transpose();

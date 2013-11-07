@@ -1222,8 +1222,23 @@ PetscErrorCode AppCtx::calcMeshVelocity(Vec const& Vec_x_0, Vec const& Vec_up_0,
           Y0 += Dt*tmp;
           TT += Dt;
         }
+        //if (is_bdf2 && !is_bdf_cte_vel && time_step !=0)
         if (is_bdf2)
-          tmp = v_exact(Y0, tt+dt, tag);
+        {
+          if (time_step == 0)
+          {
+            if (is_bdf_euler_start)
+              tmp = v_exact(Y0, tt+dt, tag);
+          }
+          else
+          {
+            if (!is_bdf_cte_vel)
+              tmp = v_exact(Y0, tt+dt, tag);
+            else
+              tmp = (Y0 - X0)/dt;
+          }
+            
+        }
         else
           tmp = (Y0 - X0)/dt;
 

@@ -252,12 +252,21 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
   PetscOptionsHasName(PETSC_NULL,"-help",&ask_help);
 
   //is_bdf2 = PETSC_FALSE;
-  is_bdf2 = PETSC_TRUE;
+  is_bdf2            = PETSC_TRUE;
+  is_bdf_cte_vel     = PETSC_TRUE;
+  is_bdf_euler_start = PETSC_TRUE;
+  is_bdf_extrap_cte  = PETSC_TRUE;
   if (is_bdf2 && utheta!=1)
   {
     cout << "ERROR:    BDF2 with utheta!=1" << endl;
     throw;
   }
+  if (is_bdf_extrap_cte && !is_bdf_cte_vel)
+  {
+    cout << "ERROR: is_bdf_extrap_cte && !is_bdf_cte_vel" << endl;
+    throw;
+  }
+
 
   if (finaltime < 0)
     finaltime = maxts*dt;
@@ -1576,25 +1585,37 @@ PetscErrorCode AppCtx::solveTimeProblem()
     VecAXPY(Vec_x_1,-1.0,Vec_x_0);
     copyMesh2Vec(Vec_x_0);
 
-    calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 2.0, Vec_v_1, current_time);
-
-    //VecWAXPY(Vec_x_1, dt, Vec_v_mid, Vec_x_0); // Vec_x_1 = Vec_v_mid*dt + Vec_x_0
-    // Vec_x_1 = Vec_x_0 + (2/3 Vec_v_1  + 1/3 Vec_v_mid) * dt
+    if (is_bdf_cte_vel)
     {
+      calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, Vec_v_1, current_time);
+      
       VecCopy(Vec_v_1, Vec_x_1);
-      VecScale(Vec_x_1, 2./3.);
-      VecAXPY(Vec_x_1, 1./3.,Vec_v_mid);
+      if (is_bdf_extrap_cte) // faz v1 <- 1.5 v1 - 0.5 v0
+      {
+        VecAXPBY(Vec_v_1, -0.5, 1.5, Vec_v_mid);
+        VecCopy(Vec_x_1, Vec_v_mid);
+      }
+      //VecScale(Vec_x_1, 2./3.);
+      //VecAXPY(Vec_x_1, 1./3.,Vec_v_mid);
+      //VecScale(Vec_x_1, 1.);
+      //VecAXPY(Vec_x_1, 0.,Vec_v_mid);
+      VecScale(Vec_x_1, dt);
+      VecAXPY(Vec_x_1,1.,Vec_x_0); // x_1 += x_0
+      
+      
+    }
+    else
+    {
+      calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 2.0, Vec_v_1, current_time);
+      
+      VecCopy(Vec_v_1, Vec_x_1);
+      //VecScale(Vec_x_1, 2./3.);
+      //VecAXPY(Vec_x_1, 1./3.,Vec_v_mid);
+      VecScale(Vec_x_1, 1./2.);
+      VecAXPY(Vec_x_1, 1./2.,Vec_v_mid);
       VecScale(Vec_x_1, dt);
       VecAXPY(Vec_x_1,1.,Vec_x_0);
     }
-    //{
-    //  VecCopy(Vec_v_1, Vec_x_1);
-    //  VecScale(Vec_x_1, 2./2.);
-    //  VecAXPY(Vec_x_1, 0./2.,Vec_v_mid);
-    //  VecScale(Vec_x_1, dt);
-    //  VecAXPY(Vec_x_1,1.,Vec_x_0);
-    //}
-
 
     VecCopy(Vec_up_1, Vec_up_0);
 
@@ -1684,9 +1705,9 @@ PetscErrorCode AppCtx::solveTimeProblem()
     {
       if (plot_exact_sol)
         computeError(Vec_x_0, Vec_up_0,current_time);
-        VecCopy(Vec_up_1, Vec_dup);
-        VecAXPY(Vec_dup,-1.0,Vec_up_0); // Vec_dup -= Vec_up_0
-        VecScale(Vec_dup, 1./dt);
+      VecCopy(Vec_up_1, Vec_dup);
+      VecAXPY(Vec_dup,-1.0,Vec_up_0); // Vec_dup -= Vec_up_0
+      VecScale(Vec_dup, 1./dt);
     }
     else
     {
@@ -1828,9 +1849,28 @@ PetscErrorCode AppCtx::solveTimeProblem()
       {
         if (is_bdf2)
         {
-          VecCopy(Vec_v_1, Vec_v_mid);
-          calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 2.0, Vec_v_1, current_time);
-          VecAXPBY(Vec_v_mid, .5, .5, Vec_v_1);
+          if (is_bdf_cte_vel)
+          {
+            //VecCopy(Vec_v_1, Vec_v_mid);
+            if (is_bdf_extrap_cte) // faz v1 <- 1.5 v1 - 0.5 v0
+            {
+              calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, Vec_v_1, current_time);
+              VecCopy(Vec_v_1, Vec_x_1); // estraga x1, eh consertado depois
+              VecAXPBY(Vec_v_1, -0.5, 1.5, Vec_v_mid);
+              VecCopy(Vec_x_1, Vec_v_mid);
+            }
+            else
+            {            
+              calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, Vec_v_1, current_time);
+              VecCopy(Vec_v_1, Vec_v_mid);
+            }
+          }
+          else
+          {
+            VecCopy(Vec_v_1, Vec_v_mid);
+            calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 2.0, Vec_v_1, current_time);
+            VecAXPBY(Vec_v_mid, .5, .5, Vec_v_1);
+          }
         }
         else
           calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, Vec_v_mid, current_time); // Adams-Bashforth

@@ -119,8 +119,8 @@ half_osc3d   interf_tags 3 feature_tags 5,6,8,1
 function_space 1 # P1P1 (or Q1Q1) GLS stabilization
 function_space 2 # P1+P1 with bubble condensation
 function_space 3 # P2+Pm1 with bubble condensation and pressure gradient elimination
--function_space 4 # P2P1 (or Q2Q1)
-function_space 5 # P1+P1
+function_space 4 # P2P1 (or Q2Q1)
+-function_space 5 # P1+P1
 function_space 6 # P2P0
 function_space 7 # P2+Pm1 full
 function_space 8 # P1P1 unstable
