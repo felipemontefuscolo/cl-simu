@@ -176,7 +176,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
         utheta = 0.5;
   }
   
-  bool const compact_bubble = true;
+  bool const compact_bubble = true; // eliminate buuble from convective term
   
 
   //PetscErrorCode      ierr;

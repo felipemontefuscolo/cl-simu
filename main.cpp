@@ -252,9 +252,9 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
   PetscOptionsHasName(PETSC_NULL,"-help",&ask_help);
 
   //is_bdf2 = PETSC_FALSE;
-  is_bdf2            = PETSC_FALSE;
+  is_bdf2            = PETSC_TRUE;
   is_bdf_cte_vel     = PETSC_FALSE;
-  is_bdf_euler_start = PETSC_FALSE;
+  is_bdf_euler_start = PETSC_TRUE;
   is_bdf_extrap_cte  = PETSC_FALSE;
   if (is_bdf2 && utheta!=1)
   {

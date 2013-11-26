@@ -1298,7 +1298,7 @@ Vector solid_veloc(Vector const& X, double t, int tag)
 #endif
 
 // COUETTE
-#if (true)
+#if (false)
 
 double const w_ = 10;
 double const a__= 1;
@@ -1492,6 +1492,219 @@ Tensor feature_proj(Vector const& X, double t, int tag)
 }
 
 #endif
+
+// ETIENNE
+#if (true)
+
+double sech(double x)
+{
+  return 1./cosh(x);
+}
+
+double G(double t)
+{
+  return 1.+tanh(t)*sin(9.*pi*t);
+}
+
+double H(double t)
+{
+  return pow(sech(t),2)*sin(9*pi*t)+9*pi*tanh(t)*cos(9*pi*t);
+}
+
+double pho(Vector const& X, int tag)
+{
+  return 1.0;
+}
+double cos_theta0()
+{
+  return 0.0;
+}
+
+double zeta(double u_norm, double angle)
+{
+  return 0*5.e-1;
+}
+
+double beta_diss()
+{
+  return 0*1.e-4;
+}
+
+double gama(Vector const& X, double t, int tag)
+{
+  return 0;
+}
+double muu(int tag)
+{
+  return  1.;
+}
+Vector force(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+
+  Vector f(Vector::Zero(X.size()));
+  //Tensor dxU(grad_u_exact(X,t,tag));
+
+  //f = dxU*u_exact(X,t,tag);
+  //f = dxU*u_exact(X,t,tag) + grad_p_exact(X,t,tag);
+  //f(0) += -a__*y*w_*sin(w_*t) + 1;
+  //f(1) += +a__*x*w_*cos(w_*t);
+  //f(1) += +a__*x;
+  //f(1) = 2*t;
+  //f(0) = -2.;
+  //f(1) = 1;
+  f(0) = -((pow(y,4)+(8*x+4)*pow(y,3)+(-6*pow(x,3)-6*pow(x,2)-3*x-5)*pow(y,2)+(-4*pow(x,3)-6*pow(x,2)-6*x-2)*y-2*pow(x,4)-8*pow(x,3)-10*pow(x,2)-2*x)*pow(G(t),2)+(12*y+8)*G(t)-4*x)/2;
+  f(1) = -((4*pow(y,4)+(-6*pow(x,2)-4*x+1)*pow(y,3)+(-6*pow(x,2)-6*x-1)*pow(y,2)+(-4*pow(x,3)-12*pow(x,2)-8*x-6)*y-2*pow(x,4)-4*pow(x,3)+6*pow(x,2)+8*x+4)*pow(G(t),2)+(12*x+2)*G(t))/2;
+  
+  f(0) += H(t)*( -1+x+pow(x,2)+y+pow(y,2)+x*y+pow(y,3) );
+  f(1) += H(t)*( 1+x+pow(x,2)-y-pow(y,2)/2-2*x*y+pow(x,3));
+  
+  
+  //f(0) = pow(sin(t*w_),2)*pow(x,3)*pow(y,2)+(w_*cos(t*w_)*pow(x,2)-2*sin(t*w_))*y+2*cos(t*w_)*x;
+  //f(1) = pow(sin(t*w_),2)*pow(x,2)*pow(y,3)-w_*cos(t*w_)*x*pow(y,2)+2*sin(t*w_)*y+2*sin(t*w_)*x;
+  
+  
+  return f;
+}
+Vector u_exact(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+
+  Vector v(Vector::Zero(X.size()));
+
+  v(0) =  G(t)*(-1+x+pow(x,2)+y+pow(y,2)+x*y+pow(y,3));
+  v(1) =  G(t)*(1+x+pow(x,2)-y-pow(y,2)/2-2*x*y+pow(x,3));
+
+  //v(0) = x*x*y*sin(w_*t);
+  //v(1) = -x*y*y*sin(w_*t);
+  
+  
+  return v;
+}
+double pressure_exact(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+
+  return  x*x;
+  //return  x*x*cos(w_*t) + y*y*sin(w_*t);
+  //return 0;
+}
+Vector grad_p_exact(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+  Vector dxP(2);
+  //dxP(0) = cos(w_*t);
+  //dxP(1) = sin(w_*t);
+
+  dxP(0) = 2.*x;
+  dxP(1) = 0;
+
+  return dxP;
+}
+Tensor grad_u_exact(Vector const& X, double t, int tag)
+{
+  double x = X(0);
+  double y = X(1);
+  Tensor dxU(Tensor::Zero(X.size(), X.size()));
+
+  //dxU(0,0) = 0;
+  //dxU(0,1) = cos(w_*t); //-2*y
+  //dxU(1,0) = sin(w_*t);
+  //dxU(1,1) = 0;
+  
+  dxU(0,0) = (y+2*x+1)*G(t);
+  dxU(0,1) = (3*pow(y,2)+2*y+x+1)*G(t);
+  dxU(1,0) = (-2*y+3*pow(x,2)+2*x+1)*G(t);
+  dxU(1,1) = (-y-2*x-1)*G(t);
+  
+  //dxU(0,0) = 2.*sin(t*w_)*x*y;
+  //dxU(0,1) = sin(t*w_)*x*x;
+  //dxU(1,0) = -sin(t*w_)*y*y;
+  //dxU(1,1) = -2.*sin(t*w_)*x*y;
+  
+  //dxU(0,1) = 1;
+  
+  return dxU;
+}
+Vector traction(Vector const& X, Vector const& normal, double t, int tag)
+{
+  Vector T(Vector::Zero(X.size()));
+
+  //T(0) = -pressure_exact(X,t,tag);
+  //T(1) = muu(tag)*(cos(w_*t) + sin(w_*t));
+
+  Tensor dxU(grad_u_exact(X,t,tag));
+  Tensor I(Tensor::Identity(2,2));
+
+  T = (- pressure_exact(X,t,tag)*I +  muu(tag)*(dxU + dxU.transpose()))*normal;
+
+  return T;
+}
+Vector u_initial(Vector const& X, int tag)
+{
+  return u_exact(X,0,tag);
+}
+double p_initial(Vector const& X, int tag)
+{
+  return pressure_exact(X,0,tag);
+}
+
+Vector solid_normal(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+
+  return N;
+}
+
+Vector v_exact(Vector const& X, double t, int tag) //(X,t,tag)
+{
+  double const tet = 10. * (pi/180.);
+  double const x = X(0);
+  double const y = X(1);
+  Vector v(Vector::Zero(X.size()));
+  //v(0) = +.1*( y );//*(X(0)+0.5)*(X(0)-0.5)/2.;
+  //v(1) = +.1*( 0 );//*(X(1)+0.5)*(X(1)-0.5)/2.;
+  //v(0) = +0.1*(  1 );//*(X(0)+0.5)*(X(0)-0.5)/2.;
+  //v(1) = +0.1*(  0 );//*(X(1)+0.5)*(X(1)-0.5)/2.;
+  //return v * (tag!=1 && tag!=2);
+  //v(0) = 10*t*(1-x*x)*(1+y)/4.;
+  //v(1) = 10*t*(1-y*y)*(x + t*(1-x*x)/32. + 1)/4.;
+  v(0) = x*y*t*t/5.;
+  v(1) = x*y*(1.-t*t/5)/10.;
+  //v(0) = x;
+  //v(1) = y;
+  
+  //v(0) = y*y;
+  //v(1) = 2*y;
+  return v;
+  //return u_exact(X,t,tag);
+}
+
+// posição do contorno
+Vector x_exact(Vector const& X, double t, int tag)
+{
+  Vector r(Vector::Zero(X.size()));
+  return r;
+}
+
+Vector solid_veloc(Vector const& X, double t, int tag)
+{
+  Vector N(Vector::Zero(X.size()));
+  //N(1) = 1;
+  return N;
+}
+
+Tensor feature_proj(Vector const& X, double t, int tag)
+{
+  return Tensor::Zero(2,2);
+}
+
+#endif
+
 
 // COUETTE_QUAD
 #if (false)

@@ -33,8 +33,22 @@ p : x*cos(w_*t) + y*sin(w_*t)$
 /* [wxMaxima: input   end   ] */
 
 /* [wxMaxima: input   start ] */
+u : [ (1+tanh(t)*sin(9*%pi*t)) * (-1+x+x^2+y+y^2+x*y+y^3),
+      (1+tanh(t)*sin(9*%pi*t)) * (1+x+x^2-y-y^2/2-2*x*y+x^3)]$
+p : x^2$
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+1+x+x^2-y-y^2/2-2*x*y+x^3
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
 ratsimp(f(u,p))$
-trigsimp(%);
+// trigsimp(%);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+ratsimp(f(u,p));
 /* [wxMaxima: input   end   ] */
 
 /* [wxMaxima: input   start ] */
@@ -42,6 +56,10 @@ diff(u[1],x);
 diff(u[1],y);
 diff(u[2],x);
 diff(u[2],y);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+diff((1+tanh(t)*sin(9*%pi*t)),t);
 /* [wxMaxima: input   end   ] */
 
 /* Maxima can't load/batch files which end with a comment! */
