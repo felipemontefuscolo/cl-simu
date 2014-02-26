@@ -1494,7 +1494,7 @@ Tensor feature_proj(Vector const& X, double t, int tag)
 #endif
 
 // ETIENNE
-#if (true)
+#if (false)
 
 double sech(double x)
 {
@@ -3684,7 +3684,7 @@ Tensor feature_proj(Vector const& X, double t, int tag)
 
 // Esse deu certo!!!!!!!!!!!!
 // OSC_BB 3D
-#if (false)
+#if (true)
 double pho(Vector const& X, int tag)
 {
   return 1.0;

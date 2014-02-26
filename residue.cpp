@@ -1045,8 +1045,8 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       is_surface = is_in(tag, interface_tags);
       is_solid   = is_in(tag, solid_tags);
 
-      if ((!is_neumann))
-      //if ((!is_neumann) && (!is_surface) && (!is_solid))
+      //if ((!is_neumann))
+      if ((!is_neumann) && (!is_surface) && (!is_solid))
       //PetscFunctionReturn(0);
         continue;
 
@@ -1198,7 +1198,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
   // LOOP NAS FACES DO CONTORNO (free surface)
   //~ FEP_PRAGMA_OMP(parallel default(none) shared(Vec_up_k,Vec_fun,cout))
-  if (true)
+  if (false)
   {
     typedef ead::DFad<double, 30>      adouble;
     typedef marray::Array<adouble, 2>  AMatrix;
@@ -2207,6 +2207,8 @@ PetscErrorCode AppCtx::formFunction_mesh(SNES /*snes_m*/, Vec Vec_v, Vec Vec_fun
 
   Assembly(*JJ);
   Assembly(Vec_fun);
+
+  //View(*JJ, "ElastOp", "JJ");
 
   PetscFunctionReturn(0);
 }

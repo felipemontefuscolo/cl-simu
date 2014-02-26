@@ -1384,7 +1384,7 @@ PetscErrorCode AppCtx::setInitialConditions()
   {
     setUPInitialGuess();
     printf("Initial conditions:\n");
-    for (int i = 0; i < 5; ++i)
+    for (int i = 0; i < 10; ++i)
     {
       printf("\tIterations %d\n", i);
       // * SOLVE THE SYSTEM *
@@ -1655,7 +1655,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
       
       for (int kk = 0 ; kk < 1+3*full_implicit; kk++)
       {
-        printf("\tIterations %d\n", kk);
+        printf("\tFixed Point Iteration %d\n", kk);
         
         ierr = SNESSolve(snes,PETSC_NULL,Vec_up_1);        CHKERRQ(ierr);
         
@@ -1910,7 +1910,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
       //VecCopy(Vec_res, Vec_up_1); // u(n+1) = 2*u(n) - u(n-1)
 
     }
-    else
+    else // if it's not ALE
     {
       VecCopy(Vec_up_1, Vec_up_0);
     }

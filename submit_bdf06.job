@@ -1,5 +1,5 @@
 #PBS -N bdf06
-#PBS -l nodes=1:ppn=8:dodeca
+#PBS -l nodes=1:ppn=8:hexadeca
 #PBS -o /cluster/felipe.mt87/err1
 #PBS -e /cluster/felipe.mt87/err2
 
