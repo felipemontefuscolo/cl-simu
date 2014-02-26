@@ -436,6 +436,7 @@ public:
   PetscBool   is_bdf_cte_vel;
   PetscBool   is_bdf_euler_start;
   PetscBool   is_bdf_extrap_cte;
+  PetscBool   is_bdf_bdf_extrap;
   
   int         converged_times;
   double      dt;
