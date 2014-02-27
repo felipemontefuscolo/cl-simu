@@ -253,10 +253,11 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
 
   //is_bdf2 = PETSC_FALSE;
   is_bdf2            = PETSC_TRUE;
+  is_bdf_bdf_extrap  = PETSC_FALSE;
+  is_bdf_ab          = PETSC_TRUE;
   is_bdf_cte_vel     = PETSC_FALSE;
   is_bdf_euler_start = PETSC_FALSE;
   is_bdf_extrap_cte  = PETSC_FALSE;
-  is_bdf_bdf_extrap  = PETSC_TRUE;
   if (is_bdf2 && utheta!=1)
   {
     cout << "ERROR:    BDF2 with utheta!=1" << endl;
@@ -272,6 +273,12 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
     cout << "ERROR: !is_bdf_bdf_extrap && !is_bdf2" << endl;
     throw;
   }
+  if (!is_bdf_ab && !is_bdf2)
+  {
+    cout << "ERROR: !is_bdf_ab && !is_bdf2" << endl;
+    throw;
+  }
+
 
   if (finaltime < 0)
     finaltime = maxts*dt;
@@ -1618,6 +1625,21 @@ PetscErrorCode AppCtx::solveTimeProblem()
       VecScale(Vec_x_1, dt);
       VecAXPY(Vec_x_1,1.,Vec_x_0);
     }
+    else if (is_bdf_ab)
+    {
+      // calcula o X meio extrapolado
+      VecAXPY(Vec_x_1,1.0,Vec_x_0);
+      VecScale(Vec_x_1, .5);
+      // computa a velocidade nesse X meio
+      calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, Vec_v_1, current_time);
+      VecCopy(Vec_v_1, Vec_x_1);
+      VecScale(Vec_x_1, dt);
+      VecAXPY(Vec_x_1,1.,Vec_x_0);
+      
+      // coloca V1 no passo inteiro
+      VecScale(Vec_v_1, 1.5);
+      VecAXPY(Vec_v_1,-.5,Vec_v_mid);
+    }
     else
     {
       calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 2.0, Vec_v_1, current_time);
@@ -1723,9 +1745,18 @@ PetscErrorCode AppCtx::solveTimeProblem()
       VecAXPY(Vec_dup,-1.0,Vec_up_0); // Vec_dup -= Vec_up_0
       VecScale(Vec_dup, 1./dt);
       
-      VecCopy(Vec_x_1, Vec_v_mid);
-      VecAXPY(Vec_v_mid,-1.0,Vec_x_0); // Vec_v_mid -= Vec_x_0
-      VecScale(Vec_v_mid, 1./dt);
+      if (is_bdf_ab)
+      {
+        // atualizando Vec_v_mid para V1 meio (lembrando que Vec_v_1 tinha sido extrapolado p/ inteiro)
+        VecScale(Vec_v_mid, 1./3.);
+        VecAXPY(Vec_v_mid,2./3.,Vec_v_1); // Vec_v_mid -= Vec_x_0
+      }
+      else
+      {
+        VecCopy(Vec_x_1, Vec_v_mid);
+        VecAXPY(Vec_v_mid,-1.0,Vec_x_0); // Vec_v_mid -= Vec_x_0
+        VecScale(Vec_v_mid, 1./dt);
+      }
     }
     else
     {
@@ -1854,6 +1885,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
         VecScale(Vec_x_1, 2.0);
         VecAXPY(Vec_x_1,-1.0,Vec_x_0);
         copyMesh2Vec(Vec_x_0);
+        
       }
 
 
@@ -1892,6 +1924,21 @@ PetscErrorCode AppCtx::solveTimeProblem()
             VecScale(Vec_x_1, dt);
             VecAXPY(Vec_x_1,1.,Vec_x_0);            
           }
+          else if (is_bdf_ab)
+          {
+            // calcula o X meio extrapolado
+            VecAXPY(Vec_x_1,1.0,Vec_x_0);
+            VecScale(Vec_x_1, .5);
+            // computa a velocidade nesse X meio
+            calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, Vec_v_1, current_time);
+            VecCopy(Vec_v_1, Vec_x_1);
+            VecScale(Vec_x_1, dt);
+            VecAXPY(Vec_x_1,1.,Vec_x_0);
+
+            // coloca V1 no passo inteiro
+            VecScale(Vec_v_1, 1.5);
+            VecAXPY(Vec_v_1,-.5,Vec_v_mid);
+          }
           else
           {
             VecCopy(Vec_v_1, Vec_v_mid);
@@ -1903,7 +1950,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
           calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, Vec_v_mid, current_time); // Adams-Bashforth
         //calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, Vec_v_mid, 0.0); // Euler
         // move the mesh
-        if (!try2 && !is_bdf_bdf_extrap)
+        if (!try2 && !is_bdf_bdf_extrap && !is_bdf_ab)
           VecWAXPY(Vec_x_1, dt, Vec_v_mid, Vec_x_0); // Vec_x_1 = Vec_v_mid*dt + Vec_x_0
       }
 
