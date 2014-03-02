@@ -1416,10 +1416,12 @@ PetscErrorCode AppCtx::setInitialConditions()
 
   if (ale)
   {
-    setUPInitialGuess();
+
     printf("Initial conditions:\n");
     for (int m=0; m<1+is_bdf3; ++m)
     {
+      setUPInitialGuess();
+      
       for (int i = 0; i < 10; ++i)
       {
         printf("\tIterations %d\n", i);
@@ -1481,6 +1483,8 @@ PetscErrorCode AppCtx::setInitialConditions()
           VecScale(Vec_dup_0, 1./dt);
           VecCopy(Vec_x_0, Vec_x_aux);
           
+          copyVec2Mesh(Vec_x_1);
+          
           VecCopy(Vec_up_1, Vec_up_0);
           VecCopy(Vec_x_1, Vec_x_0);          
         }
@@ -1510,14 +1514,14 @@ PetscErrorCode AppCtx::setInitialConditions()
           calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 0.0, Vec_v_1, current_time);
           VecCopy(Vec_v_1, Vec_x_1);
           VecScale(Vec_x_1, 6./11.*dt);
+          VecAXPY(Vec_x_1, 2./11.,Vec_x_aux);
+          VecCopy(Vec_x_0, Vec_x_aux);
           VecAXPY(Vec_x_1,-9./11.,Vec_x_0);
           copyMesh2Vec(Vec_x_0);
           VecAXPY(Vec_x_1,18./11.,Vec_x_0);
-          VecAXPY(Vec_x_1, 2./11.,Vec_x_aux);
           
           VecCopy(Vec_up_1, Vec_up_0);
-          VecCopy(Vec_x_0, Vec_x_aux);
-          VecCopy(Vec_x_1, Vec_x_0);
+          //VecCopy(Vec_x_1, Vec_x_0);
         }
       }
       
@@ -1978,6 +1982,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
         copyMesh2Vec(Vec_x_0);
       }
       else
+      if (is_bdf3)
       {
         
         // extrapola o proximo Vec_x_1
@@ -1996,15 +2001,22 @@ PetscErrorCode AppCtx::solveTimeProblem()
         calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 0.0, Vec_v_1, current_time);
         VecCopy(Vec_v_1, Vec_x_1);
         VecScale(Vec_x_1, 6./11.*dt);
+        VecAXPY(Vec_x_1, 2./11.,Vec_x_aux);
+        VecCopy(Vec_x_0, Vec_x_aux);
         VecAXPY(Vec_x_1,-9./11.,Vec_x_0);
         copyMesh2Vec(Vec_x_0);
         VecAXPY(Vec_x_1,18./11.,Vec_x_0);
-        VecAXPY(Vec_x_1, 2./11.,Vec_x_aux);
         
         //VecCopy(Vec_up_1, Vec_up_0);
-        VecCopy(Vec_x_0, Vec_x_aux);
-        VecCopy(Vec_x_1, Vec_x_0);
+        //VecCopy(Vec_x_0, Vec_x_aux);
+        //VecCopy(Vec_x_1, Vec_x_0);
         
+      }
+      else
+      {
+        VecScale(Vec_x_1, 2.0);
+        VecAXPY(Vec_x_1,-1.0,Vec_x_0);
+        copyMesh2Vec(Vec_x_0);
       }
 
 
