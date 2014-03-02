@@ -252,15 +252,16 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
   PetscOptionsHasName(PETSC_NULL,"-help",&ask_help);
 
   //is_bdf2 = PETSC_FALSE;
-  is_bdf2            = PETSC_TRUE;
+  is_bdf3            = PETSC_TRUE;
+  is_bdf2            = PETSC_FALSE;
   is_bdf_bdf_extrap  = PETSC_FALSE;
-  is_bdf_ab          = PETSC_TRUE;
+  is_bdf_ab          = PETSC_FALSE;
   is_bdf_cte_vel     = PETSC_FALSE;
   is_bdf_euler_start = PETSC_FALSE;
   is_bdf_extrap_cte  = PETSC_FALSE;
-  if (is_bdf2 && utheta!=1)
+  if ((is_bdf2 && utheta!=1) || (is_bdf3 && utheta!=1))
   {
-    cout << "ERROR:    BDF2 with utheta!=1" << endl;
+    cout << "ERROR:    BDF2/3 with utheta!=1" << endl;
     throw;
   }
   if (is_bdf_extrap_cte && !is_bdf_cte_vel)
@@ -268,17 +269,22 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
     cout << "ERROR: is_bdf_extrap_cte && !is_bdf_cte_vel" << endl;
     throw;
   }
-  if (!is_bdf_bdf_extrap && !is_bdf2)
+  if (is_bdf_bdf_extrap && !is_bdf2)
   {
     cout << "ERROR: !is_bdf_bdf_extrap && !is_bdf2" << endl;
     throw;
   }
-  if (!is_bdf_ab && !is_bdf2)
+  if (is_bdf_ab && !is_bdf2)
   {
     cout << "ERROR: !is_bdf_ab && !is_bdf2" << endl;
     throw;
   }
-
+  if (is_bdf3 && is_bdf2)
+  {
+    cout << "ERROR: is_bdf3 && is_bdf2" << endl;
+    throw;
+  }
+    
 
   if (finaltime < 0)
     finaltime = maxts*dt;
@@ -736,6 +742,14 @@ PetscErrorCode AppCtx::allocPetscObjs()
   ierr = VecSetSizes(Vec_dup, PETSC_DECIDE, n_unknowns);              CHKERRQ(ierr);
   ierr = VecSetFromOptions(Vec_dup);                                  CHKERRQ(ierr);
 
+  if (is_bdf3)
+  {
+    //Vec Vec_dup_0;
+    ierr = VecCreate(PETSC_COMM_WORLD, &Vec_dup_0);                CHKERRQ(ierr);
+    ierr = VecSetSizes(Vec_dup_0, PETSC_DECIDE, n_unknowns);       CHKERRQ(ierr);
+    ierr = VecSetFromOptions(Vec_dup_0);                           CHKERRQ(ierr);
+  }
+
   //Vec Vec_v_mid
   ierr = VecCreate(PETSC_COMM_WORLD, &Vec_v_mid);                  CHKERRQ(ierr);
   ierr = VecSetSizes(Vec_v_mid, PETSC_DECIDE, n_dofs_v_mesh);      CHKERRQ(ierr);
@@ -755,6 +769,14 @@ PetscErrorCode AppCtx::allocPetscObjs()
   ierr = VecCreate(PETSC_COMM_WORLD, &Vec_x_1);                  CHKERRQ(ierr);
   ierr = VecSetSizes(Vec_x_1, PETSC_DECIDE, n_dofs_v_mesh);      CHKERRQ(ierr);
   ierr = VecSetFromOptions(Vec_x_1);                             CHKERRQ(ierr);
+
+  if (is_bdf3)
+  {
+    //Vec Vec_x_aux;
+    ierr = VecCreate(PETSC_COMM_WORLD, &Vec_x_aux);                  CHKERRQ(ierr);
+    ierr = VecSetSizes(Vec_x_aux, PETSC_DECIDE, n_dofs_v_mesh);      CHKERRQ(ierr);
+    ierr = VecSetFromOptions(Vec_x_aux);                             CHKERRQ(ierr);    
+  }
 
   //Vec Vec_normal;
   ierr = VecCreate(PETSC_COMM_WORLD, &Vec_normal);                  CHKERRQ(ierr);
@@ -1396,54 +1418,109 @@ PetscErrorCode AppCtx::setInitialConditions()
   {
     setUPInitialGuess();
     printf("Initial conditions:\n");
-    for (int i = 0; i < 10; ++i)
+    for (int m=0; m<1+is_bdf3; ++m)
     {
-      printf("\tIterations %d\n", i);
-      // * SOLVE THE SYSTEM *
-      if (solve_the_sys)
+      for (int i = 0; i < 10; ++i)
       {
-        //setUPInitialGuess();
-        ierr = SNESSolve(snes,PETSC_NULL,Vec_up_1);  CHKERRQ(ierr);
-      }
-      // * SOLVE THE SYSTEM *
-
-      // update
-      if (ale)
-      {
-        //double tt = time_step==0? dt : current_time;
-        //calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, Vec_v_mid, 0.0); // Euler (tem que ser esse no começo)
-        calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 0.5, Vec_v_mid, 0.0); // Adams-Bashforth
-        // move the mesh
-        VecWAXPY(Vec_x_1, dt, Vec_v_mid, Vec_x_0); // Vec_x_1 = Vec_v_mid*dt + Vec_x_0
-
-        //compute normal for the next time step, at n+1/2
+        printf("\tIterations %d\n", i);
+        // * SOLVE THE SYSTEM *
+        if (solve_the_sys)
         {
-          Vec Vec_x_mid;
-          int xsize;
-          double *xarray;
-          VecGetSize(Vec_x_0, &xsize);
-          VecGetArray(Vec_res, &xarray);
-          //prototipo no petsc-dev: VecCreateSeqWithArray(MPI_Comm comm,PetscInt bs,PetscInt n,const PetscScalar array[],Vec *V)
-          //VecCreateSeqWithArray(MPI_COMM_SELF, xsize, xarray, &Vec_x_mid);
-          VecCreateSeqWithArray(MPI_COMM_SELF, 1, xsize, xarray, &Vec_x_mid);
-          Assembly(Vec_x_mid);
-
-          VecCopy(Vec_x_0, Vec_x_mid);
-          VecAXPY(Vec_x_mid,1.,Vec_x_1);
-          VecScale(Vec_x_mid, 0.5);
-          getVecNormals(&Vec_x_mid, Vec_normal);
-
-          VecDestroy(&Vec_x_mid);
-          VecRestoreArray(Vec_res, &xarray);
+          //setUPInitialGuess();
+          ierr = SNESSolve(snes,PETSC_NULL,Vec_up_1);  CHKERRQ(ierr);
         }
+        // * SOLVE THE SYSTEM *
 
-        //// initial guess for the next time step; u(n+1) = 2*u(n) - u(n-1)
-        //VecCopy(Vec_up_1, Vec_res);
-        //VecScale(Vec_res,2.);
-        //VecAXPY(Vec_res, -1., Vec_up_0);
-        //VecCopy(Vec_res, Vec_up_1); // u(n+1) = 2*u(n) - u(n-1)
+        // update
+        if (ale)
+        {
+          //double tt = time_step==0? dt : current_time;
+          //calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, Vec_v_mid, 0.0); // Euler (tem que ser esse no começo)
+          calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 0.5, Vec_v_mid, 0.0); // Adams-Bashforth
+          // move the mesh
+          VecWAXPY(Vec_x_1, dt, Vec_v_mid, Vec_x_0); // Vec_x_1 = Vec_v_mid*dt + Vec_x_0
 
+          //compute normal for the next time step, at n+1/2
+          {
+            Vec Vec_x_mid;
+            int xsize;
+            double *xarray;
+            VecGetSize(Vec_x_0, &xsize);
+            VecGetArray(Vec_res, &xarray);
+            //prototipo no petsc-dev: VecCreateSeqWithArray(MPI_Comm comm,PetscInt bs,PetscInt n,const PetscScalar array[],Vec *V)
+            //VecCreateSeqWithArray(MPI_COMM_SELF, xsize, xarray, &Vec_x_mid);
+            VecCreateSeqWithArray(MPI_COMM_SELF, 1, xsize, xarray, &Vec_x_mid);
+            Assembly(Vec_x_mid);
+
+            VecCopy(Vec_x_0, Vec_x_mid);
+            VecAXPY(Vec_x_mid,1.,Vec_x_1);
+            VecScale(Vec_x_mid, 0.5);
+            getVecNormals(&Vec_x_mid, Vec_normal);
+
+            VecDestroy(&Vec_x_mid);
+            VecRestoreArray(Vec_res, &xarray);
+          }
+
+          //// initial guess for the next time step; u(n+1) = 2*u(n) - u(n-1)
+          //VecCopy(Vec_up_1, Vec_res);
+          //VecScale(Vec_res,2.);
+          //VecAXPY(Vec_res, -1., Vec_up_0);
+          //VecCopy(Vec_res, Vec_up_1); // u(n+1) = 2*u(n) - u(n-1)
+
+        }
       }
+      
+      if (is_bdf3)
+      {
+        current_time += dt;
+        time_step += 1;
+        if (m==0)
+        {
+          VecCopy(Vec_up_1, Vec_dup_0);
+          VecAXPY(Vec_dup_0,-1.0,Vec_up_0);
+          VecScale(Vec_dup_0, 1./dt);
+          VecCopy(Vec_x_0, Vec_x_aux);
+          
+          VecCopy(Vec_up_1, Vec_up_0);
+          VecCopy(Vec_x_1, Vec_x_0);          
+        }
+        else
+        {
+          VecCopy(Vec_up_1, Vec_dup);
+          VecAXPY(Vec_dup,-1.0,Vec_up_0);
+          VecScale(Vec_dup, 1./dt);
+          
+          copyVec2Mesh(Vec_x_1);
+          
+          // solving geometry before the (u,p)
+          
+          // extrapola o proximo Vec_x_1
+          VecScale(Vec_x_1, 3.0);
+          VecAXPY(Vec_x_1,-3.0,Vec_x_0);
+          VecAXPY(Vec_x_1, 1.0,Vec_x_aux);
+          // copyMesh2Vec(Vec_x_0); // we need Vec_x_0 later, don't touch it
+          
+          // estraga Vec_up_0
+          VecCopy(Vec_dup, Vec_up_0);
+          VecScale(Vec_up_0, 2.0);
+          VecAXPY(Vec_up_0,-1.0,Vec_dup_0);
+          VecScale(Vec_up_0, dt);
+          VecAXPY(Vec_up_0, 1.0,Vec_up_1); // Vec_up_0 tem agora a extrapolacao do futuro Vec_up_1
+          
+          calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 0.0, Vec_v_1, current_time);
+          VecCopy(Vec_v_1, Vec_x_1);
+          VecScale(Vec_x_1, 6./11.*dt);
+          VecAXPY(Vec_x_1,-9./11.,Vec_x_0);
+          copyMesh2Vec(Vec_x_0);
+          VecAXPY(Vec_x_1,18./11.,Vec_x_0);
+          VecAXPY(Vec_x_1, 2./11.,Vec_x_aux);
+          
+          VecCopy(Vec_up_1, Vec_up_0);
+          VecCopy(Vec_x_0, Vec_x_aux);
+          VecCopy(Vec_x_1, Vec_x_0);
+        }
+      }
+      
     }
   }
   // normals
@@ -1759,6 +1836,20 @@ PetscErrorCode AppCtx::solveTimeProblem()
       }
     }
     else
+    if (is_bdf3)
+    {
+      if (plot_exact_sol)
+        computeError(Vec_x_0, Vec_up_0,current_time);
+      VecCopy(Vec_dup, Vec_dup_0);
+      VecCopy(Vec_up_1, Vec_dup);
+      VecAXPY(Vec_dup,-1.0,Vec_up_0); // Vec_dup -= Vec_up_0
+      VecScale(Vec_dup, 1./dt);
+      
+      //VecCopy(Vec_x_1, Vec_v_mid);
+      //VecAXPY(Vec_v_mid,-1.0,Vec_x_0); // Vec_v_mid -= Vec_x_0
+      //VecScale(Vec_v_mid, 1./dt);
+    }
+    else
     {
       if (time_step == 0)
       {
@@ -1780,6 +1871,12 @@ PetscErrorCode AppCtx::solveTimeProblem()
       if (((time_step-1)%print_step)==0 || time_step == (maxts-1))
         must_print = true;
     }
+    else
+    if (is_bdf3)
+    {
+      if (((time_step-2)%print_step)==0 || time_step == (maxts-1))
+        must_print = true;
+    }    
     else
       if ((time_step%print_step)==0 || time_step == (maxts-1))
         must_print = true;
@@ -1882,9 +1979,31 @@ PetscErrorCode AppCtx::solveTimeProblem()
       }
       else
       {
-        VecScale(Vec_x_1, 2.0);
-        VecAXPY(Vec_x_1,-1.0,Vec_x_0);
+        
+        // extrapola o proximo Vec_x_1
+        VecScale(Vec_x_1, 3.0);
+        VecAXPY(Vec_x_1,-3.0,Vec_x_0);
+        VecAXPY(Vec_x_1, 1.0,Vec_x_aux);
+        // copyMesh2Vec(Vec_x_0); // we need Vec_x_0 later, don't touch it
+
+        // estraga Vec_up_0
+        VecCopy(Vec_dup, Vec_up_0);
+        VecScale(Vec_up_0, 2.0);
+        VecAXPY(Vec_up_0,-1.0,Vec_dup_0);
+        VecScale(Vec_up_0, dt);
+        VecAXPY(Vec_up_0, 1.0,Vec_up_1); // Vec_up_0 tem agora a extrapolacao do futuro Vec_up_1
+        
+        calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 0.0, Vec_v_1, current_time);
+        VecCopy(Vec_v_1, Vec_x_1);
+        VecScale(Vec_x_1, 6./11.*dt);
+        VecAXPY(Vec_x_1,-9./11.,Vec_x_0);
         copyMesh2Vec(Vec_x_0);
+        VecAXPY(Vec_x_1,18./11.,Vec_x_0);
+        VecAXPY(Vec_x_1, 2./11.,Vec_x_aux);
+        
+        //VecCopy(Vec_up_1, Vec_up_0);
+        VecCopy(Vec_x_0, Vec_x_aux);
+        VecCopy(Vec_x_1, Vec_x_0);
         
       }
 
@@ -1895,7 +2014,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
       ///////moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, current_time, Vec_x_1); // Adams-Bashforth
       /////////moveMesh(Vec_x_0, Vec_up_0, Vec_up_1, 0.5, current_time, Vec_x_1); // Alguma-coisa
       ///////calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.5, Vec_v_mid, current_time);
-      if ( !full_implicit )
+      if ( !full_implicit && !is_bdf3 )
       {
         if (is_bdf2)
         {
@@ -2828,6 +2947,12 @@ void AppCtx::freePetscObjs()
   //Destroy(snes);
   SNESDestroy(&snes);
   SNESDestroy(&snes_m);
+  
+  if (is_bdf3)
+  {
+    Destroy(Vec_x_aux);
+    Destroy(Vec_dup_0);
+  }
 }
 
 void GetDataVelocity::get_vec(int id, Real * vec_out) const

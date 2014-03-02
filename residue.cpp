@@ -175,6 +175,11 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       if(!is_bdf_euler_start)
         utheta = 0.5;
   }
+  else if (is_bdf3)
+  {
+    if (time_step <= 1)
+      utheta = 0.5;
+  }
   
   bool const compact_bubble = true; // eliminate buuble from convective term
   
@@ -257,6 +262,9 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
     MatrixXd            du_coefs_c_old(n_dofs_u_per_cell/dim, dim);        // n
     MatrixXd            du_coefs_c_old_trans(dim,n_dofs_u_per_cell/dim);   // n
+    
+    MatrixXd            du_coefs_c_vold(n_dofs_u_per_cell/dim, dim);        // n-1
+    MatrixXd            du_coefs_c_vold_trans(dim,n_dofs_u_per_cell/dim);   // n-1
 
     MatrixXd            v_coefs_c_mid(nodes_per_cell, dim);        // mesh velocity; n
     MatrixXd            v_coefs_c_mid_trans(dim,nodes_per_cell);   // mesh velocity; n
@@ -314,6 +322,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
     Vector              Uqp_old(dim);  // n
     Vector              Uqp_new(dim);  // n+1
     Vector              dUqp_old(dim);  // n
+    Vector              dUqp_vold(dim);  // n
     Vector              Vqp(dim);
     Vector              Uconv_qp(dim);
     Vector              dUdt(dim);
@@ -389,7 +398,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       dof_handler[DH_UNKS].getVariable(VAR_U).getCellDofs(mapU_c.data(), &*cell);
       dof_handler[DH_UNKS].getVariable(VAR_P).getCellDofs(mapP_c.data(), &*cell);
 
-      if (is_bdf2 && time_step > 0)
+      if ((is_bdf2 && time_step > 0) || (is_bdf3 && time_step > 1))
         VecGetValues(Vec_v_1, mapM_c.size(), mapM_c.data(), v_coefs_c_mid.data());
       else
         VecGetValues(Vec_v_mid, mapM_c.size(), mapM_c.data(), v_coefs_c_mid.data());
@@ -400,7 +409,9 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       VecGetValues(Vec_up_k,    mapP_c.size(), mapP_c.data(), p_coefs_c_new.data());
       VecGetValues(Vec_up_0,    mapP_c.size(), mapP_c.data(), p_coefs_c_old.data());
 
-      VecGetValues(Vec_dup,    mapU_c.size(), mapU_c.data(), du_coefs_c_old.data()); // bdf2
+      VecGetValues(Vec_dup,    mapU_c.size(), mapU_c.data(), du_coefs_c_old.data()); // bdf2,bdf3
+      if (is_bdf3)
+        VecGetValues(Vec_dup_0,  mapU_c.size(), mapU_c.data(), du_coefs_c_vold.data()); // bdf3
 
       // get nodal coordinates of the old and new cell
       mesh->getCellNodesId(&*cell, cell_nodes.data());
@@ -414,6 +425,8 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       u_coefs_c_new_trans = u_coefs_c_new.transpose();
   
       du_coefs_c_old_trans = du_coefs_c_old.transpose(); // bdf2
+      if (is_bdf3)
+        du_coefs_c_vold_trans = du_coefs_c_vold.transpose(); // bdf3
 
       u_coefs_c_mid_trans = utheta*u_coefs_c_new_trans + (1.-utheta)*u_coefs_c_old_trans;
       x_coefs_c_mid_trans = utheta*x_coefs_c_new_trans + (1.-utheta)*x_coefs_c_old_trans;
@@ -564,8 +577,14 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
         if (is_bdf2 && time_step > 0)
         {
           dUqp_old  = du_coefs_c_old_trans * phi_c[qp]; //n+utheta
-          
           dUdt = 1.5*dUdt - .5*dUqp_old;
+        }
+        else
+        if (is_bdf3 && time_step > 1)
+        {
+          dUqp_old   = du_coefs_c_old_trans  * phi_c[qp];
+          dUqp_vold  = du_coefs_c_vold_trans * phi_c[qp];
+          dUdt = 11./6.*dUdt - 7./6.*dUqp_old + 1./3.*dUqp_vold;
         }
 
 
@@ -622,8 +641,14 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
                 delta_cd = c==d;
                 Aloc(i*dim + c, j*dim + d) += JxW_mid*
                                               ( has_convec*phi_c[qp][i]*utheta *rho*( delta_cd*Uconv_qp.dot(dxphi_c.row(j))  +  dxU(c,d)*phi_c[qp][j] )   // advecção
-                        + ((is_bdf2 && time_step>0)?  1.5 : 1.0)*   unsteady* delta_cd*rho*phi_c[qp][i]*phi_c[qp][j]/dt     // time derivative
+                        //+ ((is_bdf2 && time_step>0)?  1.5 : 1.0)*   unsteady* delta_cd*rho*phi_c[qp][i]*phi_c[qp][j]/dt     // time derivative
                                               + utheta*visc*( delta_cd * dxphi_c.row(i).dot(dxphi_c.row(j)) + dxphi_c(i,d)*dxphi_c(j,c))   ); // rigidez
+                if (is_bdf2 && time_step>0)
+                  Aloc(i*dim + c, j*dim + d) += 1.5*JxW_mid*( unsteady* delta_cd*rho*phi_c[qp][i]*phi_c[qp][j]/dt) ; // time derivative
+                else if (is_bdf3 && time_step>1)
+                  Aloc(i*dim + c, j*dim + d) += 11./6.*JxW_mid*( unsteady* delta_cd*rho*phi_c[qp][i]*phi_c[qp][j]/dt) ; // time derivative
+                else
+                  Aloc(i*dim + c, j*dim + d) += JxW_mid*( unsteady* delta_cd*rho*phi_c[qp][i]*phi_c[qp][j]/dt) ; // time derivative
 
               }
             }
@@ -741,6 +766,8 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
           {
             if (is_bdf2 && time_step > 0)
               dResdu = unsteady*(rho*1.5*phi_c[qp][j]/dt)*I + has_convec*rho*utheta*( phi_c[qp][j]*dxU + Uconv_qp.dot(dxphi_c.row(j))*I );
+            if (is_bdf3 && time_step > 1)
+              dResdu = unsteady*(rho*11./6.*phi_c[qp][j]/dt)*I + has_convec*rho*utheta*( phi_c[qp][j]*dxU + Uconv_qp.dot(dxphi_c.row(j))*I );
             else
               dResdu = unsteady*(rho*phi_c[qp][j]/dt)*I + has_convec*rho*utheta*( phi_c[qp][j]*dxU + Uconv_qp.dot(dxphi_c.row(j))*I );
 
@@ -1320,7 +1347,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       for (int k = 0; k < u_coefs_f_mid.size(); ++k)
         u_coefs_f_mid[k] = utheta*u_coefs_f_new[k] + (1.-utheta)*u_coefs_f_old[k];
 
-      if (is_bdf2 && time_step > 0)
+      if ((is_bdf2 && time_step > 0) || (is_bdf3 && time_step > 1))
       {
         for (int k = 0; k < x_coefs_f_mid.size(); ++k)
           x_coefs_f_mid[k] = u_coefs_f_mid[k]*dt + x_coefs_f_old[k];
@@ -1981,7 +2008,13 @@ PetscErrorCode AppCtx::formFunction_mesh(SNES /*snes_m*/, Vec Vec_v, Vec Vec_fun
       if (!is_bdf_euler_start)
         utheta = 0.5;
   }
-
+  else
+  if (is_bdf3)
+  {
+    if (time_step <= 1)
+      utheta = 0.5;
+  }
+    
   //SNESGetJacobian(snes_m, JJ, NULL, NULL, NULL);
 
   // NOTE: solve elasticity problem in the mesh at time step n
@@ -2045,10 +2078,8 @@ PetscErrorCode AppCtx::formFunction_mesh(SNES /*snes_m*/, Vec Vec_v, Vec Vec_fun
       VecGetValues(Vec_x_1, mapV_c.size(), mapV_c.data(), x_coefs_c_new.data());
 
       //if (current_time < .5*dt)
-      if (is_bdf2 && time_step > 0)
-      {
+      if ((is_bdf2 && time_step > 0) || (is_bdf3 && time_step > 1) )
         x_coefs_c = x_coefs_c_new;
-      }
       else
       {
         x_coefs_c = (1.-utheta)*x_coefs_c + utheta*x_coefs_c_new;

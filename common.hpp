@@ -432,6 +432,7 @@ public:
   PetscBool   fprint_ca; // print contact angle
   PetscBool   nonlinear_elasticity;
   PetscBool   mesh_adapt;
+  PetscBool   is_bdf3;
   PetscBool   is_bdf2;
   PetscBool   is_bdf_bdf_extrap;
   PetscBool   is_bdf_ab;
@@ -584,6 +585,7 @@ public:
 
   // petsc vectors
   Vec                 Vec_res, Vec_up_0, Vec_up_1,Vec_dup, Vec_normal/**/;
+  Vec                 Vec_dup_0; // for bdf3
   Mat                 Mat_Jac;
   SNES                snes;         /* nonlinear solver context */
   KSP    			        ksp;
@@ -595,6 +597,7 @@ public:
   KSP    			        ksp_m;
   PC	   			        pc_m;
   Vec                 Vec_res_m, Vec_x_0, Vec_x_1, Vec_v_mid, Vec_v_1;
+  Vec                 Vec_x_aux; // bdf3
   SNESLineSearch      linesearch;
   
 };
