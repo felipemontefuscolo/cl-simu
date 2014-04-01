@@ -253,7 +253,7 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
 
   //is_bdf2 = PETSC_FALSE;
   is_bdf3            = PETSC_FALSE;
-  is_bdf2            = PETSC_TRUE;
+  is_bdf2            = PETSC_FALSE;
   is_bdf_bdf_extrap  = PETSC_FALSE;
   is_bdf_ab          = PETSC_FALSE;
   is_bdf_cte_vel     = PETSC_FALSE;
