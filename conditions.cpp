@@ -1298,7 +1298,7 @@ Vector solid_veloc(Vector const& X, double t, int tag)
 #endif
 
 // COUETTE
-#if (false)
+#if (true)
 
 double const w_ = 10;
 double const a__= 1;
@@ -1385,11 +1385,11 @@ Vector grad_p_exact(Vector const& X, double t, int tag)
   double x = X(0);
   double y = X(1);
   Vector dxP(2);
-  //dxP(0) = cos(w_*t);
-  //dxP(1) = sin(w_*t);
+  dxP(0) = cos(w_*t);
+  dxP(1) = sin(w_*t);
 
-  dxP(0) = 2.*x*cos(w_*t);
-  dxP(1) = 2.*y*sin(w_*t);
+  //dxP(0) = 2.*x*cos(w_*t);
+  //dxP(1) = 2.*y*sin(w_*t);
 
   return dxP;
 }
@@ -1461,10 +1461,10 @@ Vector v_exact(Vector const& X, double t, int tag) //(X,t,tag)
   //return v * (tag!=1 && tag!=2);
   //v(0) = 10*t*(1-x*x)*(1+y)/4.;
   //v(1) = 10*t*(1-y*y)*(x + t*(1-x*x)/32. + 1)/4.;
-  v(0) = 5*( sin(x)*sin(x)*sin(w_*t) + sin(y)*sin(y)*cos(w_*t) );
-  v(1) = 5*(-sin(y)*sin(x)*sin(w_*t) + sin(x)*sin(y)*cos(w_*t) );
-  //v(0) = x;
-  //v(1) = y;
+  //v(0) = 5*( sin(x)*sin(x)*sin(w_*t) + sin(y)*sin(y)*cos(w_*t) );
+  //v(1) = 5*(-sin(y)*sin(x)*sin(w_*t) + sin(x)*sin(y)*cos(w_*t) );
+  v(0) = x;
+  v(1) = y;
   
   //v(0) = y*y;
   //v(1) = 2*y;
@@ -3684,7 +3684,7 @@ Tensor feature_proj(Vector const& X, double t, int tag)
 
 // Esse deu certo!!!!!!!!!!!!
 // OSC_BB 3D
-#if (true)
+#if (false)
 double pho(Vector const& X, int tag)
 {
   return 1.0;

@@ -252,8 +252,8 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
   PetscOptionsHasName(PETSC_NULL,"-help",&ask_help);
 
   //is_bdf2 = PETSC_FALSE;
-  is_bdf3            = PETSC_TRUE;
-  is_bdf2            = PETSC_FALSE;
+  is_bdf3            = PETSC_FALSE;
+  is_bdf2            = PETSC_TRUE;
   is_bdf_bdf_extrap  = PETSC_FALSE;
   is_bdf_ab          = PETSC_FALSE;
   is_bdf_cte_vel     = PETSC_FALSE;

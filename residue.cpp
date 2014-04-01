@@ -471,6 +471,15 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       FUloc.setZero();
       FPloc.setZero();
       Eloc.setZero();
+      double ddt_factor;
+      if (is_bdf2 && time_step > 0)
+        ddt_factor = 1.5;
+      else
+      if (is_bdf3 && time_step > 1)
+        ddt_factor = 11./6.;
+      else
+        ddt_factor = 1.;
+
 
       if (behaviors & BH_bble_condens_PnPn) // reset matrices
       {
@@ -641,14 +650,8 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
                 delta_cd = c==d;
                 Aloc(i*dim + c, j*dim + d) += JxW_mid*
                                               ( has_convec*phi_c[qp][i]*utheta *rho*( delta_cd*Uconv_qp.dot(dxphi_c.row(j))  +  dxU(c,d)*phi_c[qp][j] )   // advecção
-                        //+ ((is_bdf2 && time_step>0)?  1.5 : 1.0)*   unsteady* delta_cd*rho*phi_c[qp][i]*phi_c[qp][j]/dt     // time derivative
+                                             + ddt_factor* unsteady* delta_cd*rho*phi_c[qp][i]*phi_c[qp][j]/dt     // time derivative
                                               + utheta*visc*( delta_cd * dxphi_c.row(i).dot(dxphi_c.row(j)) + dxphi_c(i,d)*dxphi_c(j,c))   ); // rigidez
-                if (is_bdf2 && time_step>0)
-                  Aloc(i*dim + c, j*dim + d) += 1.5*JxW_mid*( unsteady* delta_cd*rho*phi_c[qp][i]*phi_c[qp][j]/dt) ; // time derivative
-                else if (is_bdf3 && time_step>1)
-                  Aloc(i*dim + c, j*dim + d) += 11./6.*JxW_mid*( unsteady* delta_cd*rho*phi_c[qp][i]*phi_c[qp][j]/dt) ; // time derivative
-                else
-                  Aloc(i*dim + c, j*dim + d) += JxW_mid*( unsteady* delta_cd*rho*phi_c[qp][i]*phi_c[qp][j]/dt) ; // time derivative
 
               }
             }
@@ -764,12 +767,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
           for (int j = 0; j < n_dofs_u_per_cell/dim; ++j)
           {
-            if (is_bdf2 && time_step > 0)
-              dResdu = unsteady*(rho*1.5*phi_c[qp][j]/dt)*I + has_convec*rho*utheta*( phi_c[qp][j]*dxU + Uconv_qp.dot(dxphi_c.row(j))*I );
-            if (is_bdf3 && time_step > 1)
-              dResdu = unsteady*(rho*11./6.*phi_c[qp][j]/dt)*I + has_convec*rho*utheta*( phi_c[qp][j]*dxU + Uconv_qp.dot(dxphi_c.row(j))*I );
-            else
-              dResdu = unsteady*(rho*phi_c[qp][j]/dt)*I + has_convec*rho*utheta*( phi_c[qp][j]*dxU + Uconv_qp.dot(dxphi_c.row(j))*I );
+            dResdu = unsteady*(ddt_factor*rho*phi_c[qp][j]/dt)*I + has_convec*rho*utheta*( phi_c[qp][j]*dxU + Uconv_qp.dot(dxphi_c.row(j))*I );
 
             for (int i = 0; i < n_dofs_p_per_cell; ++i)
             {
