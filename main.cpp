@@ -253,7 +253,7 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
 
   //is_bdf2 = PETSC_FALSE;
   is_bdf3            = PETSC_FALSE;
-  is_bdf2            = PETSC_TRUE;
+  is_bdf2            = PETSC_FALSE;
   is_bdf_bdf_extrap  = PETSC_FALSE;
   is_bdf_ab          = PETSC_FALSE;
   is_bdf_cte_vel     = PETSC_FALSE;
@@ -925,7 +925,11 @@ PetscErrorCode AppCtx::allocPetscObjs()
     int n_steps = 2;
     if (is_bdf2) n_steps = 3;
     else if (is_bdf3) n_steps = 4;
-    bubbles_coefs.reshape(n_steps, mesh->numCellsTotal(), dim);  
+    bubbles_coefs.reshape(n_steps, mesh->numCellsTotal(), dim);
+    for (int i = 0; i < bubbles_coefs.dim(0); ++i)
+      for (int j = 0; j < bubbles_coefs.dim(1); ++j)
+        for (int k = 0; k < bubbles_coefs.dim(2); ++k)
+          bubbles_coefs(i,j,k) = 0;
   }
   
 
@@ -2131,10 +2135,14 @@ PetscErrorCode AppCtx::solveTimeProblem()
 
       if (behaviors & BH_bble_condens_PnPn)
       {
-        for (int i = 0; i < bubbles_coefs.dim(0)-1; ++i)
+        //cout << "AQUIIIIIIIIII: " << bubbles_coefs.dim(0) << " " << bubbles_coefs.dim(1) << " " << bubbles_coefs.dim(2) << endl;
+        for (int i = bubbles_coefs.dim(0)-1; i >=1 ; --i)
           for (int j = 0; j < bubbles_coefs.dim(1); ++j)
             for (int k = 0; k < bubbles_coefs.dim(2); ++k)
-              bubbles_coefs(i,j,k) = bubbles_coefs(i+1,j,k);
+            {
+              //cout << i << " " << j << " " << k << endl;
+              bubbles_coefs(i,j,k) = bubbles_coefs(i-1,j,k);
+            }
       }
 
     }

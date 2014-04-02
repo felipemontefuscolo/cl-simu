@@ -1300,7 +1300,7 @@ Vector solid_veloc(Vector const& X, double t, int tag)
 // COUETTE
 #if (true)
 
-double const w_ = 10;
+double const w_ = 0;
 double const a__= 1;
 
 

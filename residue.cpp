@@ -318,7 +318,11 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
     Vector              Xqp_old(dim);
     Vector              Xc(dim);  // cell center; to compute CR element
     Vector              Uqp(dim);
-    Vector              Ubqp(dim); // bble
+    Vector              Ubqp(dim); // bble n+1
+    Vector              Ub_coef(dim); // bble n+1
+    Vector              Ub_coef_0(dim); // bble n
+    Vector              Ub_coef_00(dim); // bble n-1
+    Vector              Ub_coef_000(dim); // bble n-2
     Vector              Uqp_old(dim);  // n
     Vector              Uqp_new(dim);  // n+1
     Vector              dUqp_old(dim);  // n
@@ -389,7 +393,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
     //cell_iterator cell_end = mesh->cellEnd();
     for (; cell != cell_end; ++cell)
     {
-
+      int const cell_id = mesh->getCellId(&*cell);
       tag = cell->getTag();
 
       // mapeamento do local para o global:
@@ -489,6 +493,19 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
         FUb.setZero();
         Bbn.setZero();
         Dpb.setZero();
+        
+        for (int i = 0; i < dim; ++i)
+        {
+          Ub_coef(i)   = bubbles_coefs(0, cell_id, i);
+          Ub_coef_0(i) = bubbles_coefs(1, cell_id, i);
+          if (is_bdf2)
+            Ub_coef_00(i) = bubbles_coefs(2, cell_id, i);
+          if (is_bdf3)
+          {
+            Ub_coef_00(i) = bubbles_coefs(2, cell_id, i);
+            Ub_coef_000(i) = bubbles_coefs(3, cell_id, i);
+          }
+        }
       }
 
       if(behaviors & BH_GLS)
@@ -595,8 +612,14 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
           dUqp_vold  = du_coefs_c_vold_trans * phi_c[qp];
           dUdt = 11./6.*dUdt - 7./6.*dUqp_old + 1./3.*dUqp_vold;
         }
-
-
+        
+        if(behaviors & (BH_bble_condens_PnPn | BH_bble_condens_CR))
+        {
+          Uconv_qp = Uconv_qp + Ub_coef*bble[qp];
+        }
+        
+        
+        
         force_at_mid = force(Xqp,current_time+utheta*dt,tag);
 
         weight = quadr_cell->weight(qp);
@@ -756,9 +779,11 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
             //}
             //else
             {
+              Ubqp = Ub_coef_0*bble[qp]; // Ub old
+              dxUb = (1.-utheta)*Ub_coef_0*dxbble.transpose();
               FUb(c) += JxW_mid*
-                        ( bble[qp]*rho*(dUdt(c)*unsteady + has_convec*Uconv_qp.dot(dxU.row(c))) + // time derivative + convective
-                          visc*dxbble.dot(dxU.row(c) + dxU.col(c).transpose()) - //rigidez
+                        ( bble[qp]*rho*((dUdt(c) - Ubqp(c)/dt)*unsteady + has_convec*Uconv_qp.dot(dxU.row(c) + dxUb.row(c))) + // time derivative + convective
+                          visc*dxbble.dot(dxU.row(c) + dxU.col(c).transpose()   + dxUb.row(c) + dxUb.col(c).transpose()) - //rigidez
                           Pqp_new*dxbble(c) - // pressão
                           force_at_mid(c)*bble[qp] ); // força  
             }
@@ -853,7 +878,10 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
 
         // correções com os coeficientes da bolha
 
-        Ubqp = -utheta*iBbb*FUb; // U bolha no tempo n+utheta
+        //Ubqp = -utheta*iBbb*FUb; // U bolha no tempo n+utheta
+        
+        Ubqp = -iBbb*FUb; // delta Ub
+        Ub_coef = Ubqp;
 
         for (int qp = 0; qp < n_qpts_cell; ++qp)
         {
@@ -990,6 +1018,11 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
         MatSetValues(*JJ, mapU_c.size(), mapU_c.data(), mapP_c.size(), mapP_c.data(), Gloc.data(),  ADD_VALUES);
         MatSetValues(*JJ, mapP_c.size(), mapP_c.data(), mapU_c.size(), mapU_c.data(), Dloc.data(),  ADD_VALUES);
         MatSetValues(*JJ, mapP_c.size(), mapP_c.data(), mapP_c.size(), mapP_c.data(), Eloc.data(),  ADD_VALUES);
+        
+        if ((behaviors & BH_bble_condens_PnPn) && !compact_bubble)
+          for (int i = 0; i < dim; ++i) {
+            bubbles_coefs(0,cell_id,i) =  Ub_coef(i);
+          }
       }
     }
 
