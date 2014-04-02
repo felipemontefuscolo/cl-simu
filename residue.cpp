@@ -615,7 +615,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
         
         if(behaviors & (BH_bble_condens_PnPn | BH_bble_condens_CR))
         {
-          Uconv_qp = Uconv_qp + Ub_coef*bble[qp];
+//Uconv_qp = Uconv_qp + Ub_coef*bble[qp];
         }
         
         

@@ -2135,14 +2135,22 @@ PetscErrorCode AppCtx::solveTimeProblem()
 
       if (behaviors & BH_bble_condens_PnPn)
       {
-        //cout << "AQUIIIIIIIIII: " << bubbles_coefs.dim(0) << " " << bubbles_coefs.dim(1) << " " << bubbles_coefs.dim(2) << endl;
+        double maxi = 0;
         for (int i = bubbles_coefs.dim(0)-1; i >=1 ; --i)
           for (int j = 0; j < bubbles_coefs.dim(1); ++j)
             for (int k = 0; k < bubbles_coefs.dim(2); ++k)
             {
               //cout << i << " " << j << " " << k << endl;
               bubbles_coefs(i,j,k) = bubbles_coefs(i-1,j,k);
+              
+              maxi = std::max(fabs(bubbles_coefs(i,j,k)), maxi);
+              
             }
+        for (int j = 0; j < bubbles_coefs.dim(1); ++j)
+          for (int k = 0; k < bubbles_coefs.dim(2); ++k)
+            bubbles_coefs(0,j,k) = 0;
+        
+        cout << "AQUIIIIIIIIII: " << maxi << endl;
       }
 
     }
