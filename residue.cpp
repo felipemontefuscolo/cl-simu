@@ -181,7 +181,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
       utheta = 0.5;
   }
   
-  bool const compact_bubble = true; // eliminate buuble from convective term
+  bool const compact_bubble = false; // eliminate buuble from convective term
   
 
   //PetscErrorCode      ierr;
@@ -696,8 +696,13 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
     
                 if (compact_bubble)
                 {
+                  //Bbn(c, j*dim + d) += JxW_mid*
+                  //                     ( utheta*visc*(delta_cd * dxphi_c.row(j).dot(dxbble) + dxphi_c(j,c)*dxbble(d)) ); // rigidez
+                  
                   Bbn(c, j*dim + d) += JxW_mid*
-                                       ( utheta*visc*(delta_cd * dxphi_c.row(j).dot(dxbble) + dxphi_c(j,c)*dxbble(d)) ); // rigidez
+                                       ( has_convec*bble[qp]*utheta *rho*( delta_cd*Uconv_qp.dot(dxphi_c.row(j)) + dxU(c,d)*phi_c[qp][j] ) // convective
+                                       + ddt_factor*unsteady*delta_cd*rho*bble[qp]*phi_c[qp][j]/dt // time derivative
+                                       + utheta*visc*(delta_cd * dxphi_c.row(j).dot(dxbble) + dxphi_c(j,c)*dxbble(d)) ); // rigidez                  
 
                   Bnb(j*dim + d, c) += JxW_mid*
                                        ( utheta*visc*(delta_cd * dxphi_c.row(j).dot(dxbble) + dxphi_c(j,c)*dxbble(d)) ); // rigidez  
@@ -706,12 +711,12 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
                 {
                   Bbn(c, j*dim + d) += JxW_mid*
                                        ( has_convec*bble[qp]*utheta *rho*( delta_cd*Uconv_qp.dot(dxphi_c.row(j)) + dxU(c,d)*phi_c[qp][j] ) // convective
-                                       + unsteady*delta_cd*rho*bble[qp]*phi_c[qp][j]/dt // time derivative
+                                       + ddt_factor*unsteady*delta_cd*rho*bble[qp]*phi_c[qp][j]/dt // time derivative
                                        + utheta*visc*(delta_cd * dxphi_c.row(j).dot(dxbble) + dxphi_c(j,c)*dxbble(d)) ); // rigidez
 
                   Bnb(j*dim + d, c) += JxW_mid*
                                        ( has_convec*phi_c[qp][j]*utheta *rho*( delta_cd*Uconv_qp.dot(dxbble) ) // convective
-                                       + delta_cd*rho*phi_c[qp][j]*bble[qp]/dt * unsteady // time derivative
+                                       + ddt_factor*delta_cd*rho*phi_c[qp][j]*bble[qp]/dt * unsteady // time derivative
                                        + utheta*visc*(delta_cd * dxphi_c.row(j).dot(dxbble) + dxphi_c(j,c)*dxbble(d)) ); // rigidez
                 }
               }
@@ -736,20 +741,20 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
               {
                 iBbb(c, d) += JxW_mid*
                               ( has_convec*bble[qp]*utheta *rho*( delta_cd*Uconv_qp.dot(dxbble) ) // convective
-                              + delta_cd*rho*bble[qp]*bble[qp]/dt * unsteady // time derivative
+                              + ddt_factor*delta_cd*rho*bble[qp]*bble[qp]/dt * unsteady // time derivative
                               + utheta*visc*(delta_cd* dxbble.dot(dxbble) + dxbble(d)*dxbble(c)) ); // rigidez  
               }
               
               
             }
-            if (compact_bubble)
-            {
-              FUb(c) += JxW_mid*
-                        ( visc*dxbble.dot(dxU.row(c) + dxU.col(c).transpose()) - //rigidez
-                          Pqp_new*dxbble(c) - // pressão
-                          force_at_mid(c)*bble[qp] ); // força  
-            }
-            else
+            //if (compact_bubble)
+            //{
+            //  FUb(c) += JxW_mid*
+            //            ( visc*dxbble.dot(dxU.row(c) + dxU.col(c).transpose()) - //rigidez
+            //              Pqp_new*dxbble(c) - // pressão
+            //              force_at_mid(c)*bble[qp] ); // força  
+            //}
+            //else
             {
               FUb(c) += JxW_mid*
                         ( bble[qp]*rho*(dUdt(c)*unsteady + has_convec*Uconv_qp.dot(dxU.row(c))) + // time derivative + convective

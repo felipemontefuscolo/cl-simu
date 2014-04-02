@@ -253,7 +253,7 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
 
   //is_bdf2 = PETSC_FALSE;
   is_bdf3            = PETSC_FALSE;
-  is_bdf2            = PETSC_FALSE;
+  is_bdf2            = PETSC_TRUE;
   is_bdf_bdf_extrap  = PETSC_FALSE;
   is_bdf_ab          = PETSC_FALSE;
   is_bdf_cte_vel     = PETSC_FALSE;
@@ -285,6 +285,12 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
     throw;
   }
     
+  if (function_space==2 && mesh_adapt==1)
+  {
+    cout << "ERROR: P1bP1_c + mesh adapt: NOT implemented" << endl;
+    throw;    
+  }
+
 
   if (finaltime < 0)
     finaltime = maxts*dt;
@@ -913,6 +919,15 @@ PetscErrorCode AppCtx::allocPetscObjs()
   {
     ierr = SNESSetType(snes_m, SNESKSPONLY); CHKERRQ(ierr);
   }
+
+  if (behaviors & BH_bble_condens_PnPn)
+  {
+    int n_steps = 2;
+    if (is_bdf2) n_steps = 3;
+    else if (is_bdf3) n_steps = 4;
+    bubbles_coefs.reshape(n_steps, mesh->numCellsTotal(), dim);  
+  }
+  
 
 
 //~ #ifdef PETSC_HAVE_MUMPS
@@ -2113,6 +2128,14 @@ PetscErrorCode AppCtx::solveTimeProblem()
       //VecAXPY(Vec_res, -1., Vec_up_0);
       VecCopy(Vec_up_1, Vec_up_0);
       //VecCopy(Vec_res, Vec_up_1); // u(n+1) = 2*u(n) - u(n-1)
+
+      if (behaviors & BH_bble_condens_PnPn)
+      {
+        for (int i = 0; i < bubbles_coefs.dim(0)-1; ++i)
+          for (int j = 0; j < bubbles_coefs.dim(1); ++j)
+            for (int k = 0; k < bubbles_coefs.dim(2); ++k)
+              bubbles_coefs(i,j,k) = bubbles_coefs(i+1,j,k);
+      }
 
     }
     else // if it's not ALE

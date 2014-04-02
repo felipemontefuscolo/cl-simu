@@ -582,6 +582,7 @@ public:
 
   // mesh size control ... mesh_size[i] is the mean of edge's size connected to node i at TIME=0
   std::vector<Real>    mesh_sizes;
+  marray::Array<Real, 3>       bubbles_coefs; //bubbles_coefs(i,j,k) = tempo i, elemento j, componente k ... i=0 tempo n+1, i=1 tempo n, etc ...
 
   // petsc vectors
   Vec                 Vec_res, Vec_up_0, Vec_up_1,Vec_dup, Vec_normal/**/;
