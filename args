@@ -1,9 +1,8 @@
 options_left
--dim 2 				        # cell dimension (= space dimension)
+-dim 3 				        # cell dimension (= space dimension)
 dt 1e-2    1e-3 0.0625e-3 0.03125e-3 0.015625e-3 0.0078125e-3 0.00390625e-3 # time step 4 2 1 0.5 0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04 4.8828125e-04 2.44140625e-04 1.220703125e-04
-dt 1e-2 0.5e-2 0.25e-2 0.125e-2 0.0625e-2 0.03125e-2 0.015625e-2 0.0078125e-2
--dt 0.015625e-2
--finaltime .2          # the simulation ends at this time.
+dt 0.00005 0.5e-2 0.25e-2 0.125e-2 0.0625e-2 0.03125e-2 0.015625e-2 0.0078125e-2
+-finaltime .7          # the simulation ends at this time.
 -maxts -1              # maximum number of time steps
 -renumber_dofs 0        # dofs renumbering
 -print_step 9999999999999 1          # print step
@@ -16,7 +15,7 @@ dt 1e-2 0.5e-2 0.25e-2 0.125e-2 0.0625e-2 0.03125e-2 0.015625e-2 0.0078125e-2
 -fprint_ca 0            # print contact angle at file ContactHistory
 beta1 0.0               # Vmesh = bet1 * Ufluid  +  bet2 * Uelastic
 beta2 1.0
--plot_es 1              # plot exact solution: true or false
+-plot_es 0              # plot exact solution: true or false
 -family_files 1         # plot output as 001, 002, 003, ...
 -sst -1.e-7             # steady state tol (Unew-Uold)/(Unew)
 -utheta 1              # time discretization theta method (momentum)
@@ -29,7 +28,7 @@ vtheta 1.0              # time discretization theta method (mesh velocity)
 -force_pressure 0       # force pressure at a random point
 
 # Petsc options
--pc_type lu lu                    # Preconditioner (one of) none jacobi pbjacobi bjacobi sor lu shell mg eisenstat ilu icc cholesky asm ksp composite redundant nn mat fieldsplit galerkin exotic openmp asa cp bfbt lsc redistribute tfs (PCSetType)
+-pc_type ilu lu                    # Preconditioner (one of) none jacobi pbjacobi bjacobi sor lu shell mg eisenstat ilu icc cholesky asm ksp composite redundant nn mat fieldsplit galerkin exotic openmp asa cp bfbt lsc redistribute tfs (PCSetType)
 sub_pc_type ilu
 pc_factor_mat_solver_package mumps # MUMPS
 mat_mumps_icntl_7 2
@@ -37,7 +36,7 @@ pc_factor_levels 2
 sub_pc_factor_levels 1            # <0>  ativar quando o resolutor não estiver convergindo
 pc_composite_type multiplicative  # one of multiplicative, additive, special
 pc_composite_pcs ilu,ilu
--ksp_type preonly gmres preonly   # (one of) preonly bcgs gmres cg cgne nash stcg gltr richardson chebychev tcqmr ibcgs bcgsl cgs tfqmr cr lsqr qcg bicg fgmres minres symmlq lgmres lcd broyden gcr (KSPSetType)
+-ksp_type gmres preonly preonly   # (one of) preonly bcgs gmres cg cgne nash stcg gltr richardson chebychev tcqmr ibcgs bcgsl cgs tfqmr cr lsqr qcg bicg fgmres minres symmlq lgmres lcd broyden gcr (KSPSetType)
 ksp_initial_guess_nonzero 1       # não usar com precond asm+lu, alias nao usar nunca (talvez um erro da versão dev????)
 ksp_gmres_restart 300
 -pc_factor_shift_type NONZERO
@@ -50,7 +49,7 @@ pc_factor_diagonal_fill
 
 pc_factor_fill 3.22746e-06
 pc_factor_in_place
--ksp_rtol 1e-11 #<1e-8>
+-ksp_rtol 1e-12 #<1e-8>
 
 
 log_trace stdout
@@ -63,8 +62,8 @@ snes_test_display 1 # compare f.e. jacobian with f.d. jacobian
 snes_monitor_cancel 0 # cancela monitoramento
 -snes_monitor stdout
 snes_converged_reason 1
--snes_stol 1.e-11  # <1e-08>: Stop if step length less than
--snes_rtol 1.e-11  # <1e-08>: Stop if decrease in function norm less than
+-snes_stol 1.e-12  # <1e-08>: Stop if step length less than
+-snes_rtol 1.e-12  # <1e-08>: Stop if decrease in function norm less than
 snes_atol 1.e-12
 ksp_monitor stdout
 -snes_max_it 20
@@ -103,7 +102,7 @@ stokes donea dir_tags 2 neum_tags 1
 russa:       interf_tags 2 solid_tags 3 triple_tags 20,21
 satic drop:  interf_tags 2 neum_tags 2 (debug)
 kovasznay    dir_tags 2 neum_tags 1    serve tambem para #Anything3D
-couette      dir_tags 1,2 -neum_tags 1,2
+couette      dir_tags 1,2 neum_tags 1,2
 pseudo_osc   neum_tags 2
 sloshing     dir_tags 5 interf_tags 2 solid_tags 3,4 triple_tags 20,21
 gerbeau:     interf_tags 3 solid_tags 21,22,23,24,25,26  periodic_tags 4,5 triple_tags 11,12,13,14
@@ -115,15 +114,15 @@ zeta3d       dir_tags 1 triple_tags 2 interf_tags 3 solid_tags 4,5,6 feature_tag
 zeta3d       neum_tags 2,3,4,5,6,7,8,9 interf_tags 2,3,4,5,6,7,8,9
 half2d:      dir_tags 1 interf_tags 2 solid_tags 3 triple_tags 21 feature_tags 4,22
 bolhas       dir_tags 33 interf_tags 5 solid_tags 1,2,3 neum_tags 4
-half_osc3d   interf_tags 3 feature_tags 5,6,8,1
+half_osc3d   -interf_tags 3 -feature_tags 5,6,8,1
 etienne      dir_tags 2 neum_tags 1
 
 ############################################################################
 
--function_space 1 # P1P1 (or Q1Q1) GLS stabilization
+function_space 1 # P1P1 (or Q1Q1) GLS stabilization
 function_space 2 # P1+P1 with bubble condensation
 function_space 3 # P2+Pm1 with bubble condensation and pressure gradient elimination
-function_space 4 # P2P1 (or Q2Q1)
+-function_space 4 # P2P1 (or Q2Q1)
 function_space 5 # P1+P1
 function_space 6 # P2P0
 function_space 7 # P2+Pm1 full
@@ -189,10 +188,14 @@ fin  results/couette/2d/mesh/couette.msh
 fout results/couette/2d/mesh/couette.vtk
 fin  results/angle/2d/mesh/half.msh
 fout results/angle/2d/mesh/half.vtk
--fin  results/couette/2d/mesh/couette.msh
--fout results/couette/2d/mesh/couette.vtk
+fin  results/couette/2d/mesh/couette.msh
+fout results/couette/2d/mesh/couette.vtk
 fin  results/bolhas/santiago.msh
 fout results/bolhas/test.vtk
+
+fin  results/osc_drop/3d/drop.msh
+fout results/osc_drop/3d/drop.vtk
+
 
 fin  /cluster/felipe.mt87/mef/cl-simu/results/osc_drop/2d/mesh/drop.msh
 fout /cluster/felipe.mt87/mef/cl-simu/results/osc_drop/2d/mesh/drop.vtk

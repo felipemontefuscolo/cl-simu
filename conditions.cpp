@@ -1298,7 +1298,7 @@ Vector solid_veloc(Vector const& X, double t, int tag)
 #endif
 
 // COUETTE
-#if (true)
+#if (false)
 
 double const w_ = 20;
 double const a__= 1;
@@ -3684,7 +3684,7 @@ Tensor feature_proj(Vector const& X, double t, int tag)
 
 // Esse deu certo!!!!!!!!!!!!
 // OSC_BB 3D
-#if (false)
+#if (true)
 double pho(Vector const& X, int tag)
 {
   return 1.0;
