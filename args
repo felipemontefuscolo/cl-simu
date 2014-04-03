@@ -10,7 +10,7 @@ dt 1e-2 0.5e-2 0.25e-2 0.125e-2 0.0625e-2 0.03125e-2 0.015625e-2 0.0078125e-2
 -has_convec 1           # convective term: true or false CONSIDERE COLOCAR utheta=1 se desativar isto.
 -unsteady   1           # steady or unsteady problem
 -boundary_smoothing 0
--force_mesh_velocity 1  # imposes the mesh velocity of boundary grid
+-force_mesh_velocity 0  # imposes the mesh velocity of boundary grid
 -nonlinear_elasticity 0 # non-linear term in the elasticity problem
 -mesh_adapt 0           # 1 to enable mesh adaption
 -fprint_ca 0            # print contact angle at file ContactHistory
