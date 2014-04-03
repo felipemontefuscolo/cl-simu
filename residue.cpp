@@ -881,7 +881,7 @@ PetscErrorCode AppCtx::formFunction(SNES /*snes*/, Vec Vec_up_k, Vec Vec_fun)
         //Ubqp = -utheta*iBbb*FUb; // U bolha no tempo n+utheta
         
         Ubqp = -iBbb*FUb; // delta Ub
-        Ub_coef = Ubqp;
+        Ub_coef += Ubqp;
 
         for (int qp = 0; qp < n_qpts_cell; ++qp)
         {

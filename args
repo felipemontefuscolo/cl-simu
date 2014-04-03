@@ -2,7 +2,7 @@ options_left
 -dim 2 				        # cell dimension (= space dimension)
 dt 1e-2    1e-3 0.0625e-3 0.03125e-3 0.015625e-3 0.0078125e-3 0.00390625e-3 # time step 4 2 1 0.5 0.25 0.125 0.0625 0.03125 0.015625 0.0078125 0.00390625 0.001953125 9.765625e-04 4.8828125e-04 2.44140625e-04 1.220703125e-04
 dt 1e-2 0.5e-2 0.25e-2 0.125e-2 0.0625e-2 0.03125e-2 0.015625e-2 0.0078125e-2
--dt 0.125e-2 0.25e-2
+-dt 0.0625e-2 0.03125e-2 0.015625e-2
 -finaltime .2          # the simulation ends at this time.
 -maxts -1              # maximum number of time steps
 -renumber_dofs 0        # dofs renumbering
@@ -19,7 +19,7 @@ beta2 1.0
 -plot_es 1              # plot exact solution: true or false
 -family_files 1         # plot output as 001, 002, 003, ...
 -sst -1.e-7             # steady state tol (Unew-Uold)/(Unew)
--utheta .5              # time discretization theta method (momentum)
+-utheta 1              # time discretization theta method (momentum)
 vtheta 1.0              # time discretization theta method (mesh velocity)
 -quadr_c 4              # quadrature degree (cell) // 2D: 3 para ME e TH2, 2 para GLS .... 3D
 -quadr_f 3              # quadrature degree (facet)
@@ -120,8 +120,8 @@ etienne      dir_tags 2 neum_tags 1
 
 ############################################################################
 
-function_space 1 # P1P1 (or Q1Q1) GLS stabilization
--function_space 2 # P1+P1 with bubble condensation
+-function_space 1 # P1P1 (or Q1Q1) GLS stabilization
+function_space 2 # P1+P1 with bubble condensation
 function_space 3 # P2+Pm1 with bubble condensation and pressure gradient elimination
 function_space 4 # P2P1 (or Q2Q1)
 function_space 5 # P1+P1

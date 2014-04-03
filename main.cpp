@@ -252,7 +252,7 @@ bool AppCtx::getCommandLineOptions(int argc, char **/*argv*/)
   PetscOptionsHasName(PETSC_NULL,"-help",&ask_help);
 
   //is_bdf2 = PETSC_FALSE;
-  is_bdf3            = PETSC_FALSE;
+  is_bdf3            = PETSC_TRUE;
   is_bdf2            = PETSC_FALSE;
   is_bdf_bdf_extrap  = PETSC_FALSE;
   is_bdf_ab          = PETSC_FALSE;
@@ -1323,7 +1323,6 @@ PetscErrorCode AppCtx::setInitialConditions()
   //int       dof;
   int tag;
 
-  current_time = 0;
 
   VecZeroEntries(Vec_res);
   VecZeroEntries(Vec_up_0);
@@ -1457,7 +1456,7 @@ PetscErrorCode AppCtx::setInitialConditions()
         {
           //double tt = time_step==0? dt : current_time;
           //calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 1.0, Vec_v_mid, 0.0); // Euler (tem que ser esse no começo)
-          calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 0.5, Vec_v_mid, 0.0); // Adams-Bashforth
+          calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 0.5, Vec_v_mid, current_time/*=0*/); // Adams-Bashforth
           // move the mesh
           VecWAXPY(Vec_x_1, dt, Vec_v_mid, Vec_x_0); // Vec_x_1 = Vec_v_mid*dt + Vec_x_0
 
@@ -1903,6 +1902,9 @@ PetscErrorCode AppCtx::solveTimeProblem()
     else
       if ((time_step%print_step)==0 || time_step == (maxts-1))
         must_print = true;
+
+    //if (is_bdf3)
+    //  copyVec2Mesh(Vec_x_0);
         
     if (must_print)
     {
@@ -1941,6 +1943,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
       }
 
     }
+
 
     printContactAngle(fprint_ca);
     //////if (plot_exact_sol) eh melhor depois da atualização

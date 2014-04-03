@@ -1300,7 +1300,7 @@ Vector solid_veloc(Vector const& X, double t, int tag)
 // COUETTE
 #if (true)
 
-double const w_ = 0;
+double const w_ = 20;
 double const a__= 1;
 
 
@@ -1463,7 +1463,7 @@ Vector v_exact(Vector const& X, double t, int tag) //(X,t,tag)
   //v(1) = 10*t*(1-y*y)*(x + t*(1-x*x)/32. + 1)/4.;
   //v(0) = 5*( sin(x)*sin(x)*sin(w_*t) + sin(y)*sin(y)*cos(w_*t) );
   //v(1) = 5*(-sin(y)*sin(x)*sin(w_*t) + sin(x)*sin(y)*cos(w_*t) );
-  v(0) = 0.;
+  v(0) = t;
   v(1) = 0.;
   
   //v(0) = y*y;

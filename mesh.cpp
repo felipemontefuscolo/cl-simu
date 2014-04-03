@@ -1240,6 +1240,11 @@ PetscErrorCode AppCtx::calcMeshVelocity(Vec const& Vec_x_0, Vec const& Vec_up_0,
             
         }
         else
+        if (is_bdf3 && time_step > 1)
+        {
+          tmp = v_exact(Y0, tt+dt, tag);
+        }
+        else
           tmp = (Y0 - X0)/dt;
 
         //tmp = v_exact(X0,tt,tag);
