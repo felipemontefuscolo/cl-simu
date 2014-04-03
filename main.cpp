@@ -1516,11 +1516,15 @@ PetscErrorCode AppCtx::setInitialConditions()
           
           // solving geometry before the (u,p)
           
+          
           // extrapola o proximo Vec_x_1
-          VecScale(Vec_x_1, 3.0);
-          VecAXPY(Vec_x_1,-3.0,Vec_x_0);
-          VecAXPY(Vec_x_1, 1.0,Vec_x_aux);
-          // copyMesh2Vec(Vec_x_0); // we need Vec_x_0 later, don't touch it
+          if (!force_mesh_velocity)
+          {
+            VecScale(Vec_x_1, 3.0);
+            VecAXPY(Vec_x_1,-3.0,Vec_x_0);
+            VecAXPY(Vec_x_1, 1.0,Vec_x_aux);
+            // copyMesh2Vec(Vec_x_0); // we need Vec_x_0 later, don't touch it
+          }
           
           // estraga Vec_up_0
           VecCopy(Vec_dup, Vec_up_0);
@@ -1529,7 +1533,7 @@ PetscErrorCode AppCtx::setInitialConditions()
           VecScale(Vec_up_0, dt);
           VecAXPY(Vec_up_0, 1.0,Vec_up_1); // Vec_up_0 tem agora a extrapolacao do futuro Vec_up_1
           
-          calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 0.0, Vec_v_1, current_time);
+          calcMeshVelocity(Vec_x_1, Vec_up_0, Vec_up_1, 0.0, Vec_v_1, current_time);
           VecCopy(Vec_v_1, Vec_x_1);
           VecScale(Vec_x_1, 6./11.*dt);
           VecAXPY(Vec_x_1, 2./11.,Vec_x_aux);
@@ -2008,10 +2012,13 @@ PetscErrorCode AppCtx::solveTimeProblem()
       {
         
         // extrapola o proximo Vec_x_1
-        VecScale(Vec_x_1, 3.0);
-        VecAXPY(Vec_x_1,-3.0,Vec_x_0);
-        VecAXPY(Vec_x_1, 1.0,Vec_x_aux);
-        // copyMesh2Vec(Vec_x_0); // we need Vec_x_0 later, don't touch it
+        if (!force_mesh_velocity)
+        {
+          VecScale(Vec_x_1, 3.0);
+          VecAXPY(Vec_x_1,-3.0,Vec_x_0);
+          VecAXPY(Vec_x_1, 1.0,Vec_x_aux);
+          // copyMesh2Vec(Vec_x_0); // we need Vec_x_0 later, don't touch it
+        }
 
         // estraga Vec_up_0
         VecCopy(Vec_dup, Vec_up_0);
@@ -2020,7 +2027,7 @@ PetscErrorCode AppCtx::solveTimeProblem()
         VecScale(Vec_up_0, dt);
         VecAXPY(Vec_up_0, 1.0,Vec_up_1); // Vec_up_0 tem agora a extrapolacao do futuro Vec_up_1
         
-        calcMeshVelocity(Vec_x_0, Vec_up_0, Vec_up_1, 0.0, Vec_v_1, current_time);
+        calcMeshVelocity(Vec_x_1, Vec_up_0, Vec_up_1, 0.0, Vec_v_1, current_time);
         VecCopy(Vec_v_1, Vec_x_1);
         VecScale(Vec_x_1, 6./11.*dt);
         VecAXPY(Vec_x_1, 2./11.,Vec_x_aux);

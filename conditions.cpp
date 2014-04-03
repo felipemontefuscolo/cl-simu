@@ -1461,10 +1461,10 @@ Vector v_exact(Vector const& X, double t, int tag) //(X,t,tag)
   //return v * (tag!=1 && tag!=2);
   //v(0) = 10*t*(1-x*x)*(1+y)/4.;
   //v(1) = 10*t*(1-y*y)*(x + t*(1-x*x)/32. + 1)/4.;
-  //v(0) = 5*( sin(x)*sin(x)*sin(w_*t) + sin(y)*sin(y)*cos(w_*t) );
-  //v(1) = 5*(-sin(y)*sin(x)*sin(w_*t) + sin(x)*sin(y)*cos(w_*t) );
-  v(0) = t;
-  v(1) = 0.;
+  v(0) = 5*( sin(x)*sin(x)*sin(w_*t) + sin(y)*sin(y)*cos(w_*t) );
+  v(1) = 5*(-sin(y)*sin(x)*sin(w_*t) + sin(x)*sin(y)*cos(w_*t) );
+  //v(0) = x;
+  //v(1) = 0.;
   
   //v(0) = y*y;
   //v(1) = 2*y;
