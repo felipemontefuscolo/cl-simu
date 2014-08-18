@@ -1,0 +1,649 @@
+#include "common.hpp"
+#include <tr1/tuple>
+
+using std::tr1::tuple;
+using std::tr1::make_tuple;
+using std::tr1::get;
+
+extern PetscErrorCode FormJacobian(SNES snes,Vec Vec_up_1,Mat *Mat_Jac, Mat *prejac, MatStructure *flag, void *ptr);
+extern PetscErrorCode FormFunction(SNES snes, Vec Vec_up_1, Vec Vec_fun, void *ptr);
+extern PetscErrorCode CheckSnesConvergence(SNES snes, PetscInt it,PetscReal xnorm, PetscReal pnorm, PetscReal fnorm, SNESConvergedReason *reason, void *ctx);
+
+extern PetscErrorCode FormJacobian_mesh(SNES snes,Vec Vec_up_1,Mat *Mat_Jac, Mat *prejac, MatStructure *flag, void *ptr);
+extern PetscErrorCode FormFunction_mesh(SNES snes, Vec Vec_up_1, Vec Vec_fun, void *ptr);
+
+void checkConsistencyTri(Mesh *mesh)
+{
+  cell_iterator cell = mesh->cellBegin();
+  cell_iterator cell_end = mesh->cellEnd();
+  
+  int const nfpc = mesh->numFacetsPerCell();
+  //  int const nnpc = mesh->numNodesPerCell();
+  int const nnpf = mesh->numNodesPerFacet();
+  
+  int f_nds[nnpf];
+  
+  //  Point *p;
+  Facet *f;
+  Cell  *c;
+  
+  for (; cell != cell_end; ++cell)
+  {
+    int myid = mesh->getCellId(&*cell);
+    for (int i = 0; i < nfpc; ++i)
+    {
+      if (cell->getIncidCell(i) >= 0)
+      {
+        // verifica o vizinho
+        c = mesh->getCellPtr(cell->getIncidCell(i));
+        int pos = cell->getIncidCellPos(i);
+        if(myid != c->getIncidCell(pos))
+        {
+          cout  << "myid=" << myid<<"; c->getIncidCell(pos)="<<c->getIncidCell(pos)<<"; i="<<i<<"; pos="<<pos ;
+          throw;
+        };
+        
+        // verifica a face
+        f = mesh->getFacetPtr(cell->getFacetId(i));
+        int icf = f->getIncidCell();
+        if(!(icf==myid || icf==cell->getIncidCell(i)))
+        {
+          cout <<"myid="<<myid<<"; icf="<<icf<<"; i="<<i<<"; cell->getIncidCell(i)="<<cell->getIncidCell(i)<<"\n";
+          throw;
+        }
+        if (icf==myid)
+        {
+          if(f->getPosition() != i)
+          {
+            cout << "myid=" << myid<<"; f->getPosition()="<<f->getPosition()<<"; i="<<i<<"\n";
+            throw;
+          }
+        }
+        else
+        {
+          if(f->getPosition() != pos)
+          {
+            cout << "myid=" << myid<<"; f->getPosition()="<<f->getPosition()<<"; pos="<<pos<<"; i="<<i<<"\n";
+            throw;
+          }
+        }
+      }
+      else // bordo
+      {
+        // verifica a face
+        f = mesh->getFacetPtr(cell->getFacetId(i));
+        int icf = f->getIncidCell();
+        // só pode ser o myid, pq do outro lado não tem ngm
+        if(icf!=myid)
+        {
+          cout << "icf = " << icf << ", myid = " << myid << endl;
+          throw;
+        }
+        
+        // verifica se os nós da face estão no contorno
+        mesh->getFacetNodesId(f, f_nds);
+        for (int j = 0; j < nnpf; ++j)
+        {
+          if(!mesh->inBoundary(mesh->getNodePtr(f_nds[j])))
+          {
+            cout << "node="<<f_nds[j]<<"; icell="<<mesh->getNodePtr(f_nds[j])->getIncidCell()
+                << "; pos="<< mesh->getNodePtr(f_nds[j])->getPosition();
+            throw;
+          }
+        }
+        
+      }
+    }
+    
+  }
+  
+  std::vector<int> ics;
+  std::vector<int> cc_ids;
+  std::vector<int>::iterator it;
+  for (point_iterator point = mesh->pointBegin(); point != mesh->pointEnd(); ++point)
+  {
+    point->getAllIncidences(ics);
+    
+    cc_ids.clear();
+
+    int myid = point.index();
+    
+    for (int i = 0; i < (int)ics.size()/2; ++i)
+    {
+      int ic = ics.at(2*i);
+      int pos = ics.at(2*i+1);
+      Cell *c = mesh->getCellPtr(ic);
+      if(c==NULL)
+      {
+        cout << "c = NULL" << endl;
+        throw;
+      }
+      if(myid != c->getNodeId(pos))
+      {
+        cout << "ic = " << ic << "; pos = " << pos;
+        throw;
+      }
+      cc_ids.push_back(c->getConnectedComponentId());
+    }
+    
+    std::sort(cc_ids.begin(), cc_ids.end());
+    it = unique (cc_ids.begin(), cc_ids.end());
+    
+    // checks if all incident cells have distinct connected component id
+    if( std::distance(cc_ids.begin(), it) != (int)cc_ids.size())
+    {
+      cout << "MERDA DE std::distance\n";
+      throw;
+    }
+    
+  }
+  
+  
+}
+
+void AppCtx::getVecNormals(Vec const* Vec_x_1, Vec & Vec_normal_)
+{
+
+  VectorXi          facet_nodes(nodes_per_facet);
+  MatrixXd          x_coefs(nodes_per_facet, dim);                // coordenadas nodais da célula
+  MatrixXd          x_coefs_trans(dim, nodes_per_facet);
+  Vector            X(dim);
+  Vector            normal(dim);
+  Tensor            F(dim,dim-1);
+  VectorXi          map(n_dofs_u_per_facet);
+  //bool               is_surface, is_solid;
+  int               tag;
+  int               tag_0, tag_1, tag_2;
+  bool              contrib_0, contrib_1, contrib_2;
+  //int               tag_other;
+  bool              virtual_mesh;
+  bool              is_surface;
+  bool              is_solid;
+  bool              is_cl;
+  int               sign_;
+  int               pts_id[15];
+
+
+  if (Vec_x_1==NULL)
+    virtual_mesh = false;
+  else
+    virtual_mesh = true;
+
+  Assembly(Vec_normal_);
+  VecSet(Vec_normal_,0);
+  Assembly(Vec_normal_);
+
+  // LOOP NAS FACES DO CONTORNO
+  facet_iterator facet = mesh->facetBegin();
+  facet_iterator facet_end = mesh->facetEnd();
+  for (; facet != facet_end; ++facet)
+  {
+    tag = facet->getTag();
+
+    is_surface = is_in(tag, interface_tags);
+    is_solid   = is_in(tag, solid_tags);
+    is_cl      = is_in(tag, triple_tags);
+
+    if ( !(is_surface || is_solid || is_cl || mesh->inBoundary(&*facet)) )
+      continue;
+
+    contrib_0 = true;
+    contrib_1 = true;
+    contrib_2 = true;
+    // the solid normal doesn't contribute to the triple normal
+    if (is_solid)
+    {
+      mesh->getFacetNodesId(&*facet, pts_id);
+
+      tag_0 = mesh->getNodePtr(pts_id[0])->getTag();
+      contrib_0 = !is_in(tag_0, triple_tags);
+
+      tag_1 = mesh->getNodePtr(pts_id[1])->getTag();
+      contrib_1 = !is_in(tag_1, triple_tags);
+
+      if (dim==3)
+      {
+        tag_2 = mesh->getNodePtr(pts_id[2])->getTag();
+        contrib_2 = !is_in(tag_2, triple_tags);
+      }
+    }
+
+    dof_handler[DH_MESH].getVariable(VAR_M).getFacetDofs(map.data(), &*facet);
+
+    mesh->getFacetNodesId(&*facet, facet_nodes.data());
+    if (virtual_mesh)
+      VecGetValues(*Vec_x_1, map.size(), map.data(), x_coefs.data());
+    else
+      mesh->getNodesCoords(facet_nodes.begin(), facet_nodes.end(), x_coefs.data());
+    x_coefs_trans = x_coefs.transpose();
+
+    // fix orientation in the case where the gas phase isn't passive
+    {
+      sign_ = 1;
+      cell_handler cc = mesh->getCell(facet->getIncidCell());
+      cell_handler oc = mesh->getCell(cc->getIncidCell(facet->getPosition()));
+      if ( oc.isValid()  )
+        if ( oc->getTag() > cc->getTag() )
+          sign_ = -1;
+    }
+
+    if (false) // método alternativo que serve para todos os métodos (normal consistente)
+    {
+      // find the normal
+      for (int k = 0; k < nodes_per_facet; ++k)
+      {
+        //tag_other = mesh->getNodePtr(facet_nodes(k))->getTag();
+
+        F   = x_coefs_trans * dLphi_nf[k];
+
+        if (dim==2)
+        {
+          normal(0) = +F(1,0);
+          normal(1) = -F(0,0);
+        }
+        else
+        {
+          normal = cross(F.col(0),F.col(1));
+        }
+        //normal.normalize();
+        VecSetValues(Vec_normal_, dim, map.data()+k*dim, normal.data(), ADD_VALUES);
+
+      } // nodes
+
+    }
+    else if (mesh_cell_type == TETRAHEDRON4) // facet = triangle3
+    {
+      F   = x_coefs_trans * dLphi_nf[0];
+      Vector a(F.col(0)), b(F.col(1)-F.col(0)), c(F.col(1));
+
+      normal = cross(F.col(0), F.col(1));
+      normal *= sign_;
+
+      // 0
+      if (contrib_0)
+      {
+        X = normal;
+        X /= a.dot(a) * c.dot(c);
+        VecSetValues(Vec_normal_, dim, map.data()+0*dim, X.data(), ADD_VALUES);
+      }
+
+      // 1
+      if (contrib_1)
+      {
+        X = normal;
+        X /= a.dot(a) * b.dot(b);
+        VecSetValues(Vec_normal_, dim, map.data()+1*dim, X.data(), ADD_VALUES);
+      }
+
+      // 2
+      if (contrib_2)
+      {
+        X = normal;
+        X /= b.dot(b) * c.dot(c);
+        VecSetValues(Vec_normal_, dim, map.data()+2*dim, X.data(), ADD_VALUES);
+      }
+
+    }
+    else if(mesh_cell_type == TETRAHEDRON10) // facet = triangle6
+    {
+      Vector x0(x_coefs_trans.col(0));
+      Vector x1(x_coefs_trans.col(1));
+      Vector x2(x_coefs_trans.col(2));
+      Vector x3(x_coefs_trans.col(3));
+      Vector x4(x_coefs_trans.col(4));
+      Vector x5(x_coefs_trans.col(5));
+
+      //edges
+      double e03 = (x0-x3).squaredNorm();
+      double e05 = (x0-x5).squaredNorm();
+      double e13 = (x1-x3).squaredNorm();
+      double e14 = (x1-x4).squaredNorm();
+      double e24 = (x2-x4).squaredNorm();
+      double e25 = (x2-x5).squaredNorm();
+      double e34 = (x3-x4).squaredNorm();
+      double e35 = (x3-x5).squaredNorm();
+      double e45 = (x4-x5).squaredNorm();
+
+      // dividi o triangulo em 4 mini-triangulos
+
+      // node 0
+      if (contrib_0)
+      {
+        cross(normal,x3-x0,x5-x0);
+        normal /= e03*e05;
+        normal *= sign_;
+        VecSetValues(Vec_normal_, dim, map.data()+0*dim, normal.data(), ADD_VALUES);
+      }
+
+      // node 1
+      if (contrib_1)
+      {
+        cross(normal,x4-x1,x3-x1);
+        normal /= e14*e13;
+        normal *= sign_;
+        VecSetValues(Vec_normal_, dim, map.data()+1*dim, normal.data(), ADD_VALUES);
+      }
+
+      // node 2
+      if (contrib_2)
+      {
+        cross(normal,x5-x2,x4-x2);
+        normal /= e25*e24;
+        normal *= sign_;
+        VecSetValues(Vec_normal_, dim, map.data()+2*dim, normal.data(), ADD_VALUES);
+      }
+
+      // node 3
+      if (contrib_0 && contrib_1)
+      {
+        normal = cross(x1-x3,x4-x3)/(e13*e34) + cross(x4-x3,x5-x3)/(e34*e35) + cross(x5-x3,x0-x3)/(e35*e03);
+        normal *= sign_;
+        VecSetValues(Vec_normal_, dim, map.data()+3*dim, normal.data(), ADD_VALUES);
+      }
+
+      // node 4
+      if (contrib_1 && contrib_2)
+      {
+        normal = cross(x2-x4,x5-x4)/(e24*e45) + cross(x5-x4,x3-x4)/(e45*e34) + cross(x3-x4,x1-x4)/(e34*e14);
+        normal *= sign_;
+        VecSetValues(Vec_normal_, dim, map.data()+4*dim, normal.data(), ADD_VALUES);
+      }
+
+      // node 5
+      if (contrib_2 && contrib_0)
+      {
+        normal = cross(x0-x5,x3-x5)/(e05*e35) + cross(x3-x5,x4-x5)/(e35*e45) + cross(x4-x5,x2-x5)/(e45*e25);
+        normal *= sign_;
+        VecSetValues(Vec_normal_, dim, map.data()+5*dim, normal.data(), ADD_VALUES);
+      }
+    }
+    else if(mesh_cell_type == TRIANGLE3)
+    {
+      normal(0) = x_coefs_trans(1,1)-x_coefs_trans(1,0);
+      normal(1) = x_coefs_trans(0,0)-x_coefs_trans(0,1);
+
+      normal /= (x_coefs_trans.col(0)-x_coefs_trans.col(1)).squaredNorm();
+      normal *= sign_;
+      if (contrib_0)
+        VecSetValues(Vec_normal_, dim, map.data()+0*dim, normal.data(), ADD_VALUES);
+      if (contrib_1)
+        VecSetValues(Vec_normal_, dim, map.data()+1*dim, normal.data(), ADD_VALUES);
+      //if (is_surface)
+      //  cout << "normal = " << normal(0) << " " << normal(1) << endl;
+    }
+    else if(mesh_cell_type == TRIANGLE6) // dividi a aresta em duas partes
+    {
+      normal(0) = x_coefs_trans(1,2)-x_coefs_trans(1,0);
+      normal(1) = x_coefs_trans(0,0)-x_coefs_trans(0,2);
+      normal /= (x_coefs_trans.col(0)-x_coefs_trans.col(2)).squaredNorm();
+      normal *= sign_;
+      if (contrib_0)
+        VecSetValues(Vec_normal_, dim, map.data()+0*dim, normal.data(), ADD_VALUES);
+      VecSetValues(Vec_normal_, dim, map.data()+2*dim, normal.data(), ADD_VALUES);
+
+      normal(0) = x_coefs_trans(1,1)-x_coefs_trans(1,2);
+      normal(1) = x_coefs_trans(0,2)-x_coefs_trans(0,1);
+      normal /= (x_coefs_trans.col(1)-x_coefs_trans.col(2)).squaredNorm();
+      normal *= sign_;
+      if (contrib_1)
+        VecSetValues(Vec_normal_, dim, map.data()+1*dim, normal.data(), ADD_VALUES);
+      VecSetValues(Vec_normal_, dim, map.data()+2*dim, normal.data(), ADD_VALUES);
+    }
+
+  }
+  Assembly(Vec_normal_);
+
+  point_iterator point = mesh->pointBegin();
+  point_iterator point_end = mesh->pointEnd();
+  for (; point != point_end; ++point)
+  {
+    tag = point->getTag();
+
+    is_surface = is_in(tag, interface_tags);
+    is_solid   = is_in(tag, solid_tags);
+    is_cl      = is_in(tag, triple_tags);
+
+    if ( !(is_surface || is_solid || is_cl || mesh->inBoundary(&*point)) )
+      continue;
+
+    getNodeDofs(&*point, DH_MESH, VAR_M, map.data());
+
+    if (!is_in(tag, solid_tags))// && !is_in(tag, triple_tags))
+    {
+      VecGetValues(Vec_normal_, dim, map.data(),normal.data());
+      normal.normalize();
+      VecSetValues(Vec_normal_, dim, map.data(),normal.data(), INSERT_VALUES);
+      Assembly(Vec_normal_);
+    }
+    else
+    {
+      if (virtual_mesh)
+        VecGetValues(*Vec_x_1, dim, map.data(), X.data());
+      else
+        point->getCoord(X.data(),dim);
+      normal = -solid_normal(X,current_time,tag);
+
+      VecSetValues(Vec_normal_, dim, map.data(), normal.data(), INSERT_VALUES);
+      Assembly(Vec_normal_);
+    }
+
+  }
+  Assembly(Vec_normal_);
+
+}
+
+/// @param[out] Vec_normal_
+/// @param[out] Vec_x_
+void AppCtx::smoothsMesh(Vec & Vec_normal_, Vec &Vec_x_)
+{
+  //int        nodeid;
+  //double     *Vec_x__array;
+  bool const u_has_edge_assoc_dof = shape_phi_c->numDofsAssociatedToFacet()+shape_phi_c->numDofsAssociatedToCorner() > 0;
+
+  Vector      Xm(dim); // X mean
+  Vector      X0(dim);
+  Vector      Xi(dim);
+  Vector      dX(dim);
+  Vector      normal(dim);
+  Vector      tmp(dim), tmp2(dim);
+  Vector      Uf(dim), Ue(dim), Umsh(dim); // Ue := elastic velocity
+  int         tag;
+  int         viz_tag;
+  int         iVs[128], *iVs_end;
+  int         iCs[128], viCs[128];
+  VectorXi    vtx_dofs_umesh(dim);  // indices de onde pegar a velocidade
+  VectorXi    vtx_dofs_fluid(dim); // indices de onde pegar a velocidade
+  VectorXi    edge_dofs_umesh(3*dim);
+  VectorXi    edge_dofs_fluid((2+u_has_edge_assoc_dof)*dim);
+  VectorXi    edge_nodes(3);
+  double      error;
+  double      old_quality, new_quality;
+  bool        in_boundary;
+  //int        id;
+  bool        is_surface;
+  bool        is_solid;
+
+  int const n_smooths = 10;
+
+  /* suavização laplaciana */
+  for (int smooth_it = 0; smooth_it < n_smooths; ++smooth_it)
+  {
+    error = 0;
+    getVecNormals(&Vec_x_, Vec_normal_);
+
+    // VERTICES
+    point_iterator point = mesh->pointBegin();
+    point_iterator point_end = mesh->pointEnd();
+    for (; point != point_end; ++point)
+    {
+      tag = point->getTag();
+
+      is_surface = is_in(tag, interface_tags);
+      is_solid   = is_in(tag, solid_tags);
+
+      in_boundary =  is_surface || is_solid;
+
+      // pula o caso em que o ponto está no contoro mas não tem boundary smoothing
+      if (!boundary_smoothing && in_boundary)
+        continue;
+
+      if (is_in(tag,triple_tags) || is_in(tag,feature_tags))
+          continue;
+
+      if (is_in(tag,dirichlet_tags) || is_in(tag,neumann_tags) || is_in(tag,periodic_tags))
+          continue;
+
+      if (mesh->isVertex(&*point))
+      {
+        //if (  is_in(tag,interface_tags) || is_in(tag,triple_tags) || is_in(tag,solid_tags) ||
+        //    is_in(tag,dirichlet_tags) || is_in(tag,neumann_tags)  )
+
+        dof_handler[DH_MESH].getVariable(VAR_M).getVertexDofs(vtx_dofs_umesh.data(), &*point);
+        VecGetValues(Vec_x_, dim, vtx_dofs_umesh.data(), X0.data()); // old coord
+
+        Xm = Vector::Zero(dim);
+        //iVs_end = mesh->connectedVtcs(&*point, iVs);
+        iVs_end = mesh->connectedVtcs(&*point, iVs, iCs, viCs);
+
+        if (!in_boundary)
+        {
+          int N=0;
+          Point const* viz_pt;
+          for (int *it = iVs; it != iVs_end ; ++it)
+          {
+            viz_pt = mesh->getNodePtr(*it);
+            viz_tag = viz_pt->getTag();
+            dof_handler[DH_MESH].getVariable(VAR_M).getVertexDofs(vtx_dofs_umesh.data(), viz_pt);
+            VecGetValues(Vec_x_, dim, vtx_dofs_umesh.data(), tmp.data());
+            ++N;
+            Xm += tmp;
+            //if (isFixedPoint(viz_tag))
+            //{
+            //  Xm += 5*X0;
+            //  N += 5;
+            //}
+          }
+          Xm /= N;
+
+          dof_handler[DH_MESH].getVariable(VAR_M).getVertexDofs(vtx_dofs_umesh.data(), &*point);
+          //// compute error
+          VecGetValues(Vec_x_, dim, vtx_dofs_umesh.data(), tmp.data()); // old coord
+          error += (tmp-Xm).norm();
+          old_quality = getCellPatchQuality(Vec_x_, iCs);
+
+          VecSetValues(Vec_x_, dim, vtx_dofs_umesh.data(), Xm.data(), INSERT_VALUES);
+
+          new_quality = getCellPatchQuality(Vec_x_, iCs);
+
+          // se a qualidade piorou, volta no que estava antes
+          if (new_quality < old_quality)
+          {
+            VecSetValues(Vec_x_, dim, vtx_dofs_umesh.data(), tmp.data(), INSERT_VALUES);
+          }
+
+        }
+        else
+        {
+          int N=0;
+          for (int *it = iVs; it != iVs_end ; ++it)
+          {
+            Point const* viz_pt = mesh->getNodePtr(*it);
+            //if (viz_pt->getTag()!=tag && !is_in( viz_pt->getTag(), triple_tags ))
+            viz_tag = viz_pt->getTag();
+            if (viz_tag!=tag && (is_in(viz_tag,interface_tags) || is_in(viz_tag,solid_tags)) )
+              continue;
+            if (viz_tag!=tag && !is_in(viz_tag,triple_tags) && !isFixedPoint(viz_tag) && !is_in(viz_tag,feature_tags))
+              continue;
+            dof_handler[DH_MESH].getVariable(VAR_M).getVertexDofs(vtx_dofs_umesh.data(), mesh->getNodePtr(*it));
+            // debug
+            VecGetValues(Vec_x_, dim, vtx_dofs_umesh.data(), tmp.data());
+            ++N;
+            Xm += tmp;
+            //if (isFixedPoint(viz_tag))
+            //{
+            //  Xm += 3*X0;
+            //  N += 3;
+            //}
+          }
+
+          dof_handler[DH_MESH].getVariable(VAR_M).getVertexDofs(vtx_dofs_umesh.data(), &*point);
+          VecGetValues(Vec_x_, dim, vtx_dofs_umesh.data(), Xi.data());
+
+          if (dim==3)
+            Xm = (N*Xi + 2*Xm)/(3*N);
+            //Xm = Xm/N;
+          else
+            //Xm = (N*Xi + Xm)/(2*N);
+            Xm = Xm/N;
+          //
+
+          dX = Xm - Xi;
+          VecGetValues(Vec_normal_, dim, vtx_dofs_umesh.data(), normal.data());
+          dX -= normal.dot(dX)*normal;
+          Xi += dX;
+
+          // compute error
+          VecGetValues(Vec_x_, dim, vtx_dofs_umesh.data(), tmp.data());
+          error += (tmp-Xi).norm();
+
+          //old_quality = getCellPatchQuality(Vec_x_, iCs);
+          VecSetValues(Vec_x_, dim, vtx_dofs_umesh.data(), Xi.data(), INSERT_VALUES);
+          //new_quality = getCellPatchQuality(Vec_x_, iCs);
+          //// se a qualidade piorou, volta no que estava antes
+          //if (new_quality < old_quality)
+          //{
+          //  VecSetValues(Vec_x_, dim, vtx_dofs_umesh.data(), tmp.data(), INSERT_VALUES);
+          //}
+        }
+
+      }
+
+    } // end point
+
+
+    // MID NODES
+    point = mesh->pointBegin();
+    point_end = mesh->pointEnd();
+    if (u_has_edge_assoc_dof)
+    for (; point != point_end; ++point)
+    {
+      tag = point->getTag();
+
+      is_surface = is_in(tag, interface_tags);
+      is_solid   = is_in(tag, solid_tags);
+
+      in_boundary = mesh->inBoundary(&*point) || is_surface || is_solid;
+
+      // pula o caso em que o ponto está no contoro mas não tem boundary smoothing
+      if (!boundary_smoothing && in_boundary)
+        continue;
+
+      if (!mesh->isVertex(&*point))
+      {
+
+        const int m = point->getPosition() - mesh->numVerticesPerCell();
+        Cell const* icell = mesh->getCellPtr(point->getIncidCell());
+        if (dim==3)
+        {
+          Corner *edge = mesh->getCornerPtr(icell->getCornerId(m));
+          dof_handler[DH_MESH].getVariable(VAR_M).getCornerDofs(edge_dofs_umesh.data(), &*edge);
+          dof_handler[DH_UNKS].getVariable(VAR_U).getCornerDofs(edge_dofs_fluid.data(), &*edge);
+          mesh->getCornerNodesId(&*edge, edge_nodes.data());
+        }
+        else // dim=2
+        {
+          Facet *edge = mesh->getFacetPtr(icell->getFacetId(m));
+          dof_handler[DH_MESH].getVariable(VAR_M).getFacetDofs(edge_dofs_umesh.data(), &*edge);
+          dof_handler[DH_UNKS].getVariable(VAR_U).getFacetDofs(edge_dofs_fluid.data(), &*edge);
+          mesh->getFacetNodesId(&*edge, edge_nodes.data());
+        }
+
+        VecGetValues(Vec_x_, dim, edge_dofs_umesh.data(), Xm.data());
+        VecGetValues(Vec_x_, dim, edge_dofs_umesh.data()+dim, tmp.data());
+        VecGetValues(Vec_x_, dim, edge_dofs_umesh.data()+2*dim, Xi.data());    // mid
+
+        if (in_boundary)
+        {
+          Xm = (Xm+tmp+2*Xi)/4.;
+
+          //

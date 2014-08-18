@@ -1,47 +1,37 @@
-#PBS -N again04
-#PBS -l nodes=1:ppn=3:hexadeca
-#PBS -o /cluster/felipe.mt87/err1
-#PBS -e /cluster/felipe.mt87/err2
+#PBS -N drop04
+#PBS -l nodes=1:ppn=8
+#/PBS -q hexadeca
+#/PBS -e /cluster/felipe.mt87/err2
 
-#export           TT=1e-3
-#export         TT=0.5e-3
-#export        TT=0.25e-3
-#export       TT=0.125e-3
-#export      TT=0.0625e-3
-export     TT=0.03125e-3
-#export    TT=0.015625e-3
-#export   TT=0.0078125e-3
-#export  TT=0.00390625e-3
-#export TT=0.001953125e-3
+export TT=0.125e-3
+export TMP_DIR=/temp/felipe.mt87/drop$TT
 
-
-export TMP_DIR=/temp/felipe.mt87/osc$TT
-
-export OUT_DIR=/cluster/felipe.mt87/cluster_out
-export OUT_NAME=osc_04.txt
+export OUT_DIR=/cluster/felipe.mt87/cluster_out/paper_osc_bdf2-bdf2e
+export OUT_NAME=drop_04.txt
 export MSH_IN=/cluster/felipe.mt87/mef/cl-simu/results/osc_drop/3d/drop.msh
-export VTK_OUT=osc_04.vtk
+export VTK_OUT=drop_04.vtk
 
 
 mkdir -p $TMP_DIR 
+rm -f $TMP_DIR/*
 
 cp /cluster/felipe.mt87/mef/cl-simu/main $TMP_DIR
 cp /cluster/felipe.mt87/mef/cl-simu/args $TMP_DIR
 
 cd $TMP_DIR
 
-export OMP_NUM_THREADS=3
+export OMP_NUM_THREADS=8
 
-export GOMP_CPU_AFFINITY=0-2
+#export GOMP_CPU_AFFINITY=0-3
 
-./main -dt $TT -fin $MSH_IN -fout $VTK_OUT `cat args` > $OUT_DIR/$OUT_NAME 2>&1
+{ time ./main -dt $TT -fin $MSH_IN -fout $VTK_OUT `cat args` >&2 2>&2; } 2> $OUT_DIR/$OUT_NAME
 
 #./main -dt -fin $MSH_IN -fout $VTK_OUT `cat args` > $OUT_NAME 2>&1
 
 rm -f main
 rm -f args
 
-cp ContactHistory $OUT_DIR/osc_history$TT
+cp ContactHistory $OUT_DIR/drop_hist_04
 cp -r $TMP_DIR/* $OUT_DIR
 
 rm -rf $TMP_DIR

@@ -1,6 +1,6 @@
 #PBS -N kinosagi08
-#PBS -l nodes=1:ppn=8:octo32
-#PBS -o /cluster/felipe.mt87/err1
+#PBS -l nodes=1:ppn=8
+#PBS -q octo
 #PBS -e /cluster/felipe.mt87/err2
 
 #export           TT=1e-3

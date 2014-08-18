@@ -2928,7 +2928,7 @@ void AppCtx::printContactAngle(bool _print)
   File << current_time << " "
        << theta_min << " "
        << theta_max << " "
-       << sqrt(X(0)*X(0) + X(1)*X(1)) <<" "
+       << fabs(X(1)) <<" "
        << viscous_power << " "
        << kinetic_energy << " "
        << euler_dissip << " "

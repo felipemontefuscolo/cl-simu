@@ -3,11 +3,11 @@
 *.a
 *.so
 *.d
-*.vtk
 *.png
 *.svg
 *.msh
 *.avi
+*.vtk
 results/*.dat
 results/*.txt
 results/*.pdf
