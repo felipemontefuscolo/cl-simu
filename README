@@ -1,7 +1,3 @@
-parametros
+# Contact-line simulator
 
--snes_ls basic
--snes_fd 0
--stab 2
--Re 400
-
+This C++ code simulates the contact-line formed by the fluid-solid-air interaction.
